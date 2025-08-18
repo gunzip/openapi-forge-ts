@@ -1,0 +1,110 @@
+openapi: 3.1.0
+info:
+  title: Simple API
+  version: 1.0.0
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+      required:
+        - id
+        - name
+        - email
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+      required:
+        - code
+        - message
+    Items:
+      type: array
+      items:
+        type: string
+      minItems: 1
+      maxItems: 10
+      uniqueItems: true
+
+paths:
+  /users/{id}:
+    get:
+      summary: Get a user by ID
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: A user object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "201":
+          description: A user object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /upload/binary:
+    post:
+      summary: Upload a binary file
+      operationId: uploadBinaryFile
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: File uploaded successfully
+  /upload/form:
+    post:
+      summary: Upload a file using multipart form
+      operationId: uploadFormFile
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: File uploaded successfully

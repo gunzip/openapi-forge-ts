@@ -38,14 +38,15 @@ export async function generate(options: GenerationOptions): Promise<void> {
         "allOf" in obj ||
         "anyOf" in obj ||
         "oneOf" in obj ||
-        "properties" in obj
+        "properties" in obj ||
+        "additionalProperties" in obj ||
+        "array" in obj
       );
     }
 
     for (const [name, schema] of Object.entries(
       openApiDoc.components.schemas
     )) {
-      console.debug(`Processing schema: ${name}`, schema);
       if (!isPlainSchemaObject(schema)) {
         console.warn(
           `⚠️ Skipping ${name}: not a plain OpenAPI schema object. Value:`,
@@ -56,7 +57,6 @@ export async function generate(options: GenerationOptions): Promise<void> {
 
       const schemaVar = `${name}`;
       const schemaResult = zodSchemaToCode(schema);
-      console.log(`Generated for ${name}:`, schemaResult);
 
       // Generate imports for dependencies
       const imports = Array.from(schemaResult.imports)

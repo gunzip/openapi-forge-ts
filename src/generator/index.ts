@@ -15,7 +15,6 @@ export interface GenerationOptions {
   input: string;
   output: string;
   generateClient: boolean;
-  validateRequest: boolean;
 }
 
 // Helper function to extract request schemas from operations

@@ -7,7 +7,7 @@ Generate a TypeScript API client from OpenAPI specifications, with automatic con
 - **Multi-version support**: Automatically converts OpenAPI 2.0 (Swagger), 3.0.x, and 3.1.x specifications to 3.1.0
 - **Operation-based client generation** from OpenAPI 3.1.0 (one function per operation)
 - **Zod v4 runtime validation** for response (and optionally request) payloads
-- **Modular output**: generate schemas/types in separate files
+- **Modular output**: generate schemas/types and operations in separate files
 - **Type-safe configuration** with immutable global defaults and per-operation configuration
 - **Tree-shakeable**: only import the operations you use
 - **Flexible authentication and error handling**
@@ -35,10 +35,7 @@ pnpm install
 pnpm start -- generate \
   --input ./swagger-2.0.yaml \
   --output ./generated \
-  --generate-client \
-  --validate-request \
-  --loose-interfaces \
-  --modular
+  --generate-client
 ```
 
 The tool automatically detects the OpenAPI version and converts as needed:
@@ -52,9 +49,6 @@ The tool automatically detects the OpenAPI version and converts as needed:
 - `-i, --input <path>`: Path to the OpenAPI spec file (2.0, 3.0.x, or 3.1.x) in YAML or JSON format
 - `-o, --output <path>`: Output directory for generated code
 - `--generate-client`: Generate the operation functions (default: false)
-- `--validate-request`: Generate Zod schemas for request validation (default: false)
-- `--loose-interfaces`: Generate loose interfaces for runtime checks (default: false)
-- `--modular`: Generate each Zod schema and type in its own file (default: false)
 
 ## Programmatic Usage
 
@@ -65,9 +59,6 @@ await generate({
   input: "./openapi.yaml",
   output: "./generated",
   generateClient: true,
-  validateRequest: false,
-  looseInterfaces: false,
-  modular: false,
 });
 ```
 

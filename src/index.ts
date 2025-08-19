@@ -21,16 +21,6 @@ program
   )
   .requiredOption("-o, --output <path>", "Path to the output directory.")
   .option("--generate-client", "Generate the full HTTP client.", false)
-  .option(
-    "--validate-request",
-    "Generate Zod schemas for request validation.",
-    false
-  )
-  .option(
-    "--loose-interfaces",
-    "Generate loose interfaces for runtime checks.",
-    false
-  )
   .action(async (options: Record<string, unknown>) => {
     try {
       await generate(options as any);

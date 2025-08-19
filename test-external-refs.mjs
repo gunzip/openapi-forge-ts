@@ -10,8 +10,6 @@ async function testExternalRefResolution() {
       input: "test.yaml",
       output: "test-external-refs-output",
       generateClient: false,
-      validateRequest: false,
-      looseInterfaces: false,
     });
 
     // Check if Person and Book schemas were generated

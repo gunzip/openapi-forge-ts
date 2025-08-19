@@ -1,166 +1,167 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "TypeScript Build",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"run",
-				"build"
-			],
-			"problemMatcher": [
-				"$tsc"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Run Tests",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			],
-			"group": "test"
-		},
-		{
-			"label": "Test OpenAPI Conversion",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"test.yaml"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Test OpenAPI 3.1 Generation",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test.yaml",
-				"-o",
-				"generated-test",
-				"--generate-client"
-			],
-			"group": "test"
-		},
-		{
-			"label": "Remove corrupted file",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"src/generator/client-generator.ts"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Remove old generated test",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"generated-test"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Install openapi-types dependency",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"add",
-				"openapi-types"
-			]
-		},
-		{
-			"label": "Test OpenAPI 3.0 to 3.1 conversion",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test-3.0.yaml",
-				"-o",
-				"test-conversion-output",
-				"--generate-client"
-			]
-		},
-		{
-			"label": "Debug conversion",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-conversion.mjs"
-			]
-		},
-		{
-			"label": "Debug conversion fixed",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-conversion.mjs"
-			]
-		},
-		{
-			"label": "Debug comprehensive conversion",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-conversion.mjs"
-			]
-		},
-		{
-			"label": "Test comprehensive conversion with generation",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"comprehensive-test-3.0.yaml",
-				"-o",
-				"comprehensive-test-output",
-				"--generate-client"
-			]
-		},
-		{
-			"label": "Test OpenAPI 3.1 passthrough",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test.yaml",
-				"-o",
-				"test-31-output"
-			]
-		},
-		{
-			"label": "Clean up temporary files",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"debug-conversion.mjs",
-				"test-3.0.yaml",
-				"comprehensive-test-3.0.yaml"
-			]
-		},
-		{
-			"label": "Clean up temporary directories",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"test-conversion-output",
-				"comprehensive-test-output",
-				"test-31-output"
-			]
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "TypeScript Build",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["run", "build"],
+      "problemMatcher": ["$tsc"],
+      "group": "build"
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"],
+      "group": "test"
+    },
+    {
+      "label": "Test OpenAPI Conversion",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["start", "test.yaml"],
+      "group": "build"
+    },
+    {
+      "label": "Test OpenAPI 3.1 Generation",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test.yaml",
+        "-o",
+        "generated-test",
+        "--generate-client"
+      ],
+      "group": "test"
+    },
+    {
+      "label": "Remove corrupted file",
+      "type": "shell",
+      "command": "rm",
+      "args": ["src/generator/client-generator.ts"],
+      "group": "build"
+    },
+    {
+      "label": "Remove old generated test",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "generated-test"],
+      "group": "build"
+    },
+    {
+      "label": "Test OpenAPI 3.0 to 3.1 conversion",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test-3.0.yaml",
+        "-o",
+        "test-conversion-output",
+        "--generate-client"
+      ]
+    },
+    {
+      "label": "Debug conversion",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-conversion.mjs"]
+    },
+    {
+      "label": "Debug conversion fixed",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-conversion.mjs"]
+    },
+    {
+      "label": "Debug comprehensive conversion",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-conversion.mjs"]
+    },
+    {
+      "label": "Test comprehensive conversion with generation",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "comprehensive-test-3.0.yaml",
+        "-o",
+        "comprehensive-test-output",
+        "--generate-client"
+      ]
+    },
+    {
+      "label": "Test OpenAPI 3.1 passthrough",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["start", "generate", "-i", "test.yaml", "-o", "test-31-output"]
+    },
+    {
+      "label": "Clean up temporary files",
+      "type": "shell",
+      "command": "rm",
+      "args": [
+        "debug-conversion.mjs",
+        "test-3.0.yaml",
+        "comprehensive-test-3.0.yaml"
+      ]
+    },
+    {
+      "label": "Clean up temporary directories",
+      "type": "shell",
+      "command": "rm",
+      "args": [
+        "-rf",
+        "test-conversion-output",
+        "comprehensive-test-output",
+        "test-31-output"
+      ]
+    },
+    {
+      "label": "Update dependencies",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["install"]
+    },
+    {
+      "label": "Test refactored conversion",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test-3.0-simple.yaml",
+        "-o",
+        "test-refactor-output",
+        "--generate-client"
+      ]
+    },
+    {
+      "label": "Clean up test files",
+      "type": "shell",
+      "command": "rm",
+      "args": ["test-3.0-simple.yaml"]
+    },
+    {
+      "label": "Clean up test output",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "test-refactor-output"]
+    },
+    {
+      "label": "Run all tests",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"]
+    }
+  ]
 }

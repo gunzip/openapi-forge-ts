@@ -1,11 +1,12 @@
-import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+import type { OpenAPIObject as OpenAPIV3Document } from "openapi3-ts/oas30";
+import type { OpenAPIObject as OpenAPIV3_1Document } from "openapi3-ts/oas31";
 
 /**
  * Converts an OpenAPI 3.0.x specification to OpenAPI 3.1.0 format
  */
 export function convertOpenAPI30to31(
-  openapi30: OpenAPIV3.Document
-): OpenAPIV3_1.Document {
+  openapi30: OpenAPIV3Document
+): OpenAPIV3_1Document {
   const converted = JSON.parse(JSON.stringify(openapi30)) as any;
 
   // Update version
@@ -27,7 +28,7 @@ export function convertOpenAPI30to31(
     }
   }
 
-  return converted as OpenAPIV3_1.Document;
+  return converted as OpenAPIV3_1Document;
 }
 
 /**

@@ -118,6 +118,32 @@ export function zodSchemaToCode(
   }
 
   if (schema.anyOf) {
+    // Check if discriminator is present for discriminated unions
+    if (schema.discriminator && schema.discriminator.propertyName) {
+      const discriminatorProperty = schema.discriminator.propertyName;
+      const subResults = schema.anyOf.map((s) =>
+        zodSchemaToCode(s, result.imports)
+      );
+      const schemas = subResults.map((r) => r.code);
+      subResults.forEach((r) => {
+        result.imports = new Set([...result.imports, ...r.imports]);
+      });
+
+      if (schemas.length === 0) {
+        result.code = "z.unknown()";
+        return result;
+      }
+      if (schemas.length === 1) {
+        result.code = schemas[0];
+        return result;
+      }
+
+      // Generate discriminated union
+      result.code = `z.discriminatedUnion("${discriminatorProperty}", [${schemas.join(", ")}])`;
+      return result;
+    }
+
+    // Regular anyOf without discriminator
     const subResults = schema.anyOf.map((s) =>
       zodSchemaToCode(s, result.imports)
     );
@@ -139,6 +165,35 @@ export function zodSchemaToCode(
   }
 
   if (schema.oneOf) {
+    // Check if discriminator is present for discriminated unions
+    if (schema.discriminator && schema.discriminator.propertyName) {
+      const discriminatorProperty = schema.discriminator.propertyName;
+      const subResults = schema.oneOf.map((s) =>
+        zodSchemaToCode(s, result.imports)
+      );
+
+      // For discriminated unions, we need the actual schema names/codes
+      const schemas = subResults.map((r) => r.code);
+      subResults.forEach((r) => {
+        result.imports = new Set([...result.imports, ...r.imports]);
+      });
+
+      if (schemas.length === 0) {
+        result.code = "z.unknown()";
+        return result;
+      }
+      if (schemas.length === 1) {
+        result.code = schemas[0];
+        return result;
+      }
+
+      // Generate discriminated union - this works even with references since
+      // Zod will validate the discriminator field exists in each schema
+      result.code = `z.discriminatedUnion("${discriminatorProperty}", [${schemas.join(", ")}])`;
+      return result;
+    }
+
+    // Regular oneOf without discriminator
     const subResults = schema.oneOf.map((s) =>
       zodSchemaToCode(s, result.imports)
     );

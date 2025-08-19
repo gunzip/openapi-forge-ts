@@ -239,4 +239,109 @@ describe("zodSchemaToCode", () => {
     expect(zodSchema.parse({ other: [1, 2, 3] })).toEqual({ other: [1, 2, 3] });
     expect(zodSchema.parse(undefined)).toEqual({ test: [1000] }); // default value
   });
+
+  it("should handle discriminated unions with oneOf", () => {
+    const schema: SchemaObject = {
+      discriminator: {
+        propertyName: "type",
+      },
+      oneOf: [
+        {
+          type: "object",
+          properties: {
+            type: { type: "string", enum: ["circle"] },
+            radius: { type: "number" },
+          },
+          required: ["type", "radius"],
+        },
+        {
+          type: "object",
+          properties: {
+            type: { type: "string", enum: ["square"] },
+            size: { type: "number" },
+          },
+          required: ["type", "size"],
+        },
+      ],
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toContain('z.discriminatedUnion("type"');
+    expect(result.code).toContain("z.object");
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.safeParse({ type: "circle", radius: 5 }).success).toBe(
+      true
+    );
+    expect(zodSchema.safeParse({ type: "square", size: 10 }).success).toBe(
+      true
+    );
+    expect(zodSchema.safeParse({ type: "triangle", height: 5 }).success).toBe(
+      false
+    );
+  });
+
+  it("should handle discriminated unions with anyOf", () => {
+    const schema: SchemaObject = {
+      discriminator: {
+        propertyName: "kind",
+      },
+      anyOf: [
+        {
+          type: "object",
+          properties: {
+            kind: { type: "string", enum: ["user"] },
+            name: { type: "string" },
+          },
+          required: ["kind", "name"],
+        },
+        {
+          type: "object",
+          properties: {
+            kind: { type: "string", enum: ["admin"] },
+            permissions: { type: "array", items: { type: "string" } },
+          },
+          required: ["kind", "permissions"],
+        },
+      ],
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toContain('z.discriminatedUnion("kind"');
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.safeParse({ kind: "user", name: "john" }).success).toBe(
+      true
+    );
+    expect(
+      zodSchema.safeParse({ kind: "admin", permissions: ["read", "write"] })
+        .success
+    ).toBe(true);
+    expect(zodSchema.safeParse({ kind: "guest", id: 123 }).success).toBe(false);
+  });
+
+  it("should handle discriminated unions with $ref schemas", () => {
+    const schema: SchemaObject = {
+      discriminator: {
+        propertyName: "type",
+      },
+      oneOf: [
+        { $ref: "#/components/schemas/Circle" },
+        { $ref: "#/components/schemas/Square" },
+      ],
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe('z.discriminatedUnion("type", [Circle, Square])');
+    expect(result.imports.has("Circle")).toBe(true);
+    expect(result.imports.has("Square")).toBe(true);
+  });
+
+  it("should fallback to regular union when no discriminator is present", () => {
+    const schema: SchemaObject = {
+      oneOf: [{ type: "string" }, { type: "number" }],
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toContain("z.union([");
+    expect(result.code).not.toContain("discriminatedUnion");
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.safeParse("hello").success).toBe(true);
+    expect(zodSchema.safeParse(123).success).toBe(true);
+    expect(zodSchema.safeParse(true).success).toBe(false);
+  });
 });

@@ -99,7 +99,61 @@ Parameters are organized in a single object with typed properties:
 
 #### Request Body
 
-- Available as `body?: any` when operation accepts a request body
+- Available as `body` when operation accepts a request body
+
+### Utility: bindAllOperationsConfig
+
+The generator provides a utility to bind all operation functions to a specific configuration, so you don't need to pass the config object to every call:
+
+```ts
+import { bindAllOperationsConfig } from "./generated/operations/config.js";
+import * as operations from "./generated/operations/index.js";
+
+const apiConfig = {
+  baseURL: "https://api.example.com/v1",
+  fetch: fetch,
+  headers: {
+    Authorization: "Bearer your-token",
+  },
+};
+
+const bound = bindAllOperationsConfig(operations, apiConfig);
+
+// Now you can call operations without passing config each time:
+const pet = await bound.getPetById({ petId: "123" });
+```
+
+- All operation functions are bound to the provided config.
+- The returned object has the same keys as the input operations object.
+- Each function takes only the operation parameters.
+- You can override the config for individual calls when needed.
+
+#### Override configuration object
+
+You may want to override the configuration object for specific requests
+in order to customize the behavior of individual API calls setting:
+
+- HTTP headers
+- baseURL
+- fetch instance
+
+```typescript
+import { testAuthBearer } from "./operations/testAuthBearer.js";
+import { globalConfig } from "./operations/config.js";
+
+await testAuthBearer(
+  {
+    qr: "required-value",
+    qo: "optional-value",
+  },
+  {
+    headers: {
+      Authorization: "Bearer your-token",
+    },
+    ...globalConfig,
+  }
+);
+```
 
 ### Examples
 

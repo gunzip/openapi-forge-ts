@@ -366,6 +366,121 @@
 			"args": [
 				"test"
 			]
+		},
+		{
+			"label": "Debug zod",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"debug-zod.mjs"
+			]
+		},
+		{
+			"label": "Debug zod simple",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"debug-zod.mjs"
+			]
+		},
+		{
+			"label": "Clean debug file",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"debug-zod.mjs"
+			]
+		},
+		{
+			"label": "Test inline schema",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"start",
+				"generate",
+				"-i",
+				"test-inline.yaml",
+				"-o",
+				"test-inline-output",
+				"--generate-client"
+			]
+		},
+		{
+			"label": "Clean up test files",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"-rf",
+				"test-inline.yaml",
+				"test-inline-output"
+			]
+		},
+		{
+			"label": "Clean test files",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"-rf",
+				"test-inline.yaml",
+				"test-inline-output"
+			]
+		},
+		{
+			"label": "Test schema generation only",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"start",
+				"generate",
+				"-i",
+				"test-request-schemas.yaml",
+				"-o",
+				"test-schemas-only"
+			]
+		},
+		{
+			"label": "Test with client generation",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"start",
+				"generate",
+				"-i",
+				"test-request-schemas.yaml",
+				"-o",
+				"test-with-client",
+				"--generate-client"
+			]
+		},
+		{
+			"label": "Clean test files",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"-rf",
+				"test-request-schemas.yaml",
+				"test-schemas-only",
+				"test-with-client"
+			]
+		},
+		{
+			"label": "Clean test files 2",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"-rf",
+				"test-request-schemas.yaml",
+				"test-schemas-only",
+				"test-with-client"
+			]
+		},
+		{
+			"label": "Run tests",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			]
 		}
 	]
 }

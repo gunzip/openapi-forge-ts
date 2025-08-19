@@ -4,3 +4,4 @@ dist/
 *.log
 generated*
 *.gitignore.*
+diff.diff

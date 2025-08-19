@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import type { SchemaObject } from "openapi3-ts/oas31";
+import type { SchemaObject, OperationObject, RequestBodyObject } from "openapi3-ts/oas31";
 import { parseOpenAPI } from "./parser.js";
 import { zodSchemaToCode } from "./zod-schema-generator.js";
 import { generateOperations } from "./client-generator.js";
@@ -13,6 +13,38 @@ export interface GenerationOptions {
   generateClient: boolean;
   validateRequest: boolean;
   looseInterfaces: boolean;
+}
+
+// Helper function to extract request schemas from operations
+function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
+  const requestSchemas = new Map<string, SchemaObject>();
+  
+  if (!openApiDoc.paths) {
+    return requestSchemas;
+  }
+  
+  for (const [pathKey, pathItem] of Object.entries(openApiDoc.paths)) {
+    for (const [method, operation] of Object.entries(pathItem as any)) {
+      if (
+        ["get", "post", "put", "delete", "patch"].includes(method) &&
+        (operation as OperationObject).operationId &&
+        (operation as OperationObject).requestBody
+      ) {
+        const operationObj = operation as OperationObject;
+        const requestBody = operationObj.requestBody as RequestBodyObject;
+        
+        // Look for application/json content
+        const jsonContent = requestBody.content?.["application/json"];
+        if (jsonContent?.schema && !jsonContent.schema["$ref"]) {
+          // Only extract inline schemas, not $ref schemas
+          const requestTypeName = `${operationObj.operationId}Request`;
+          requestSchemas.set(requestTypeName, jsonContent.schema as SchemaObject);
+        }
+      }
+    }
+  }
+  
+  return requestSchemas;
 }
 
 export async function generate(options: GenerationOptions): Promise<void> {
@@ -58,6 +90,7 @@ export async function generate(options: GenerationOptions): Promise<void> {
       );
     }
 
+    // Generate schemas from components/schemas
     for (const [name, schema] of Object.entries(
       openApiDoc.components.schemas
     )) {
@@ -83,6 +116,37 @@ export async function generate(options: GenerationOptions): Promise<void> {
             .map((line) => line.trim())
             .join("\n * ")}\n */\n`
         : "";
+
+      // Generate imports for dependencies
+      const imports = Array.from(schemaResult.imports)
+        .filter((importName) => importName !== name) // Don't import self
+        .map(
+          (importName) => `import { ${importName} } from "./${importName}.js";`
+        )
+        .join("\n");
+
+      const importsSection = imports ? `${imports}\n` : "";
+      const schemaContent = `${commentSection}export const ${schemaVar} = ${schemaResult.code};`;
+      const typeContent = `export type ${schemaVar} = z.infer<typeof ${schemaVar}>;`;
+
+      const filePath = path.join(schemasDir, `${name}.ts`);
+      const formattedContent = await format(
+        `import { z } from 'zod';\n${importsSection}\n${schemaContent}\n${typeContent}`,
+        {
+          parser: "typescript",
+        }
+      );
+      await fs.writeFile(filePath, formattedContent);
+    }
+
+    // Generate request schemas from operations
+    const requestSchemas = extractRequestSchemas(openApiDoc);
+    for (const [name, schema] of requestSchemas) {
+      const schemaVar = `${name}`;
+      const schemaResult = zodSchemaToCode(schema);
+
+      // Generate comment for request schema
+      const commentSection = `/**\n * Request schema for ${name.replace('Request', '')} operation\n */\n`;
 
       // Generate imports for dependencies
       const imports = Array.from(schemaResult.imports)

@@ -6,10 +6,13 @@ import type {
   RequestBodyObject,
   ResponseObject,
   SecuritySchemeObject,
+  SchemaObject,
+  ReferenceObject,
 } from "openapi3-ts/oas31";
 import { format } from "prettier";
 import { promises as fs } from "fs";
 import path from "path";
+import { zodSchemaToCode } from "./zod-schema-generator.js";
 
 // Helper function to convert kebab-case to camelCase
 function toCamelCase(str: string): string {
@@ -30,6 +33,43 @@ function resolveParameterReference(
     return resolved as ParameterObject;
   }
   return param as ParameterObject;
+}
+
+// Helper function to resolve request body schema and extract type name
+function resolveRequestBodyType(
+  requestBody: RequestBodyObject,
+  operationId: string,
+  doc: OpenAPIObject
+): { typeName: string | null; isRequired: boolean; typeImports: Set<string> } {
+  // Check if request body is required (default is false)
+  const isRequired = requestBody.required === true;
+  
+  // Look for application/json content
+  const jsonContent = requestBody.content?.["application/json"];
+  if (!jsonContent?.schema) {
+    return { typeName: null, isRequired, typeImports: new Set<string>() };
+  }
+  
+  const schema = jsonContent.schema;
+  
+  // If it's a reference to a schema, use that as the type name
+  if (schema["$ref"]) {
+    const typeName = schema["$ref"].split("/").pop();
+    return { 
+      typeName: typeName || null, 
+      isRequired, 
+      typeImports: new Set([typeName || ""])
+    };
+  }
+  
+  // For inline schemas, use the pre-generated request schema
+  // The request schema will be generated as {operationId}Request in the main generator
+  const requestTypeName = `${operationId}Request`;
+  return { 
+    typeName: requestTypeName, 
+    isRequired, 
+    typeImports: new Set([requestTypeName])
+  };
 }
 
 // Extract auth header names from security schemes
@@ -111,6 +151,7 @@ function generateOperationFunction(
 ): { functionCode: string; typeImports: Set<string> } {
   const functionName = operation.operationId!;
   const summary = operation.summary ? `/** ${operation.summary} */\n` : "";
+  const typeImports = new Set<string>();
 
   // Resolve parameter references and combine path-level and operation-level parameters
   const resolvedPathLevelParams = pathLevelParameters.map((p) =>
@@ -161,8 +202,20 @@ function generateOperationFunction(
   }
 
   // Body parameter
+  let bodyTypeName: string | null = null;
   if (hasBody) {
-    parameterProperties.push(`body?: any`);
+    const requestBody = operation.requestBody as RequestBodyObject;
+    const { typeName, isRequired, typeImports: bodyTypeImports } = resolveRequestBodyType(requestBody, functionName, doc);
+    bodyTypeName = typeName;
+    
+    // Add any imports from the body type resolution
+    bodyTypeImports.forEach(imp => typeImports.add(imp));
+    
+    if (typeName) {
+      parameterProperties.push(`body${isRequired ? "" : "?"}: ${typeName}`);
+    } else {
+      parameterProperties.push(`body?: any`);
+    }
   }
 
   const paramsInterface =
@@ -205,7 +258,6 @@ function generateOperationFunction(
   // Find all defined 2xx responses
   let returnType = "void";
   let typeName = null;
-  const typeImports = new Set<string>();
   const responseHandlers: string[] = [];
   if (operation.responses) {
     const successCodes = Object.keys(operation.responses)

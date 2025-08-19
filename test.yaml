@@ -180,6 +180,26 @@ paths:
           description: "Created"
         500:
           description: "Fatal error"
+
+  /test-inline-body-schema:
+    post:
+      operationId: testInlineBodySchema
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                age:
+                  type: number
+              required:
+                - name
+      responses:
+        201:
+          description: Created
+
   /test-parameter-with-body-ref:
     post:
       operationId: "testParameterWithBodyReference"

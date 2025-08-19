@@ -1,5 +1,54 @@
 import type { OpenAPIObject as OpenAPIV3Document } from "openapi3-ts/oas30";
 import type { OpenAPIObject as OpenAPIV3_1Document } from "openapi3-ts/oas31";
+import { convertObj } from "swagger2openapi";
+
+/**
+ * Converts an OpenAPI 2.0 (Swagger) specification to OpenAPI 3.0 format
+ */
+export async function convertOpenAPI20to30(
+  swagger20: any
+): Promise<OpenAPIV3Document> {
+  try {
+    const result = await convertObj(swagger20, {
+      patch: true,
+      warnOnly: true,
+      resolve: true,
+      source: "input.yaml",
+    });
+    return result.openapi as OpenAPIV3Document;
+  } catch (error) {
+    throw new Error(
+      `Failed to convert OpenAPI 2.0 to 3.0: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+/**
+ * Converts an OpenAPI specification to 3.1 format, handling both 2.0 and 3.0 inputs
+ */
+export async function convertToOpenAPI31(
+  openapi: any
+): Promise<OpenAPIV3_1Document> {
+  // If it's already 3.1, return as-is
+  if (isOpenAPI31(openapi)) {
+    return openapi as OpenAPIV3_1Document;
+  }
+
+  // If it's 2.0, first convert to 3.0, then to 3.1
+  if (isOpenAPI20(openapi)) {
+    const openapi30 = await convertOpenAPI20to30(openapi);
+    return convertOpenAPI30to31(openapi30);
+  }
+
+  // If it's 3.0, convert directly to 3.1
+  if (isOpenAPI30(openapi)) {
+    return convertOpenAPI30to31(openapi as OpenAPIV3Document);
+  }
+
+  throw new Error(
+    `Unsupported OpenAPI version: ${openapi.openapi || openapi.swagger || "unknown"}`
+  );
+}
 
 /**
  * Converts an OpenAPI 3.0.x specification to OpenAPI 3.1.0 format
@@ -272,6 +321,15 @@ function convertMediaType(mediaTypeObject: any): any {
   }
 
   return converted;
+}
+
+/**
+ * Checks if an OpenAPI document is version 2.0 (Swagger)
+ */
+export function isOpenAPI20(openapi: any): boolean {
+  return (
+    typeof openapi.swagger === "string" && openapi.swagger.startsWith("2.0")
+  );
 }
 
 /**

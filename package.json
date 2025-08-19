@@ -21,6 +21,7 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.12.12",
+    "@types/swagger2openapi": "^7.0.4",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"
@@ -30,6 +31,7 @@
     "commander": "^14.0.0",
     "js-yaml": "^4.1.0",
     "openapi3-ts": "^4.3.0",
+    "swagger2openapi": "^7.0.8",
     "zod": "^4.0.0"
   },
   "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748"

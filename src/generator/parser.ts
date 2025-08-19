@@ -1,7 +1,13 @@
 import { promises as fs } from "fs";
 import yaml from "js-yaml";
 import type { OpenAPIObject } from "openapi3-ts/oas31";
-import { convertOpenAPI30to31, isOpenAPI30, isOpenAPI31 } from "./converter.js";
+import {
+  convertOpenAPI30to31,
+  convertToOpenAPI31,
+  isOpenAPI20,
+  isOpenAPI30,
+  isOpenAPI31,
+} from "./converter.js";
 
 export async function parseOpenAPI(filePath: string): Promise<OpenAPIObject> {
   const fileContent = await fs.readFile(filePath, "utf-8");
@@ -17,8 +23,14 @@ export async function parseOpenAPI(filePath: string): Promise<OpenAPIObject> {
     throw new Error(`Unsupported file extension: ${extension}`);
   }
 
-  // Check if we need to convert from OpenAPI 3.0 to 3.1
-  if (isOpenAPI30(parsed)) {
+  // Automatically convert to OpenAPI 3.1 regardless of input version
+  if (isOpenAPI20(parsed)) {
+    console.log(
+      "🔄 Detected OpenAPI 2.0 (Swagger) specification, converting to 3.1.0..."
+    );
+    parsed = await convertToOpenAPI31(parsed);
+    console.log("✅ Successfully converted from OpenAPI 2.0 to 3.1.0");
+  } else if (isOpenAPI30(parsed)) {
     console.log(
       "🔄 Detected OpenAPI 3.0.x specification, converting to 3.1.0..."
     );

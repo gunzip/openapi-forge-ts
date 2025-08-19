@@ -2,6 +2,21 @@
 
 The OpenAPI client generator has been refactored to generate standalone operation functions instead of a class-based client. This provides more flexibility and better tree-shaking support.
 
+## Input Format Support
+
+The generator now supports automatic conversion of multiple OpenAPI formats:
+
+- **OpenAPI 2.0 (Swagger)**: Automatically converted to 3.0, then to 3.1
+- **OpenAPI 3.0.x**: Automatically converted to 3.1
+- **OpenAPI 3.1.x**: Used directly without conversion
+
+All conversions preserve semantics while updating format:
+
+- `nullable: true` → `type: ["string", "null"]`
+- Boolean `exclusiveMinimum/Maximum` → numeric values
+- `example` → `examples` array
+- Swagger 2.0 `host`/`basePath` → OpenAPI 3.x `servers`
+
 ## Architecture Overview
 
 ### Files Generated

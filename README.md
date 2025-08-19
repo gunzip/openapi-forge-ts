@@ -1,9 +1,10 @@
 # OpenAPI TypeScript Client Generator
 
-Generate a TypeScript API client from an OpenAPI 3.1.0 specification, with Zod validation and operation-based architecture.
+Generate a TypeScript API client from OpenAPI specifications, with automatic conversion to 3.1.0, Zod validation, and operation-based architecture.
 
 ## Features
 
+- **Multi-version support**: Automatically converts OpenAPI 2.0 (Swagger), 3.0.x, and 3.1.x specifications to 3.1.0
 - **Operation-based client generation** from OpenAPI 3.1.0 (one function per operation)
 - **Zod v4 runtime validation** for response (and optionally request) payloads
 - **Modular output**: generate schemas/types in separate files
@@ -11,6 +12,16 @@ Generate a TypeScript API client from an OpenAPI 3.1.0 specification, with Zod v
 - **Tree-shakeable**: only import the operations you use
 - **Flexible authentication and error handling**
 - **ESM output, minimal dependencies**
+
+## Supported Input Formats
+
+The generator automatically detects and converts:
+
+- **OpenAPI 2.0** (Swagger) → 3.0 → 3.1
+- **OpenAPI 3.0.x** → 3.1
+- **OpenAPI 3.1.x** (no conversion needed)
+
+All input formats are automatically normalized to OpenAPI 3.1.0 before generation.
 
 ## Installation
 
@@ -22,7 +33,7 @@ pnpm install
 
 ```
 pnpm start -- generate \
-  --input ./openapi.yaml \
+  --input ./swagger-2.0.yaml \
   --output ./generated \
   --generate-client \
   --validate-request \
@@ -30,9 +41,15 @@ pnpm start -- generate \
   --modular
 ```
 
+The tool automatically detects the OpenAPI version and converts as needed:
+
+- Swagger 2.0 files are converted to OpenAPI 3.0, then to 3.1
+- OpenAPI 3.0.x files are converted directly to 3.1
+- OpenAPI 3.1.x files are used as-is
+
 ### CLI Options
 
-- `-i, --input <path>`: Path to the OpenAPI 3.1.0 spec file (YAML or JSON)
+- `-i, --input <path>`: Path to the OpenAPI spec file (2.0, 3.0.x, or 3.1.x) in YAML or JSON format
 - `-o, --output <path>`: Output directory for generated code
 - `--generate-client`: Generate the operation functions (default: false)
 - `--validate-request`: Generate Zod schemas for request validation (default: false)

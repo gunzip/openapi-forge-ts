@@ -207,6 +207,50 @@
 			"args": [
 				"debug-required.mjs"
 			]
+		},
+		{
+			"label": "Test Edge Case Generation",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"start",
+				"generate",
+				"-i",
+				"test-edge-case.yaml",
+				"-o",
+				"test-edge-case-output"
+			]
+		},
+		{
+			"label": "Test Edge Case Generation Again",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"start",
+				"generate",
+				"-i",
+				"test-edge-case.yaml",
+				"-o",
+				"test-edge-case-output"
+			]
+		},
+		{
+			"label": "Clean up edge case test",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"-rf",
+				"test-edge-case.yaml",
+				"test-edge-case-output"
+			]
+		},
+		{
+			"label": "Run tests manually",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			]
 		}
 	]
 }

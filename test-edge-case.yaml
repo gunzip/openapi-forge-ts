@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info:
+  title: Edge Case Test
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    TestWithStarSlash:
+      type: string
+      description: "This description contains */ which could break comments"
+    TestWithAsterisk:
+      type: string
+      description: "This description contains * asterisks * everywhere"

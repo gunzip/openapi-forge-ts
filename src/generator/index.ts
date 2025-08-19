@@ -58,6 +58,18 @@ export async function generate(options: GenerationOptions): Promise<void> {
       const schemaVar = `${name}`;
       const schemaResult = zodSchemaToCode(schema);
 
+      // Extract description from schema for comment
+      const description = schema.description ? schema.description.trim() : null;
+
+      // Generate comment if description exists
+      const commentSection = description
+        ? `/**\n * ${description
+            .replace(/\*\//g, "*\\/") // Escape */ to prevent breaking comment blocks
+            .split("\n")
+            .map((line) => line.trim())
+            .join("\n * ")}\n */\n`
+        : "";
+
       // Generate imports for dependencies
       const imports = Array.from(schemaResult.imports)
         .filter((importName) => importName !== name) // Don't import self
@@ -67,7 +79,7 @@ export async function generate(options: GenerationOptions): Promise<void> {
         .join("\n");
 
       const importsSection = imports ? `${imports}\n` : "";
-      const schemaContent = `export const ${schemaVar} = ${schemaResult.code};`;
+      const schemaContent = `${commentSection}export const ${schemaVar} = ${schemaResult.code};`;
       const typeContent = `export type ${schemaVar} = z.infer<typeof ${schemaVar}>;`;
 
       const filePath = path.join(schemasDir, `${name}.ts`);

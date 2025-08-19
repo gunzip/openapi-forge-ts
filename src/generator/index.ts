@@ -162,7 +162,7 @@ export async function generate(options: GenerationOptions): Promise<void> {
       const schemaContent = `${commentSection}export const ${schemaVar} = ${schemaResult.code};`;
       const typeContent = `export type ${schemaVar} = z.infer<typeof ${schemaVar}>;`;
 
-      const filePath = path.join(schemasDir, `${name}.ts`);
+      const filePath = path.join(schemasDir, `${schemaVar}.ts`);
       const formattedContent = await format(
         `import { z } from 'zod';\n${importsSection}\n${schemaContent}\n${typeContent}`,
         {

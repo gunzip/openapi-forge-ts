@@ -26,8 +26,8 @@ export function zodSchemaToCode(
         return result;
       }
     }
-    // For non-local refs or other cases, fall back to z.any()
-    result.code = "z.any()";
+    // For non-local refs or other cases, fall back to z.unknown()
+    result.code = "z.unknown()";
     return result;
   }
 
@@ -75,7 +75,7 @@ export function zodSchemaToCode(
     });
 
     if (schemas.length === 0) {
-      result.code = "z.any()";
+      result.code = "z.unknown()";
       return result;
     }
     if (schemas.length === 1) {
@@ -99,7 +99,7 @@ export function zodSchemaToCode(
     });
 
     if (schemas.length === 0) {
-      result.code = "z.any()";
+      result.code = "z.unknown()";
       return result;
     }
     if (schemas.length === 1) {
@@ -120,7 +120,7 @@ export function zodSchemaToCode(
     });
 
     if (schemas.length === 0) {
-      result.code = "z.any()";
+      result.code = "z.unknown()";
       return result;
     }
     if (schemas.length === 1) {
@@ -172,7 +172,7 @@ export function zodSchemaToCode(
 
   if (schema.type === "array") {
     if (!schema.items) {
-      result.code = "z.array(z.any())";
+      result.code = "z.array(z.unknown())";
       return result;
     }
     const itemsResult = zodSchemaToCode(
@@ -192,6 +192,8 @@ export function zodSchemaToCode(
 
   if (schema.type === "object") {
     const shape: string[] = [];
+    const requiredFields = schema.required || [];
+
     if (schema.properties) {
       for (const [key, propSchema] of Object.entries(schema.properties)) {
         const propResult = zodSchemaToCode(
@@ -199,7 +201,13 @@ export function zodSchemaToCode(
           result.imports
         );
         result.imports = new Set([...result.imports, ...propResult.imports]);
-        shape.push(`${JSON.stringify(key)}: ${propResult.code}`);
+
+        const isRequired = requiredFields.includes(key);
+        const propCode = isRequired
+          ? propResult.code
+          : `${propResult.code}.optional()`;
+
+        shape.push(`${JSON.stringify(key)}: ${propCode}`);
       }
     }
     let code = `z.object({${shape.join(", ")}})`;

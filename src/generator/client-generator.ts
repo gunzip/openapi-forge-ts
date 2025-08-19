@@ -61,7 +61,7 @@ function resolveRequestBodyType(
 
   // For inline schemas, use the pre-generated request schema
   // The request schema will be generated as {operationId}Request in the main generator
-  const requestTypeName = `${operationId}Request`;
+  const requestTypeName = `${operationId.charAt(0).toUpperCase() + operationId.slice(1)}Request`;
   return {
     typeName: requestTypeName,
     isRequired,

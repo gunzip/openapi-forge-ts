@@ -126,4 +126,117 @@ describe("zodSchemaToCode", () => {
     expect(result.code).toContain("intersection");
     expect(result.imports.has("Profile")).toBe(true);
   });
+
+  it("should handle default values for boolean schemas", () => {
+    const schema: SchemaObject = {
+      type: "boolean",
+      default: false,
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe("z.boolean().default(false)");
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.parse(true)).toBe(true);
+    expect(zodSchema.parse(false)).toBe(false);
+    expect(zodSchema.parse(undefined)).toBe(false); // default value
+  });
+
+  it("should handle default values for string schemas", () => {
+    const schema: SchemaObject = {
+      type: "string",
+      default: "hello world",
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe('z.string().default("hello world")');
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.parse("test")).toBe("test");
+    expect(zodSchema.parse(undefined)).toBe("hello world"); // default value
+  });
+
+  it("should handle default values for number schemas", () => {
+    const schema: SchemaObject = {
+      type: "number",
+      default: 42,
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe("z.number().default(42)");
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.parse(100)).toBe(100);
+    expect(zodSchema.parse(undefined)).toBe(42); // default value
+  });
+
+  it("should handle default values for integer schemas", () => {
+    const schema: SchemaObject = {
+      type: "integer",
+      default: 10,
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe("z.number().int().default(10)");
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.parse(5)).toBe(5);
+    expect(zodSchema.parse(undefined)).toBe(10); // default value
+  });
+
+  it("should handle default values for array schemas", () => {
+    const schema: SchemaObject = {
+      type: "array",
+      items: { type: "string" },
+      default: ["default", "values"],
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe(
+      'z.array(z.string()).default(["default","values"])'
+    );
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.parse(["test"])).toEqual(["test"]);
+    expect(zodSchema.parse(undefined)).toEqual(["default", "values"]); // default value
+  });
+
+  it("should handle default values for object schemas", () => {
+    const schema: SchemaObject = {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+      },
+      default: { name: "default name" },
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe(
+      'z.object({"name": z.string().optional()}).default({"name":"default name"})'
+    );
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.parse({ name: "test" })).toEqual({ name: "test" });
+    expect(zodSchema.parse(undefined)).toEqual({ name: "default name" }); // default value
+  });
+
+  it("should handle default values with other constraints", () => {
+    const schema: SchemaObject = {
+      type: "string",
+      minLength: 5,
+      maxLength: 20,
+      default: "hello",
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe('z.string().min(5).max(20).default("hello")');
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.parse("test string")).toBe("test string");
+    expect(zodSchema.parse(undefined)).toBe("hello"); // default value
+  });
+
+  it("should handle complex default values", () => {
+    const schema: SchemaObject = {
+      type: "object",
+      additionalProperties: {
+        type: "array",
+        items: { type: "number" },
+      },
+      default: { test: [1000] },
+    };
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe(
+      'z.object({}).catchall(z.array(z.number())).default({"test":[1000]})'
+    );
+    const zodSchema = evalZod(result.code);
+    expect(zodSchema.parse({ other: [1, 2, 3] })).toEqual({ other: [1, 2, 3] });
+    expect(zodSchema.parse(undefined)).toEqual({ test: [1000] }); // default value
+  });
 });

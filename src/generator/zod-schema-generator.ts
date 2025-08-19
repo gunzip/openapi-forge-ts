@@ -157,6 +157,11 @@ export function zodSchemaToCode(
     if (schema.enum)
       code = `z.enum([${schema.enum.map((e) => JSON.stringify(e)).join(", ")}])`;
 
+    // Add default value if present
+    if (schema.default !== undefined) {
+      code += `.default(${JSON.stringify(schema.default)})`;
+    }
+
     result.code = code;
     return result;
   }
@@ -171,18 +176,37 @@ export function zodSchemaToCode(
       code += `.lt(${schema.exclusiveMaximum})`;
     if (schema.type === "integer") code += ".int()";
 
+    // Add default value if present
+    if (schema.default !== undefined) {
+      code += `.default(${schema.default})`;
+    }
+
     result.code = code;
     return result;
   }
 
   if (effectiveType === "boolean") {
-    result.code = "z.boolean()";
+    let code = "z.boolean()";
+
+    // Add default value if present
+    if (schema.default !== undefined) {
+      code += `.default(${schema.default})`;
+    }
+
+    result.code = code;
     return result;
   }
 
   if (effectiveType === "array") {
     if (!schema.items) {
-      result.code = "z.array(z.unknown())";
+      let code = "z.array(z.unknown())";
+
+      // Add default value if present
+      if (schema.default !== undefined) {
+        code += `.default(${JSON.stringify(schema.default)})`;
+      }
+
+      result.code = code;
       return result;
     }
     const itemsResult = zodSchemaToCode(
@@ -195,6 +219,11 @@ export function zodSchemaToCode(
     if (schema.minItems !== undefined) code += `.min(${schema.minItems})`;
     if (schema.maxItems !== undefined) code += `.max(${schema.maxItems})`;
     // uniqueItems not representable in code string
+
+    // Add default value if present
+    if (schema.default !== undefined) {
+      code += `.default(${JSON.stringify(schema.default)})`;
+    }
 
     result.code = code;
     return result;
@@ -235,6 +264,11 @@ export function zodSchemaToCode(
         ]);
         code += `.catchall(${additionalResult.code})`;
       }
+    }
+
+    // Add default value if present
+    if (schema.default !== undefined) {
+      code += `.default(${JSON.stringify(schema.default)})`;
     }
 
     result.code = code;

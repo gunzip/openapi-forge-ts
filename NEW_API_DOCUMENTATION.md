@@ -130,7 +130,7 @@ const pet = await bound.getPetById({ petId: "123" });
 
 #### Override configuration object
 
-You may want to override the configuration object for specific requests
+You may want to override the configuration object for bound requests
 in order to customize the behavior of individual API calls setting:
 
 - HTTP headers

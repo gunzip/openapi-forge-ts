@@ -1,6 +1,129 @@
-# New Operation-Based API Documentation
+# New Operation-Based API with Discriminated Union Responses
 
-The OpenAPI client generator has been refactored to generate standalone operation functions instead of a class-based client. This provides more flexibility and better tree-shaking support.
+The OpenAPI client generator has been refactored to generate standalone operation functions with discriminated union response types. This provides better type safety, explicit error handling, and support for multiple response types per operation.
+
+## Key Improvements
+
+### ✅ Problems Solved
+
+1. **Multiple 2xx Success Responses**: Each success response (200, 201, 202, etc.) now has its own type in the discriminated union
+2. **Typed Error Payloads**: Error responses (4xx, 5xx) with content (like Problem+JSON) are now properly typed
+3. **Status Code Discrimination**: The response type is discriminated by `status` property, enabling type-safe access to response data
+4. **No More Exceptions for Expected Errors**: API errors are returned as values, not thrown as exceptions
+
+## New Response Pattern
+
+### Response Type Structure
+
+All operations now return a discriminated union of `ApiResponse` types:
+
+```typescript
+type ApiResponse<S extends number, T> = {
+  readonly status: S;      // Discriminant property
+  readonly data: T;        // Typed response data
+  readonly response: Response; // Raw fetch Response
+};
+```
+
+### Operation Signatures
+
+```typescript
+// Before: Single success type, exceptions for errors
+async function someOperation(): Promise<SuccessType>
+
+// After: All responses as discriminated union
+async function someOperation(): Promise<
+  | ApiResponse<200, SuccessType1>
+  | ApiResponse<201, SuccessType2>
+  | ApiResponse<404, ProblemDetails>
+  | ApiResponse<500, ServerError>
+>
+```
+
+## Usage Examples
+
+### Type-Safe Status Checking
+
+```typescript
+import { testMultipleSuccess } from './operations/testMultipleSuccess.js';
+import { isStatus } from './operations/config.js';
+
+const result = await testMultipleSuccess();
+
+if (isStatus<200, Message>(result, 200)) {
+  // result.data is typed as Message
+  console.log('Message:', result.data.content.markdown);
+} else if (isStatus<202, void>(result, 202)) {
+  // result.data is typed as void
+  console.log('Accepted without content');
+} else if (isStatus<403, OneOfTest>(result, 403)) {
+  // result.data is typed as OneOfTest
+  console.log('Forbidden:', result.data);
+}
+```
+
+### Error Handling Without Exceptions
+
+```typescript
+import { testAuthBearerHttp } from './operations/testAuthBearerHttp.js';
+import { isSuccessResponse, isStatus } from './operations/config.js';
+
+const result = await testAuthBearerHttp({ qr: 'required-param' });
+
+if (isSuccessResponse(result)) {
+  console.log('Authentication successful');
+} else if (isStatus<504, ProblemDetails>(result, 504)) {
+  // result.data is typed as ProblemDetails
+  console.error('Gateway timeout:', {
+    type: result.data.type,
+    title: result.data.title,
+    detail: result.data.detail
+  });
+} else {
+  console.log('Other error:', result.status);
+}
+```
+
+### Content-Type Aware Parsing
+
+The generator automatically handles different content types:
+
+- `application/json` → `response.json()`
+- `application/problem+json` → `response.json()`
+- `text/*` → `response.text()`
+- `application/octet-stream` → `response.arrayBuffer()`
+
+No more hardcoded `.json()` calls that fail on non-JSON responses!
+
+## Helper Functions
+
+### Status Type Guards
+
+```typescript
+// Generic status checking
+isStatus<S, T>(result, status): result is ApiResponse<S, T>
+
+// Range checking
+isSuccessResponse(result): result is ApiResponse<2xx, T>
+isClientErrorResponse(result): result is ApiResponse<4xx, T>
+isServerErrorResponse(result): result is ApiResponse<5xx, T>
+```
+
+### Exhaustive Response Handler
+
+```typescript
+import { handleResponse } from './operations/config.js';
+
+const result = await testMultipleSuccess();
+
+handleResponse(result, {
+  200: (data: Message) => console.log('Success:', data.content.markdown),
+  202: (data: void) => console.log('Accepted'),
+  403: (data: OneOfTest) => console.log('Forbidden:', data),
+  404: (data: void) => console.log('Not found'),
+  default: (result) => console.log('Other:', result.status)
+});
+```
 
 ## Input Format Support
 

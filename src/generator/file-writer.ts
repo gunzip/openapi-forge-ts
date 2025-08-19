@@ -40,7 +40,7 @@ export async function ensureDirectory(dirPath: string): Promise<void> {
  */
 export function buildOperationImports(typeImports: Set<string>): string[] {
   return [
-    `import { globalConfig, GlobalConfig, ApiError } from './config.js';`,
+    `import { globalConfig, GlobalConfig, ApiResponse, parseResponseBody, UnexpectedResponseError } from './config.js';`,
     ...Array.from(typeImports).map(
       (type) => `import { ${type} } from '../schemas/${type}.js';`
     ),

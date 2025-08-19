@@ -192,44 +192,90 @@ function generateHeaderParamHandling(headerParams: ParameterObject[]): string {
 }
 
 /**
- * Generates response handling code and determines return type
+ * Determines if a response content type should be parsed as JSON
+ */
+function getResponseContentType(response: ResponseObject): string | null {
+  if (!response.content) return null;
+  
+  // Check for JSON content types in order of preference
+  const jsonTypes = ['application/json', 'application/problem+json'];
+  for (const type of jsonTypes) {
+    if (response.content[type]) return type;
+  }
+  
+  // Check for other JSON-like content types
+  for (const [contentType] of Object.entries(response.content)) {
+    if (contentType.includes('+json')) return contentType;
+  }
+  
+  // Return the first content type if no JSON found
+  const contentTypes = Object.keys(response.content);
+  return contentTypes.length > 0 ? contentTypes[0] : null;
+}
+
+/**
+ * Generates response handling code and determines return type using discriminated unions
  */
 function generateResponseHandlers(
   operation: OperationObject,
   typeImports: Set<string>
 ): { returnType: string; responseHandlers: string[] } {
-  let returnType = "void";
-  let typeName = null;
   const responseHandlers: string[] = [];
+  const unionTypes: string[] = [];
 
   if (operation.responses) {
-    const successCodes = Object.keys(operation.responses)
-      .filter((code) => /^2\d\d$/.test(code))
-      .sort((a, b) => parseInt(a) - parseInt(b));
+    // Sort all response codes (both success and error)
+    const responseCodes = Object.keys(operation.responses).filter(code => code !== 'default');
+    responseCodes.sort((a, b) => parseInt(a) - parseInt(b));
 
-    for (const code of successCodes) {
+    for (const code of responseCodes) {
       const response = operation.responses[code] as ResponseObject;
-      const responseSchema = response.content?.["application/json"]?.schema;
-      if (responseSchema && responseSchema["$ref"]) {
-        typeName = responseSchema["$ref"].split("/").pop()!;
-        returnType = typeName;
-        typeImports.add(typeName);
-        responseHandlers.push(
-          `if (response.status === ${code}) { const data = await response.json(); return ${typeName}.parse(data); }`
-        );
+      const contentType = getResponseContentType(response);
+      
+      let typeName: string | null = null;
+      let parseCode = 'undefined';
+      
+      if (contentType && response.content?.[contentType]?.schema) {
+        const schema = response.content[contentType].schema;
+        
+        if (schema["$ref"]) {
+          typeName = schema["$ref"].split("/").pop()!;
+          typeImports.add(typeName);
+          
+          if (contentType.includes('json')) {
+            parseCode = `${typeName}.parse(await parseResponseBody(response))`;
+          } else {
+            parseCode = `await parseResponseBody(response) as ${typeName}`;
+          }
+        } else if (contentType.includes('json')) {
+          // For inline schemas, we'll parse as unknown and let runtime validation handle it
+          parseCode = 'await parseResponseBody(response)';
+        } else {
+          parseCode = 'await parseResponseBody(response)';
+        }
+      }
+      
+      // Build the discriminated union type
+      const dataType = typeName || (contentType ? 'unknown' : 'void');
+      unionTypes.push(`ApiResponse<${code}, ${dataType}>`);
+      
+      // Generate the response handler with status as const to help with discrimination
+      if (typeName || contentType) {
+        responseHandlers.push(`    case ${code}: {
+      const data = ${parseCode};
+      return { status: ${code} as const, data, response };
+    }`);
       } else {
-        // If no schema, just return void
-        responseHandlers.push(`if (response.status === ${code}) { return; }`);
+        responseHandlers.push(`    case ${code}:
+      return { status: ${code} as const, data: undefined, response };`);
       }
     }
   }
 
-  // If no 2xx responses, default to void
-  if (!typeName && responseHandlers.length === 0) {
-    responseHandlers.push(
-      `if (response.status >= 200 && response.status < 300) { return; }`
-    );
-  }
+  // Don't add a catch-all to the union type to ensure proper narrowing
+  const returnType = unionTypes.length > 0 
+    ? unionTypes.join(' | ')
+    : 'ApiResponse<number, unknown>';
 
   return { returnType, responseHandlers };
 }
@@ -382,7 +428,152 @@ export const globalConfig: GlobalConfig = {
   headers: {}
 };
 
-// ApiError class
+/**
+ * Represents a generic API response for the new discriminated union pattern.
+ * @template S The HTTP status code.
+ * @template T The response body type.
+ */
+export type ApiResponse<S extends number, T> = {
+  readonly status: S;
+  readonly data: T;
+  readonly response: Response;
+};
+
+/**
+ * Type guards for response status codes
+ */
+export function isSuccessResponse<T>(
+  result: ApiResponse<number, any>
+): result is ApiResponse<200 | 201 | 202 | 204, T> {
+  return result.status >= 200 && result.status < 300;
+}
+
+export function isClientErrorResponse<T>(
+  result: ApiResponse<number, any>
+): result is ApiResponse<400 | 401 | 403 | 404 | 409 | 422, T> {
+  return result.status >= 400 && result.status < 500;
+}
+
+export function isServerErrorResponse<T>(
+  result: ApiResponse<number, any>
+): result is ApiResponse<500 | 502 | 503 | 504, T> {
+  return result.status >= 500;
+}
+
+/**
+ * Type-safe status checking functions
+ */
+export function isStatus<S extends number, T>(
+  result: ApiResponse<number, any>,
+  status: S
+): result is ApiResponse<S, T> {
+  return result.status === status;
+}
+
+/**
+ * Utility function to handle response with exhaustive type checking
+ */
+export function handleResponse<T extends ApiResponse<number, any>>(
+  result: T,
+  handlers: {
+    [K in T['status']]?: (data: Extract<T, { status: K }>['data']) => void;
+  } & {
+    default?: (result: T) => void;
+  }
+): void {
+  const handler = handlers[result.status as keyof typeof handlers];
+  if (handler) {
+    (handler as any)(result.data);
+  } else if (handlers.default) {
+    handlers.default(result);
+  }
+}
+
+/**
+ * Error thrown when receiving an unexpected response status code
+ */
+export class UnexpectedResponseError extends Error {
+  status: number;
+  data: unknown;
+  response: Response;
+  
+  constructor(status: number, data: unknown, response: Response) {
+    super(\`Unexpected response status: \${status}\`);
+    this.name = 'UnexpectedResponseError';
+    this.status = status;
+    this.data = data;
+    this.response = response;
+  }
+}
+
+/**
+ * Type-safe status checking function
+ * Only allows checking for status codes that exist in the given response union
+ */
+export function isStatus<
+  TResponse extends ApiResponse<number, any>,
+  S extends TResponse['status'],
+  T extends Extract<TResponse, { status: S }>['data']
+>(
+  result: TResponse,
+  status: S,
+): result is Extract<TResponse, { status: S }> {
+  return result.status === status;
+}
+
+/**
+ * Utility function to handle response with exhaustive type checking
+ */
+export function handleResponse<T extends ApiResponse<number, any>>(
+  result: T,
+  handlers: {
+    [K in T['status']]?: (data: Extract<T, { status: K }>['data']) => void;
+  } & {
+    default?: (result: T) => void;
+  }
+): void {
+  const handler = handlers[result.status as keyof typeof handlers];
+  if (handler) {
+    (handler as any)(result.data);
+  } else if (handlers.default) {
+    handlers.default(result);
+  }
+}
+
+/**
+ * Helper function to determine if a response should be parsed as JSON
+ */
+export function shouldParseAsJson(response: Response): boolean {
+  const contentType = response.headers.get('content-type') || '';
+  return contentType.includes('application/json') || 
+         contentType.includes('application/problem+json') ||
+         contentType.includes('+json');
+}
+
+/**
+ * Helper function to parse response body based on content type
+ */
+export async function parseResponseBody(response: Response): Promise<any> {
+  if (shouldParseAsJson(response)) {
+    return response.json().catch(() => null);
+  }
+  
+  const contentType = response.headers.get('content-type') || '';
+  
+  if (contentType.includes('text/')) {
+    return response.text().catch(() => null);
+  }
+  
+  if (contentType.includes('application/octet-stream') || 
+      contentType.includes('binary')) {
+    return response.arrayBuffer().catch(() => null);
+  }
+  
+  // Default to text for unknown content types
+  return response.text().catch(() => null);
+}
+
+// ApiError class for backwards compatibility
 export class ApiError extends Error {
   status: number;
   body: unknown;
@@ -417,7 +608,7 @@ export function bindAllOperationsConfig<T extends Record<string, Operation>>(
 }
 
 /**
- * Generates the function body for an operation
+ * Generates the function body for an operation with explicit exhaustive handling
  */
 function generateFunctionBody(
   pathKey: string,
@@ -433,34 +624,35 @@ function generateFunctionBody(
   const headerParamLines = generateHeaderParamHandling(headerParams);
 
   const bodyContent = hasBody
-    ? "body: params.body ? JSON.stringify(params.body) : undefined,"
+    ? `    body: params.body ? JSON.stringify(params.body) : undefined,`
     : "";
 
-  return `const finalHeaders = { ...config.headers };
-  ${headerParamLines ? headerParamLines : ""}
-  
+  const contentTypeHeader = hasBody
+    ? `    "Content-Type": "application/json",`
+    : "";
+
+  return `  const finalHeaders = {
+    ...config.headers,${contentTypeHeader}
+  };
+  ${headerParamLines ? `  ${headerParamLines}` : ""}
+
   const url = new URL(\`${finalPath}\`, config.baseURL);
-  ${queryParamLines ? queryParamLines : ""}
-  
+  ${queryParamLines ? `  ${queryParamLines}` : ""}
+
   const response = await config.fetch(url.toString(), {
-    method: '${method.toUpperCase()}',
-    headers: finalHeaders,${
-      bodyContent
-        ? `
-    ${bodyContent}`
-        : ""
-    }
+    method: "${method.toUpperCase()}",
+    headers: finalHeaders,${bodyContent ? `
+${bodyContent}` : ""}
   });
 
-  if (!response.ok) {
-    const responseBody = await response.json().catch(() => null);
-    throw new ApiError(response.status, responseBody, response.headers);
-  }
-
-  ${responseHandlers.join("\n  ")}
-
-  // throw for unexpected 2xx responses
-  throw new ApiError(response.status, null, response.headers);`;
+  switch (response.status) {
+${responseHandlers.join("\n")}
+    default: {
+      // Throw UnexpectedResponseError for undefined status codes
+      const data = await parseResponseBody(response);
+      throw new UnexpectedResponseError(response.status, data, response);
+    }
+  }`;
 }
 
 /**

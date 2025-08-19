@@ -464,35 +464,6 @@ export function isServerErrorResponse<T>(
 }
 
 /**
- * Type-safe status checking functions
- */
-export function isStatus<S extends number, T>(
-  result: ApiResponse<number, any>,
-  status: S
-): result is ApiResponse<S, T> {
-  return result.status === status;
-}
-
-/**
- * Utility function to handle response with exhaustive type checking
- */
-export function handleResponse<T extends ApiResponse<number, any>>(
-  result: T,
-  handlers: {
-    [K in T['status']]?: (data: Extract<T, { status: K }>['data']) => void;
-  } & {
-    default?: (result: T) => void;
-  }
-): void {
-  const handler = handlers[result.status as keyof typeof handlers];
-  if (handler) {
-    (handler as any)(result.data);
-  } else if (handlers.default) {
-    handlers.default(result);
-  }
-}
-
-/**
  * Error thrown when receiving an unexpected response status code
  */
 export class UnexpectedResponseError extends Error {

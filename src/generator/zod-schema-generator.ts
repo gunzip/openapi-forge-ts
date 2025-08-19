@@ -209,10 +209,7 @@ export function zodSchemaToCode(
       result.code = code;
       return result;
     }
-    const itemsResult = zodSchemaToCode(
-      schema.items as SchemaObject,
-      result.imports
-    );
+    const itemsResult = zodSchemaToCode(schema.items, result.imports);
     let code = `z.array(${itemsResult.code})`;
     result.imports = new Set([...result.imports, ...itemsResult.imports]);
 
@@ -235,10 +232,7 @@ export function zodSchemaToCode(
 
     if (schema.properties) {
       for (const [key, propSchema] of Object.entries(schema.properties)) {
-        const propResult = zodSchemaToCode(
-          propSchema as SchemaObject,
-          result.imports
-        );
+        const propResult = zodSchemaToCode(propSchema, result.imports);
         result.imports = new Set([...result.imports, ...propResult.imports]);
 
         const isRequired = requiredFields.includes(key);
@@ -255,7 +249,7 @@ export function zodSchemaToCode(
         code += ".catchall(z.unknown())";
       } else {
         const additionalResult = zodSchemaToCode(
-          schema.additionalProperties as SchemaObject,
+          schema.additionalProperties,
           result.imports
         );
         result.imports = new Set([

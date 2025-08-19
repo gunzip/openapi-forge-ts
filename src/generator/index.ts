@@ -24,8 +24,9 @@ export async function generate(options: GenerationOptions): Promise<void> {
   let openApiDoc = await parseOpenAPI(input);
 
   // Pre-process: Resolve external $ref pointers using json-schema-ref-parser
+  // Only resolve external references, keep internal references intact
   try {
-    openApiDoc = await $RefParser.dereference(openApiDoc, {
+    openApiDoc = await $RefParser.bundle(openApiDoc, {
       mutateInputSchema: false, // Don't modify the original
     });
     console.log("✅ Successfully resolved external $ref pointers");

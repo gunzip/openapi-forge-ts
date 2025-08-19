@@ -61,6 +61,11 @@ export function zodSchemaToCode(
 
   if (schema.type === "string") {
     let code = "z.string()";
+
+    // include minLength
+    if (schema.minLength !== undefined) code += `.min(${schema.minLength})`;
+    if (schema.maxLength !== undefined) code += `.max(${schema.maxLength})`;
+
     if (schema.pattern)
       code += `.regex(new RegExp(${JSON.stringify(schema.pattern)}))`;
     if (schema.format === "email") code += ".email()";
@@ -75,8 +80,10 @@ export function zodSchemaToCode(
     let code = "z.number()";
     if (schema.minimum !== undefined) code += `.min(${schema.minimum})`;
     if (schema.maximum !== undefined) code += `.max(${schema.maximum})`;
-    if (schema.exclusiveMinimum) code += `.gt(${schema.minimum})`;
-    if (schema.exclusiveMaximum) code += `.lt(${schema.maximum})`;
+    if (schema.exclusiveMinimum !== undefined)
+      code += `.gt(${schema.exclusiveMinimum})`;
+    if (schema.exclusiveMaximum !== undefined)
+      code += `.lt(${schema.exclusiveMaximum})`;
     if (schema.type === "integer") code += ".int()";
     return code;
   }

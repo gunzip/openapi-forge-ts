@@ -54,7 +54,7 @@ export async function generate(options: GenerationOptions): Promise<void> {
     for (const [name, schema] of Object.entries(
       openApiDoc.components.schemas
     )) {
-      const schemaVar = `${name}Schema`;
+      const schemaVar = `${name}`;
       const schemaContent = `export const ${schemaVar} = ${zodSchemaToCode(schema)};`;
       const typeContent = `export type ${name} = z.infer<typeof ${schemaVar}>;`;
       if (!isPlainSchemaObject(schema)) {

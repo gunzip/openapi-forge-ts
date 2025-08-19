@@ -13,6 +13,59 @@
 				"$tsc"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Run Tests",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			],
+			"group": "test"
+		},
+		{
+			"label": "Test OpenAPI Conversion",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"start",
+				"test.yaml"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Test OpenAPI 3.1 Generation",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"start",
+				"generate",
+				"-i",
+				"test.yaml",
+				"-o",
+				"generated-test",
+				"--generate-client"
+			],
+			"group": "test"
+		},
+		{
+			"label": "Remove corrupted file",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"src/generator/client-generator.ts"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Remove old generated test",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"-rf",
+				"generated-test"
+			],
+			"group": "build"
 		}
 	]
 }

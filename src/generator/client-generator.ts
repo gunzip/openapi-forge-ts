@@ -358,9 +358,9 @@ export async function generateOperations(
             doc
           );
 
-          // Build imports for the operation file - import from index.js instead of config.js
+          // Build imports for the operation file - import from config.js
           const importLines = [
-            `import { globalConfig, GlobalConfig, ApiError } from './index.js';`,
+            `import { globalConfig, GlobalConfig, ApiError } from './config.js';`,
             ...Array.from(typeImports).map(
               (type) => `import { ${type} } from '../schemas/${type}.js';`
             ),
@@ -380,7 +380,16 @@ export async function generateOperations(
     }
   }
 
-  // Generate an index file that exports all operations AND contains configuration
+  // Generate a separate config file
+  const baseURL = extractBaseURL(doc);
+  const configContent = generateConfigTypes(authHeaders, baseURL);
+  const configPath = path.join(operationsDir, "config.ts");
+  const formattedConfigContent = await format(configContent, {
+    parser: "typescript",
+  });
+  await fs.writeFile(configPath, formattedConfigContent);
+
+  // Generate an index file that only exports operations
   const operationImports: string[] = [];
   const operationExports: string[] = [];
 
@@ -403,13 +412,12 @@ export async function generateOperations(
     }
   }
 
-  // Extract base URL from OpenAPI spec
-  const baseURL = extractBaseURL(doc);
+  // Index file now only contains operation exports
+  const indexContent = `${operationImports.join("\n")}
 
-  // Generate config types content
-  const configContent = generateConfigTypes(authHeaders, baseURL);
-
-  const indexContent = `${configContent}\n\n${operationImports.join("\n")}\n\nexport {\n  ${operationExports.join(",\n  ")}\n};`;
+export {
+  ${operationExports.join(",\n  ")},
+};`;
   const indexPath = path.join(operationsDir, "index.ts");
   const formattedIndexContent = await format(indexContent, {
     parser: "typescript",

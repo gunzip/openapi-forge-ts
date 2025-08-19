@@ -66,6 +66,24 @@ export function zodSchemaToCode(
     }
   }
 
+  // Handle enum before type-specific logic
+  if (schema.enum && Array.isArray(schema.enum)) {
+    // Single enum value should be a literal
+    if (schema.enum.length === 1) {
+      const value = schema.enum[0];
+      let code = `z.literal(${typeof value === "string" ? JSON.stringify(value) : value})`;
+
+      // Add default value if present
+      if (schema.default !== undefined) {
+        code += `.default(${typeof schema.default === "string" ? JSON.stringify(schema.default) : schema.default})`;
+      }
+
+      result.code = code;
+      return result;
+    }
+    // Multiple enum values - handle in type-specific sections below
+  }
+
   if ("nullable" in schema && (schema as any).nullable) {
     const clone = { ...schema };
     delete (clone as any).nullable;
@@ -154,7 +172,9 @@ export function zodSchemaToCode(
     if (schema.format === "email") code = "z.email()";
     if (schema.format === "uuid") code = "z.uuid()";
     if (schema.format === "uri") code = "z.url()";
-    if (schema.enum)
+
+    // Handle multi-value enums for strings
+    if (schema.enum && schema.enum.length > 1)
       code = `z.enum([${schema.enum.map((e) => JSON.stringify(e)).join(", ")}])`;
 
     // Add default value if present
@@ -176,6 +196,11 @@ export function zodSchemaToCode(
       code += `.lt(${schema.exclusiveMaximum})`;
     if (schema.type === "integer") code += ".int()";
 
+    // Handle multi-value enums for numbers
+    if (schema.enum && schema.enum.length > 1) {
+      code = `z.enum([${schema.enum.map((e) => JSON.stringify(e)).join(", ")}])`;
+    }
+
     // Add default value if present
     if (schema.default !== undefined) {
       code += `.default(${schema.default})`;
@@ -187,6 +212,11 @@ export function zodSchemaToCode(
 
   if (effectiveType === "boolean") {
     let code = "z.boolean()";
+
+    // Handle multi-value enums for booleans (though rare)
+    if (schema.enum && schema.enum.length > 1) {
+      code = `z.enum([${schema.enum.map((e) => JSON.stringify(e)).join(", ")}])`;
+    }
 
     // Add default value if present
     if (schema.default !== undefined) {

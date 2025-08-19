@@ -145,7 +145,7 @@ export async function generate(options: GenerationOptions): Promise<void> {
     // Generate request schemas from operations
     const requestSchemas = extractRequestSchemas(openApiDoc);
     for (const [name, schema] of requestSchemas) {
-      const schemaVar = `${name}`;
+      const schemaVar = `${name.charAt(0).toUpperCase() + name.slice(1)}`;
       const schemaResult = zodSchemaToCode(schema);
 
       // Generate comment for request schema

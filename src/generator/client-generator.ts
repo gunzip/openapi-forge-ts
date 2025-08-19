@@ -6,13 +6,10 @@ import type {
   RequestBodyObject,
   ResponseObject,
   SecuritySchemeObject,
-  SchemaObject,
-  ReferenceObject,
 } from "openapi3-ts/oas31";
 import { format } from "prettier";
 import { promises as fs } from "fs";
 import path from "path";
-import { zodSchemaToCode } from "./zod-schema-generator.js";
 
 // Helper function to convert kebab-case to camelCase
 function toCamelCase(str: string): string {
@@ -202,7 +199,6 @@ function generateOperationFunction(
   }
 
   // Body parameter
-  let bodyTypeName: string | null = null;
   if (hasBody) {
     const requestBody = operation.requestBody as RequestBodyObject;
     const {
@@ -210,7 +206,6 @@ function generateOperationFunction(
       isRequired,
       typeImports: bodyTypeImports,
     } = resolveRequestBodyType(requestBody, functionName, doc);
-    bodyTypeName = typeName;
 
     // Add any imports from the body type resolution
     bodyTypeImports.forEach((imp) => typeImports.add(imp));

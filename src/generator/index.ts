@@ -16,7 +16,6 @@ export interface GenerationOptions {
   output: string;
   generateClient: boolean;
   validateRequest: boolean;
-  looseInterfaces: boolean;
 }
 
 // Helper function to extract request schemas from operations
@@ -27,7 +26,7 @@ function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
     return requestSchemas;
   }
 
-  for (const [pathKey, pathItem] of Object.entries(openApiDoc.paths)) {
+  for (const [, pathItem] of Object.entries(openApiDoc.paths)) {
     for (const [method, operation] of Object.entries(pathItem as any)) {
       if (
         ["get", "post", "put", "delete", "patch"].includes(method) &&
@@ -55,7 +54,7 @@ function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
 }
 
 export async function generate(options: GenerationOptions): Promise<void> {
-  const { input, output, generateClient: genClient, looseInterfaces } = options;
+  const { input, output, generateClient: genClient } = options;
 
   await fs.mkdir(output, { recursive: true });
 
@@ -77,9 +76,6 @@ export async function generate(options: GenerationOptions): Promise<void> {
   if (openApiDoc.components?.schemas) {
     const schemasDir = path.join(output, "schemas");
     await fs.mkdir(schemasDir, { recursive: true });
-
-    let allSchemasContent = `import { z } from 'zod';\n\n`;
-    let allTypesContent = "";
 
     function isPlainSchemaObject(obj: any): obj is SchemaObject {
       // Must be a plain object, not a Zod object, and not null

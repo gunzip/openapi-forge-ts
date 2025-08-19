@@ -185,6 +185,7 @@ paths:
     post:
       operationId: testInlineBodySchema
       requestBody:
+        required: true
         content:
           application/json:
             schema:

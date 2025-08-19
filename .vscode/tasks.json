@@ -292,6 +292,72 @@
 			"args": [
 				"test"
 			]
+		},
+		{
+			"label": "Test new operation-based API",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"test-new-api.mjs"
+			]
+		},
+		{
+			"label": "Debug path parameters",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"debug-path-params.mjs"
+			]
+		},
+		{
+			"label": "Debug bundling process",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"debug-bundling.mjs"
+			]
+		},
+		{
+			"label": "Run unit tests",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			]
+		},
+		{
+			"label": "Clean up debug files",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"debug-path-params.mjs",
+				"debug-bundling.mjs",
+				"test-new-api.mjs"
+			]
+		},
+		{
+			"label": "Final test run",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			]
+		},
+		{
+			"label": "Final test verification",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			]
+		},
+		{
+			"label": "Test after removing OperationConfig",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			]
 		}
 	]
 }

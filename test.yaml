@@ -30,6 +30,11 @@ paths:
       responses:
         200:
           description: Will send `Authenticated`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
         403:
           description: You do not have necessary permissions for the resource
       security:

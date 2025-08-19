@@ -3,7 +3,7 @@ import path from "path";
 import type { SchemaObject } from "openapi3-ts/oas31";
 import { parseOpenAPI } from "./parser.js";
 import { zodSchemaToCode } from "./zod-schema-generator.js";
-import { generateClient } from "./client-generator.js";
+import { generateOperations } from "./client-generator.js";
 import { format } from "prettier";
 import $RefParser from "@apidevtools/json-schema-ref-parser";
 
@@ -108,9 +108,7 @@ export async function generate(options: GenerationOptions): Promise<void> {
   }
 
   if (genClient) {
-    const clientContent = await generateClient(openApiDoc);
-    const clientPath = path.join(output, "client.ts");
-    await fs.writeFile(clientPath, clientContent);
+    await generateOperations(openApiDoc, output);
   }
 
   const packageJsonContent = {

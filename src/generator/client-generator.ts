@@ -8,62 +8,172 @@ import type {
   SecuritySchemeObject,
 } from "openapi3-ts/oas31";
 import { format } from "prettier";
+import { promises as fs } from "fs";
+import path from "path";
 
 // Helper function to convert kebab-case to camelCase
 function toCamelCase(str: string): string {
   return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
-// Generates a single client method for an operation
-// Returns: { method: string, typeImports: Set<string> }
-function generateMethod(
-  path: string,
+// Helper function to resolve parameter references
+function resolveParameterReference(param: ParameterObject | { $ref: string }, doc: OpenAPIObject): ParameterObject {
+  if ('$ref' in param && param.$ref) {
+    const refPath = param.$ref.replace('#/', '').split('/');
+    let resolved = doc as any;
+    for (const segment of refPath) {
+      resolved = resolved[segment];
+    }
+    return resolved as ParameterObject;
+  }
+  return param as ParameterObject;
+}
+
+// Extract auth header names from security schemes
+function extractAuthHeaders(doc: OpenAPIObject): string[] {
+  const authHeaders: string[] = [];
+  
+  if (doc.components?.securitySchemes) {
+    for (const [name, scheme] of Object.entries(doc.components.securitySchemes)) {
+      const securityScheme = scheme as SecuritySchemeObject;
+      if (securityScheme.type === "apiKey" && securityScheme.in === "header" && securityScheme.name) {
+        authHeaders.push(securityScheme.name);
+      } else if (securityScheme.type === "http" && securityScheme.scheme === "bearer") {
+        authHeaders.push("Authorization");
+      }
+    }
+  }
+  
+  return [...new Set(authHeaders)]; // Remove duplicates
+}
+
+// Generate configuration types
+function generateConfigTypes(authHeaders: string[]): string {
+  const authHeadersType = authHeaders.length > 0 
+    ? authHeaders.map(h => `'${h}'`).join(' | ')
+    : 'string';
+
+  return `
+// Configuration types
+export interface GlobalConfig {
+  baseURL: string;
+  fetch: typeof fetch;
+  headers: {
+    [K in ${authHeaders.length > 0 ? `AuthHeaders` : 'string'}]?: string;
+  } & Record<string, string>;
+}
+
+${authHeaders.length > 0 ? `export type AuthHeaders = ${authHeadersType};` : ''}
+
+// Default global configuration - immutable
+export const globalConfig: GlobalConfig = {
+  baseURL: '',
+  fetch: fetch,
+  headers: {}
+};
+
+// ApiError class
+export class ApiError extends Error {
+  status: number;
+  body: unknown;
+  headers: Headers;
+  constructor(status: number, body: unknown, headers: Headers) {
+    super(\`API Error: \${status}\`);
+    this.status = status;
+    this.body = body;
+    this.headers = headers;
+  }
+}
+`;
+}
+
+// Generates a single operation function
+// Returns: { functionCode: string, typeImports: Set<string> }
+function generateOperationFunction(
+  pathKey: string,
   method: string,
-  operation: OperationObject
-): { method: string; typeImports: Set<string> } {
-  const methodName = operation.operationId!;
+  operation: OperationObject,
+  pathLevelParameters: (ParameterObject | { $ref: string })[] = [],
+  doc: OpenAPIObject
+): { functionCode: string; typeImports: Set<string> } {
+  const functionName = operation.operationId!;
   const summary = operation.summary ? `/** ${operation.summary} */\n` : "";
 
+  // Resolve parameter references and combine path-level and operation-level parameters
+  const resolvedPathLevelParams = pathLevelParameters.map(p => resolveParameterReference(p, doc));
+  const resolvedOperationParams = (operation.parameters || []).map(p => resolveParameterReference(p as ParameterObject | { $ref: string }, doc));
+  const allParameters = [...resolvedPathLevelParams, ...resolvedOperationParams];
+
   // Parameters
-  const pathParams = (operation.parameters || []).filter(
-    (p) => (p as ParameterObject).in === "path"
+  const pathParams = allParameters.filter(
+    (p) => p.in === "path"
   ) as ParameterObject[];
-  const queryParams = (operation.parameters || []).filter(
-    (p) => (p as ParameterObject).in === "query"
+  const queryParams = allParameters.filter(
+    (p) => p.in === "query"
+  ) as ParameterObject[];
+  const headerParams = allParameters.filter(
+    (p) => p.in === "header"
   ) as ParameterObject[];
   const hasBody = !!operation.requestBody;
 
-  // Method params - convert parameter names to camelCase for valid TypeScript identifiers
-  const methodParams = [
-    ...pathParams.map((p) => `${toCamelCase(p.name)}: string`),
-    ...queryParams.map((p) => `${toCamelCase(p.name)}?: string`),
-    hasBody ? "body?: any" : null,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  // Build parameter interface
+  const parameterProperties: string[] = [];
+  
+  // Path parameters (always required)
+  for (const param of pathParams) {
+    parameterProperties.push(`${toCamelCase(param.name)}: string`);
+  }
+  
+  // Query parameters
+  for (const param of queryParams) {
+    const isRequired = param.required === true;
+    parameterProperties.push(`${toCamelCase(param.name)}${isRequired ? '' : '?'}: string`);
+  }
+  
+  // Header parameters
+  for (const param of headerParams) {
+    const isRequired = param.required === true;
+    parameterProperties.push(`${toCamelCase(param.name)}${isRequired ? '' : '?'}: string`);
+  }
+  
+  // Body parameter
+  if (hasBody) {
+    parameterProperties.push(`body?: any`);
+  }
+
+  const paramsInterface = parameterProperties.length > 0
+    ? `params: {\n    ${parameterProperties.join(';\n    ')};\n  }`
+    : 'params?: {}';
 
   // Path interpolation - use camelCase parameter names in the template string
-  let finalPath = path;
+  let finalPath = pathKey;
   for (const p of pathParams) {
-    finalPath = finalPath.replace(`{${p.name}}`, `\${${toCamelCase(p.name)}}`);
+    finalPath = finalPath.replace(`{${p.name}}`, `\${params.${toCamelCase(p.name)}}`);
   }
 
   // Query param appending - use camelCase parameter names but keep original names for URL
   const queryParamLines = queryParams
     .map(
       (p) =>
-        `if (${toCamelCase(p.name)} !== undefined) url.searchParams.append('${p.name}', String(${toCamelCase(p.name)}));`
+        `if (params.${toCamelCase(p.name)} !== undefined) url.searchParams.append('${p.name}', String(params.${toCamelCase(p.name)}));`
     )
-    .join("\n    ");
+    .join('\n    ');
+
+  // Header param setting
+  const headerParamLines = headerParams
+    .map(
+      (p) =>
+        `if (params.${toCamelCase(p.name)} !== undefined) finalHeaders['${p.name}'] = String(params.${toCamelCase(p.name)});`
+    )
+    .join('\n    ');
 
   // Request body
   let bodyContent = "";
   if (hasBody) {
-    bodyContent = "body ? JSON.stringify(body) : undefined,";
+    bodyContent = "body: params.body ? JSON.stringify(params.body) : undefined,";
   }
 
   // Find all defined 2xx responses
-
   let returnType = "void";
   let typeName = null;
   const typeImports = new Set<string>();
@@ -80,7 +190,7 @@ function generateMethod(
         returnType = typeName;
         typeImports.add(typeName);
         responseHandlers.push(
-          `if (response.status === ${code}) { const data = await response.json(); return Schemas.${typeName}.parse(data); }`
+          `if (response.status === ${code}) { const data = await response.json(); return ${typeName}.parse(data); }`
         );
       } else {
         // If no schema, just return void
@@ -96,105 +206,116 @@ function generateMethod(
     );
   }
 
-  const methodStr = `${summary}async ${methodName}(${methodParams}): Promise<${typeName ? typeName : "void"}> {
-    const url = new URL(\`${finalPath}\`, this.baseURL);
-    ${queryParamLines ? queryParamLines : ""}
-    const response = await this.fetch(url.toString(), {
-      method: '${method.toUpperCase()}',
-      headers: this.headers,${
-        bodyContent
-          ? `
-      body: ${bodyContent}`
-          : ""
-      }
-    });
-
-    if (!response.ok) {
-      const responseBody = await response.json().catch(() => null);
-      throw new ApiError(response.status, responseBody, response.headers);
+  const functionStr = `${summary}export async function ${functionName}(
+  ${paramsInterface},
+  config: GlobalConfig = globalConfig
+): Promise<${typeName ? typeName : "void"}> {
+  const finalHeaders = { ...config.headers };
+  ${headerParamLines ? headerParamLines : ''}
+  
+  const url = new URL(\`${finalPath}\`, config.baseURL);
+  ${queryParamLines ? queryParamLines : ""}
+  
+  const response = await config.fetch(url.toString(), {
+    method: '${method.toUpperCase()}',
+    headers: finalHeaders,${
+      bodyContent
+        ? `
+    ${bodyContent}`
+        : ""
     }
+  });
 
-    ${responseHandlers.join("\n    ")}
-
-    // throw for unexpected 2xx responses
-    throw new ApiError(response.status, null, response.headers);
-  }`;
-  return { method: methodStr, typeImports };
-}
-
-// Generates the full client class
-export async function generateClient(doc: OpenAPIObject): Promise<string> {
-  const methods: string[] = [];
-  let securityMethods = "";
-  const allTypeImports = new Set<string>();
-  if (doc.components?.securitySchemes) {
-    for (const [name, scheme] of Object.entries(
-      doc.components.securitySchemes
-    )) {
-      const securityScheme = scheme as SecuritySchemeObject;
-      if (securityScheme.type === "apiKey") {
-        securityMethods += `
-    setApiKey(key: string) {
-      this.headers['${securityScheme.name}'] = key;
-    }
-  `;
-      } else if (
-        securityScheme.type === "http" &&
-        securityScheme.scheme === "bearer"
-      ) {
-        securityMethods += `
-    setBearerToken(token: string) {
-      this.headers['Authorization'] = \`Bearer \${token}\`;
-    }
-  `;
-      }
-    }
+  if (!response.ok) {
+    const responseBody = await response.json().catch(() => null);
+    throw new ApiError(response.status, responseBody, response.headers);
   }
 
+  ${responseHandlers.join("\n  ")}
+
+  // throw for unexpected 2xx responses
+  throw new ApiError(response.status, null, response.headers);
+}`;
+  return { functionCode: functionStr, typeImports };
+}
+
+// Generates individual operation files and configuration
+export async function generateOperations(doc: OpenAPIObject, outputDir: string): Promise<void> {
+  const operationsDir = path.join(outputDir, "operations");
+  await fs.mkdir(operationsDir, { recursive: true });
+
+  // Extract auth headers for configuration types
+  const authHeaders = extractAuthHeaders(doc);
+  
+  // Generate each operation as a separate file
   if (doc.paths) {
-    for (const [path, pathItem] of Object.entries(doc.paths)) {
-      for (const [method, operation] of Object.entries(
-        pathItem as PathItemObject
-      )) {
+    for (const [pathKey, pathItem] of Object.entries(doc.paths)) {
+      const pathItemObj = pathItem as PathItemObject;
+      const pathLevelParameters = (pathItemObj.parameters || []) as ParameterObject[];
+      
+      for (const [method, operation] of Object.entries(pathItemObj)) {
         if (
           ["get", "post", "put", "delete", "patch"].includes(method) &&
           (operation as OperationObject).operationId
         ) {
-          const { method: methodStr, typeImports } = generateMethod(
-            path,
+          const { functionCode, typeImports } = generateOperationFunction(
+            pathKey,
             method,
-            operation as OperationObject
+            operation as OperationObject,
+            pathLevelParameters,
+            doc
           );
-          methods.push(methodStr);
-          typeImports.forEach((t) => allTypeImports.add(t));
+
+          // Build imports for the operation file - import from index.js instead of config.js
+          const importLines = [
+            `import { globalConfig, GlobalConfig, ApiError } from './index.js';`,
+            ...Array.from(typeImports).map(
+              (type) => `import { ${type} } from '../schemas/${type}.js';`
+            ),
+          ];
+
+          const operationContent = `${importLines.join('\n')}\n\n${functionCode}`;
+          const operationPath = path.join(operationsDir, `${(operation as OperationObject).operationId}.ts`);
+          const formattedOperationContent = await format(operationContent, { parser: "typescript" });
+          await fs.writeFile(operationPath, formattedOperationContent);
         }
       }
     }
   }
 
-  // Build type import lines
-  const typeImportLines = Array.from(allTypeImports)
-    .map((type) => `import type { ${type} } from './schemas/${type}.ts';`)
-    .join("\n");
-
-  const apiErrorClass = `// Inlined ApiError for self-contained client\nexport class ApiError extends Error {\n  status: number;\n  body: unknown;\n  headers: Headers;\n  constructor(status: number, body: unknown, headers: Headers) {\n    super(\`API Error: \\\${status}\`);\n    this.status = status;\n    this.body = body;\n    this.headers = headers;\n  }\n}\n`;
-
-  const classBody = [securityMethods, ...methods].filter(Boolean).join("\n");
-  const clientClass = `${apiErrorClass}
-import * as Schemas from './schemas';
-${typeImportLines ? typeImportLines + "\n" : ""}
-export class ApiClient {
-  private baseURL: string;
-  private fetch: typeof fetch;
-  private headers: Record<string, string>;
-
-  constructor(config: { baseURL: string; fetch: typeof fetch; headers?: Record<string, string> }) {
-    this.baseURL = config.baseURL;
-    this.fetch = config.fetch;
-    this.headers = config.headers || {};
+  // Generate an index file that exports all operations AND contains configuration
+  const operationImports: string[] = [];
+  const operationExports: string[] = [];
+  
+  if (doc.paths) {
+    for (const [pathKey, pathItem] of Object.entries(doc.paths)) {
+      const pathItemObj = pathItem as PathItemObject;
+      
+      for (const [method, operation] of Object.entries(pathItemObj)) {
+        if (
+          ["get", "post", "put", "delete", "patch"].includes(method) &&
+          (operation as OperationObject).operationId
+        ) {
+          const operationId = (operation as OperationObject).operationId!;
+          operationImports.push(`import { ${operationId} } from './${operationId}.js';`);
+          operationExports.push(operationId);
+        }
+      }
+    }
   }
-${classBody}
+
+  // Generate config types content
+  const configContent = generateConfigTypes(authHeaders);
+  
+  const indexContent = `${configContent}\n\n${operationImports.join('\n')}\n\nexport {\n  ${operationExports.join(',\n  ')}\n};`;
+  const indexPath = path.join(operationsDir, "index.ts");
+  const formattedIndexContent = await format(indexContent, { parser: "typescript" });
+  await fs.writeFile(indexPath, formattedIndexContent);
 }
-`;
-  return format(clientClass, { parser: "typescript" });
+
+// Legacy function for backwards compatibility - now generates operations instead
+export async function generateClient(doc: OpenAPIObject): Promise<string> {
+  // This is now a dummy function that would need the output directory
+  // The actual generation happens in generateOperations
+  throw new Error("Use generateOperations instead of generateClient");
 }

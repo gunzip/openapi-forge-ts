@@ -1,10 +1,34 @@
 import type { SchemaObject, ReferenceObject } from "openapi3-ts/oas31";
+
+export interface ZodSchemaResult {
+  code: string;
+  imports: Set<string>;
+}
+
 export function zodSchemaToCode(
-  schema: SchemaObject | ReferenceObject
-): string {
+  schema: SchemaObject | ReferenceObject,
+  imports?: Set<string>
+): ZodSchemaResult {
+  const result: ZodSchemaResult = {
+    code: "",
+    imports: imports || new Set<string>(),
+  };
+
   if (!isSchemaObject(schema)) {
-    // $ref: not supported in this generator (should be dereferenced before)
-    return "z.any()";
+    // Handle local $ref references
+    if ("$ref" in schema && schema.$ref) {
+      const ref = schema.$ref;
+      // Check if it's a local reference to components/schemas
+      if (ref.startsWith("#/components/schemas/")) {
+        const schemaName = ref.replace("#/components/schemas/", "");
+        result.imports.add(schemaName);
+        result.code = schemaName;
+        return result;
+      }
+    }
+    // For non-local refs or other cases, fall back to z.any()
+    result.code = "z.any()";
+    return result;
   }
 
   // Handle OpenAPI 3.1.0 union types, e.g., type: ["string", "null"]
@@ -14,49 +38,98 @@ export function zodSchemaToCode(
     if (nonNullTypes.length === 1 && types.includes("null")) {
       // e.g., type: ["string", "null"]
       const clone = { ...schema, type: nonNullTypes[0] };
-      return `(${zodSchemaToCode(clone as SchemaObject)}).nullable()`;
+      const subResult = zodSchemaToCode(clone as SchemaObject, result.imports);
+      result.code = `(${subResult.code}).nullable()`;
+      result.imports = new Set([...result.imports, ...subResult.imports]);
+      return result;
     } else {
       // e.g., type: ["string", "number"]
-      const schemas = types.map((t) =>
-        zodSchemaToCode({ ...schema, type: t } as SchemaObject)
+      const subResults = types.map((t) =>
+        zodSchemaToCode({ ...schema, type: t } as SchemaObject, result.imports)
       );
-      return `z.union([${schemas.join(", ")}])`;
+      const schemas = subResults.map((r) => r.code);
+      subResults.forEach((r) => {
+        result.imports = new Set([...result.imports, ...r.imports]);
+      });
+      result.code = `z.union([${schemas.join(", ")}])`;
+      return result;
     }
   }
 
   if ("nullable" in schema && (schema as any).nullable) {
     const clone = { ...schema };
     delete (clone as any).nullable;
-    return `(${zodSchemaToCode(clone as SchemaObject)}).nullable()`;
+    const subResult = zodSchemaToCode(clone as SchemaObject, result.imports);
+    result.code = `(${subResult.code}).nullable()`;
+    result.imports = new Set([...result.imports, ...subResult.imports]);
+    return result;
   }
 
   if (schema.allOf) {
-    const schemas = schema.allOf
-      .filter(isSchemaObject)
-      .map((s) => zodSchemaToCode(s));
-    if (schemas.length === 0) return "z.any()";
-    if (schemas.length === 1) return schemas[0];
+    const subResults = schema.allOf.map((s) =>
+      zodSchemaToCode(s, result.imports)
+    );
+    const schemas = subResults.map((r) => r.code);
+    subResults.forEach((r) => {
+      result.imports = new Set([...result.imports, ...r.imports]);
+    });
+
+    if (schemas.length === 0) {
+      result.code = "z.any()";
+      return result;
+    }
+    if (schemas.length === 1) {
+      result.code = schemas[0];
+      return result;
+    }
     // If all are objects, merge; else intersection
-    return schemas.reduce((acc, curr) => `z.intersection(${acc}, ${curr})`);
+    result.code = schemas.reduce(
+      (acc, curr) => `z.intersection(${acc}, ${curr})`
+    );
+    return result;
   }
 
   if (schema.anyOf) {
-    const schemas = schema.anyOf
-      .filter(isSchemaObject)
-      .map((s) => zodSchemaToCode(s));
-    if (schemas.length === 0) return "z.any()";
-    if (schemas.length === 1) return schemas[0];
-    return `z.union([${schemas.join(", ")}])`;
+    const subResults = schema.anyOf.map((s) =>
+      zodSchemaToCode(s, result.imports)
+    );
+    const schemas = subResults.map((r) => r.code);
+    subResults.forEach((r) => {
+      result.imports = new Set([...result.imports, ...r.imports]);
+    });
+
+    if (schemas.length === 0) {
+      result.code = "z.any()";
+      return result;
+    }
+    if (schemas.length === 1) {
+      result.code = schemas[0];
+      return result;
+    }
+    result.code = `z.union([${schemas.join(", ")}])`;
+    return result;
   }
 
   if (schema.oneOf) {
-    const schemas = schema.oneOf
-      .filter(isSchemaObject)
-      .map((s) => zodSchemaToCode(s));
-    if (schemas.length === 0) return "z.any()";
-    if (schemas.length === 1) return schemas[0];
+    const subResults = schema.oneOf.map((s) =>
+      zodSchemaToCode(s, result.imports)
+    );
+    const schemas = subResults.map((r) => r.code);
+    subResults.forEach((r) => {
+      result.imports = new Set([...result.imports, ...r.imports]);
+    });
+
+    if (schemas.length === 0) {
+      result.code = "z.any()";
+      return result;
+    }
+    if (schemas.length === 1) {
+      result.code = schemas[0];
+      return result;
+    }
     // Note: superRefine for oneOf uniqueness is not representable as code string
-    return `z.union([${schemas.join(", ")}])`;
+    result.code = `z.union([${schemas.join(", ")}])`;
+    return result;
   }
 
   if (schema.type === "string") {
@@ -73,7 +146,9 @@ export function zodSchemaToCode(
     if (schema.format === "uri") code += ".url()";
     if (schema.enum)
       code = `z.enum([${schema.enum.map((e) => JSON.stringify(e)).join(", ")}])`;
-    return code;
+
+    result.code = code;
+    return result;
   }
 
   if (schema.type === "number" || schema.type === "integer") {
@@ -85,29 +160,46 @@ export function zodSchemaToCode(
     if (schema.exclusiveMaximum !== undefined)
       code += `.lt(${schema.exclusiveMaximum})`;
     if (schema.type === "integer") code += ".int()";
-    return code;
+
+    result.code = code;
+    return result;
   }
 
   if (schema.type === "boolean") {
-    return "z.boolean()";
+    result.code = "z.boolean()";
+    return result;
   }
 
   if (schema.type === "array") {
-    if (!schema.items) return "z.array(z.any())";
-    let code = `z.array(${zodSchemaToCode(schema.items as SchemaObject)})`;
+    if (!schema.items) {
+      result.code = "z.array(z.any())";
+      return result;
+    }
+    const itemsResult = zodSchemaToCode(
+      schema.items as SchemaObject,
+      result.imports
+    );
+    let code = `z.array(${itemsResult.code})`;
+    result.imports = new Set([...result.imports, ...itemsResult.imports]);
+
     if (schema.minItems !== undefined) code += `.min(${schema.minItems})`;
     if (schema.maxItems !== undefined) code += `.max(${schema.maxItems})`;
     // uniqueItems not representable in code string
-    return code;
+
+    result.code = code;
+    return result;
   }
 
   if (schema.type === "object") {
     const shape: string[] = [];
     if (schema.properties) {
       for (const [key, propSchema] of Object.entries(schema.properties)) {
-        shape.push(
-          `${JSON.stringify(key)}: ${zodSchemaToCode(propSchema as SchemaObject)}`
+        const propResult = zodSchemaToCode(
+          propSchema as SchemaObject,
+          result.imports
         );
+        result.imports = new Set([...result.imports, ...propResult.imports]);
+        shape.push(`${JSON.stringify(key)}: ${propResult.code}`);
       }
     }
     let code = `z.object({${shape.join(", ")}})`;
@@ -115,13 +207,24 @@ export function zodSchemaToCode(
       if (typeof schema.additionalProperties === "boolean") {
         code += ".catchall(z.any())";
       } else {
-        code += `.catchall(${zodSchemaToCode(schema.additionalProperties as SchemaObject)})`;
+        const additionalResult = zodSchemaToCode(
+          schema.additionalProperties as SchemaObject,
+          result.imports
+        );
+        result.imports = new Set([
+          ...result.imports,
+          ...additionalResult.imports,
+        ]);
+        code += `.catchall(${additionalResult.code})`;
       }
     }
-    return code;
+
+    result.code = code;
+    return result;
   }
 
-  return "z.any()";
+  result.code = "z.any()";
+  return result;
 }
 
 function isSchemaObject(

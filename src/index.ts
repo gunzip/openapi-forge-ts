@@ -31,11 +31,6 @@ program
     "Generate loose interfaces for runtime checks.",
     false
   )
-  .option(
-    "--modular",
-    "Generate each Zod schema and its corresponding type in its own file.",
-    false
-  )
   .action(async (options: Record<string, unknown>) => {
     try {
       await generate(options as any);

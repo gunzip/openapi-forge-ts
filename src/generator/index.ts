@@ -12,27 +12,18 @@ export interface GenerationOptions {
   generateClient: boolean;
   validateRequest: boolean;
   looseInterfaces: boolean;
-  modular: boolean;
 }
 
 export async function generate(options: GenerationOptions): Promise<void> {
-  const {
-    input,
-    output,
-    modular,
-    generateClient: genClient,
-    looseInterfaces,
-  } = options;
+  const { input, output, generateClient: genClient, looseInterfaces } = options;
 
   await fs.mkdir(output, { recursive: true });
 
   const openApiDoc = await parseOpenAPI(input);
 
   if (openApiDoc.components?.schemas) {
-    const schemasDir = modular ? path.join(output, "schemas") : output;
-    if (modular) {
-      await fs.mkdir(schemasDir, { recursive: true });
-    }
+    const schemasDir = path.join(output, "schemas");
+    await fs.mkdir(schemasDir, { recursive: true });
 
     let allSchemasContent = `import { z } from 'zod';\n\n`;
     let allTypesContent = "";
@@ -54,9 +45,7 @@ export async function generate(options: GenerationOptions): Promise<void> {
     for (const [name, schema] of Object.entries(
       openApiDoc.components.schemas
     )) {
-      const schemaVar = `${name}`;
-      const schemaContent = `export const ${schemaVar} = ${zodSchemaToCode(schema)};`;
-      const typeContent = `export type ${name} = z.infer<typeof ${schemaVar}>;`;
+      console.debug(`Processing schema: ${name}`, schema);
       if (!isPlainSchemaObject(schema)) {
         console.warn(
           `⚠️ Skipping ${name}: not a plain OpenAPI schema object. Value:`,
@@ -65,36 +54,30 @@ export async function generate(options: GenerationOptions): Promise<void> {
         continue;
       }
 
-      // No longer generating separate .type.ts files; type is exported from schema file
+      const schemaVar = `${name}`;
+      const schemaResult = zodSchemaToCode(schema);
+      console.log(`Generated for ${name}:`, schemaResult);
 
-      if (modular) {
-        const filePath = path.join(schemasDir, `${name}.ts`);
-        const formattedContent = await format(
-          `import { z } from 'zod';\n\n${schemaContent}`,
-          {
-            parser: "typescript",
-          }
-        );
-        await fs.writeFile(filePath, formattedContent);
-      } else {
-        allSchemasContent += `${schemaContent}\n\n`;
-      }
-    }
+      // Generate imports for dependencies
+      const imports = Array.from(schemaResult.imports)
+        .filter((importName) => importName !== name) // Don't import self
+        .map(
+          (importName) => `import { ${importName} } from "./${importName}.js";`
+        )
+        .join("\n");
 
-    if (!modular) {
-      const filePath = path.join(schemasDir, "schemas.ts");
-      const formattedContent = await format(allSchemasContent, {
-        parser: "typescript",
-      });
-      await fs.writeFile(filePath, formattedContent);
+      const importsSection = imports ? `${imports}\n` : "";
+      const schemaContent = `export const ${schemaVar} = ${schemaResult.code};`;
+      const typeContent = `export type ${schemaVar} = z.infer<typeof ${schemaVar}>;`;
 
-      if (looseInterfaces) {
-        const typePath = path.join(schemasDir, "types.ts");
-        const formattedContent = await format(allTypesContent, {
+      const filePath = path.join(schemasDir, `${name}.ts`);
+      const formattedContent = await format(
+        `import { z } from 'zod';\n${importsSection}\n${schemaContent}\n${typeContent}`,
+        {
           parser: "typescript",
-        });
-        await fs.writeFile(typePath, formattedContent);
-      }
+        }
+      );
+      await fs.writeFile(filePath, formattedContent);
     }
   }
 

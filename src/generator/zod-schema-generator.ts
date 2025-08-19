@@ -151,9 +151,9 @@ export function zodSchemaToCode(
 
     if (schema.pattern)
       code += `.regex(new RegExp(${JSON.stringify(schema.pattern)}))`;
-    if (schema.format === "email") code += ".email()";
+    if (schema.format === "email") code = "z.email()";
     if (schema.format === "uuid") code = "z.uuid()";
-    if (schema.format === "uri") code += ".url()";
+    if (schema.format === "uri") code = "z.url()";
     if (schema.enum)
       code = `z.enum([${schema.enum.map((e) => JSON.stringify(e)).join(", ")}])`;
 

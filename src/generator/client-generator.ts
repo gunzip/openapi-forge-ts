@@ -142,6 +142,25 @@ export class ApiError extends Error {
     this.headers = headers;
   }
 }
+
+// Utility types for operation binding
+type Operation = (params: any, config?: GlobalConfig) => Promise<any>;
+
+// Bind all operations with a specific config
+export function bindAllOperationsConfig<T extends Record<string, Operation>>(
+  operations: T, 
+  config: GlobalConfig
+): {
+  [K in keyof T]: (params: Parameters<T[K]>[0]) => ReturnType<T[K]>;
+} {
+  const bound: Partial<Record<keyof T, any>> = {};
+  for (const key in operations) {
+    if (typeof operations[key] === 'function') {
+      bound[key] = (params: any) => operations[key](params, config);
+    }
+  }
+  return bound as any;
+}
 `;
 }
 

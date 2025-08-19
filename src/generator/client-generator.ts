@@ -10,6 +10,11 @@ import type {
 import { format } from "prettier";
 import { promises as fs } from "fs";
 import path from "path";
+import {
+  writeFormattedFile,
+  ensureDirectory,
+  buildOperationFileContent,
+} from "./file-writer.js";
 
 // Helper function to convert kebab-case to camelCase
 function toCamelCase(str: string): string {
@@ -32,7 +37,206 @@ function resolveParameterReference(
   return param as ParameterObject;
 }
 
-// Helper function to resolve request body schema and extract type name
+// Type definitions for better structure
+interface OperationMetadata {
+  pathKey: string;
+  method: string;
+  operation: OperationObject;
+  pathLevelParameters: ParameterObject[];
+  operationId: string;
+}
+
+interface ParameterGroups {
+  pathParams: ParameterObject[];
+  queryParams: ParameterObject[];
+  headerParams: ParameterObject[];
+}
+
+interface ResponseTypeInfo {
+  typeName: string | null;
+  typeImports: Set<string>;
+  responseHandlers: string[];
+}
+
+interface RequestBodyTypeInfo {
+  typeName: string | null;
+  isRequired: boolean;
+  typeImports: Set<string>;
+}
+
+interface ParameterInterfaceResult {
+  interfaceCode: string;
+  hasParameters: boolean;
+}
+
+/**
+ * Extracts and groups parameters from operation and path-level definitions
+ */
+function extractParameterGroups(
+  operation: OperationObject,
+  pathLevelParameters: (ParameterObject | { $ref: string })[],
+  doc: OpenAPIObject
+): ParameterGroups {
+  // Resolve parameter references and combine path-level and operation-level parameters
+  const resolvedPathLevelParams = pathLevelParameters.map((p) =>
+    resolveParameterReference(p, doc)
+  );
+  const resolvedOperationParams = (operation.parameters || []).map((p) =>
+    resolveParameterReference(p as ParameterObject | { $ref: string }, doc)
+  );
+  const allParameters = [
+    ...resolvedPathLevelParams,
+    ...resolvedOperationParams,
+  ];
+
+  return {
+    pathParams: allParameters.filter(
+      (p) => p.in === "path"
+    ) as ParameterObject[],
+    queryParams: allParameters.filter(
+      (p) => p.in === "query"
+    ) as ParameterObject[],
+    headerParams: allParameters.filter(
+      (p) => p.in === "header"
+    ) as ParameterObject[],
+  };
+}
+
+/**
+ * Builds the parameter interface string for a function
+ */
+function buildParameterInterface(
+  parameterGroups: ParameterGroups,
+  hasBody: boolean,
+  bodyTypeInfo?: RequestBodyTypeInfo
+): string {
+  const { pathParams, queryParams, headerParams } = parameterGroups;
+  const parameterProperties: string[] = [];
+
+  // Path parameters (always required)
+  for (const param of pathParams) {
+    parameterProperties.push(`${toCamelCase(param.name)}: string`);
+  }
+
+  // Query parameters
+  for (const param of queryParams) {
+    const isRequired = param.required === true;
+    parameterProperties.push(
+      `${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`
+    );
+  }
+
+  // Header parameters
+  for (const param of headerParams) {
+    const isRequired = param.required === true;
+    parameterProperties.push(
+      `${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`
+    );
+  }
+
+  // Body parameter
+  if (hasBody && bodyTypeInfo) {
+    if (bodyTypeInfo.typeName) {
+      parameterProperties.push(
+        `body${bodyTypeInfo.isRequired ? "" : "?"}: ${bodyTypeInfo.typeName}`
+      );
+    } else {
+      parameterProperties.push(`body?: any`);
+    }
+  }
+
+  return parameterProperties.length > 0
+    ? `params: {\n    ${parameterProperties.join(";\n    ")};\n  }`
+    : "params?: {}";
+}
+
+/**
+ * Generates URL path with parameter interpolation
+ */
+function generatePathInterpolation(
+  pathKey: string,
+  pathParams: ParameterObject[]
+): string {
+  let finalPath = pathKey;
+  for (const param of pathParams) {
+    finalPath = finalPath.replace(
+      `{${param.name}}`,
+      `\${params.${toCamelCase(param.name)}}`
+    );
+  }
+  return finalPath;
+}
+
+/**
+ * Generates query parameter handling code
+ */
+function generateQueryParamHandling(queryParams: ParameterObject[]): string {
+  return queryParams
+    .map(
+      (p) =>
+        `if (params.${toCamelCase(p.name)} !== undefined) url.searchParams.append('${p.name}', String(params.${toCamelCase(p.name)}));`
+    )
+    .join("\n    ");
+}
+
+/**
+ * Generates header parameter handling code
+ */
+function generateHeaderParamHandling(headerParams: ParameterObject[]): string {
+  return headerParams
+    .map(
+      (p) =>
+        `if (params.${toCamelCase(p.name)} !== undefined) finalHeaders['${p.name}'] = String(params.${toCamelCase(p.name)});`
+    )
+    .join("\n    ");
+}
+
+/**
+ * Generates response handling code and determines return type
+ */
+function generateResponseHandlers(
+  operation: OperationObject,
+  typeImports: Set<string>
+): { returnType: string; responseHandlers: string[] } {
+  let returnType = "void";
+  let typeName = null;
+  const responseHandlers: string[] = [];
+
+  if (operation.responses) {
+    const successCodes = Object.keys(operation.responses)
+      .filter((code) => /^2\d\d$/.test(code))
+      .sort((a, b) => parseInt(a) - parseInt(b));
+
+    for (const code of successCodes) {
+      const response = operation.responses[code] as ResponseObject;
+      const responseSchema = response.content?.["application/json"]?.schema;
+      if (responseSchema && responseSchema["$ref"]) {
+        typeName = responseSchema["$ref"].split("/").pop()!;
+        returnType = typeName;
+        typeImports.add(typeName);
+        responseHandlers.push(
+          `if (response.status === ${code}) { const data = await response.json(); return ${typeName}.parse(data); }`
+        );
+      } else {
+        // If no schema, just return void
+        responseHandlers.push(`if (response.status === ${code}) { return; }`);
+      }
+    }
+  }
+
+  // If no 2xx responses, default to void
+  if (!typeName && responseHandlers.length === 0) {
+    responseHandlers.push(
+      `if (response.status >= 200 && response.status < 300) { return; }`
+    );
+  }
+
+  return { returnType, responseHandlers };
+}
+
+/**
+ * Resolves request body schema and extracts type information
+ */
 function resolveRequestBodyType(
   requestBody: RequestBodyObject,
   operationId: string,
@@ -69,7 +273,9 @@ function resolveRequestBodyType(
   };
 }
 
-// Extract auth header names from security schemes
+/**
+ * Extracts auth header names from security schemes
+ */
 function extractAuthHeaders(doc: OpenAPIObject): string[] {
   const authHeaders: string[] = [];
 
@@ -96,7 +302,9 @@ function extractAuthHeaders(doc: OpenAPIObject): string[] {
   return [...new Set(authHeaders)]; // Remove duplicates
 }
 
-// Extract base URL from the first server in OpenAPI spec
+/**
+ * Extracts base URL from the first server in OpenAPI spec
+ */
 function extractBaseURL(doc: OpenAPIObject): string {
   if (doc.servers && doc.servers.length > 0) {
     return doc.servers[0].url || "";
@@ -104,7 +312,51 @@ function extractBaseURL(doc: OpenAPIObject): string {
   return "";
 }
 
-// Generate configuration types
+/**
+ * Extracts all operations from the OpenAPI document
+ */
+function extractAllOperations(doc: OpenAPIObject): OperationMetadata[] {
+  const operations: OperationMetadata[] = [];
+
+  if (doc.paths) {
+    for (const [pathKey, pathItem] of Object.entries(doc.paths)) {
+      const pathItemObj = pathItem as PathItemObject;
+      const pathLevelParameters = (pathItemObj.parameters ||
+        []) as ParameterObject[];
+
+      for (const [method, operation] of Object.entries(pathItemObj)) {
+        if (
+          ["get", "post", "put", "delete", "patch"].includes(method) &&
+          (operation as OperationObject).operationId
+        ) {
+          operations.push({
+            pathKey,
+            method,
+            operation: operation as OperationObject,
+            pathLevelParameters,
+            operationId: (operation as OperationObject).operationId!,
+          });
+        }
+      }
+    }
+  }
+
+  return operations;
+}
+
+/**
+ * Generates the configuration file content
+ */
+function generateConfigFileContent(
+  authHeaders: string[],
+  baseURL: string
+): string {
+  return generateConfigTypes(authHeaders, baseURL);
+}
+
+/**
+ * Generate configuration types
+ */
 function generateConfigTypes(authHeaders: string[], baseURL: string): string {
   const authHeadersType =
     authHeaders.length > 0
@@ -164,160 +416,27 @@ export function bindAllOperationsConfig<T extends Record<string, Operation>>(
 `;
 }
 
-// Generates a single operation function
-// Returns: { functionCode: string, typeImports: Set<string> }
-function generateOperationFunction(
+/**
+ * Generates the function body for an operation
+ */
+function generateFunctionBody(
   pathKey: string,
   method: string,
-  operation: OperationObject,
-  pathLevelParameters: (ParameterObject | { $ref: string })[] = [],
-  doc: OpenAPIObject
-): { functionCode: string; typeImports: Set<string> } {
-  const functionName = operation.operationId!;
-  const summary = operation.summary ? `/** ${operation.summary} */\n` : "";
-  const typeImports = new Set<string>();
+  parameterGroups: ParameterGroups,
+  hasBody: boolean,
+  responseHandlers: string[]
+): string {
+  const { pathParams, queryParams, headerParams } = parameterGroups;
 
-  // Resolve parameter references and combine path-level and operation-level parameters
-  const resolvedPathLevelParams = pathLevelParameters.map((p) =>
-    resolveParameterReference(p, doc)
-  );
-  const resolvedOperationParams = (operation.parameters || []).map((p) =>
-    resolveParameterReference(p as ParameterObject | { $ref: string }, doc)
-  );
-  const allParameters = [
-    ...resolvedPathLevelParams,
-    ...resolvedOperationParams,
-  ];
+  const finalPath = generatePathInterpolation(pathKey, pathParams);
+  const queryParamLines = generateQueryParamHandling(queryParams);
+  const headerParamLines = generateHeaderParamHandling(headerParams);
 
-  // Parameters
-  const pathParams = allParameters.filter(
-    (p) => p.in === "path"
-  ) as ParameterObject[];
-  const queryParams = allParameters.filter(
-    (p) => p.in === "query"
-  ) as ParameterObject[];
-  const headerParams = allParameters.filter(
-    (p) => p.in === "header"
-  ) as ParameterObject[];
-  const hasBody = !!operation.requestBody;
+  const bodyContent = hasBody
+    ? "body: params.body ? JSON.stringify(params.body) : undefined,"
+    : "";
 
-  // Build parameter interface
-  const parameterProperties: string[] = [];
-
-  // Path parameters (always required)
-  for (const param of pathParams) {
-    parameterProperties.push(`${toCamelCase(param.name)}: string`);
-  }
-
-  // Query parameters
-  for (const param of queryParams) {
-    const isRequired = param.required === true;
-    parameterProperties.push(
-      `${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`
-    );
-  }
-
-  // Header parameters
-  for (const param of headerParams) {
-    const isRequired = param.required === true;
-    parameterProperties.push(
-      `${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`
-    );
-  }
-
-  // Body parameter
-  if (hasBody) {
-    const requestBody = operation.requestBody as RequestBodyObject;
-    const {
-      typeName,
-      isRequired,
-      typeImports: bodyTypeImports,
-    } = resolveRequestBodyType(requestBody, functionName, doc);
-
-    // Add any imports from the body type resolution
-    bodyTypeImports.forEach((imp) => typeImports.add(imp));
-
-    if (typeName) {
-      parameterProperties.push(`body${isRequired ? "" : "?"}: ${typeName}`);
-    } else {
-      parameterProperties.push(`body?: any`);
-    }
-  }
-
-  const paramsInterface =
-    parameterProperties.length > 0
-      ? `params: {\n    ${parameterProperties.join(";\n    ")};\n  }`
-      : "params?: {}";
-
-  // Path interpolation - use camelCase parameter names in the template string
-  let finalPath = pathKey;
-  for (const p of pathParams) {
-    finalPath = finalPath.replace(
-      `{${p.name}}`,
-      `\${params.${toCamelCase(p.name)}}`
-    );
-  }
-
-  // Query param appending - use camelCase parameter names but keep original names for URL
-  const queryParamLines = queryParams
-    .map(
-      (p) =>
-        `if (params.${toCamelCase(p.name)} !== undefined) url.searchParams.append('${p.name}', String(params.${toCamelCase(p.name)}));`
-    )
-    .join("\n    ");
-
-  // Header param setting
-  const headerParamLines = headerParams
-    .map(
-      (p) =>
-        `if (params.${toCamelCase(p.name)} !== undefined) finalHeaders['${p.name}'] = String(params.${toCamelCase(p.name)});`
-    )
-    .join("\n    ");
-
-  // Request body
-  let bodyContent = "";
-  if (hasBody) {
-    bodyContent =
-      "body: params.body ? JSON.stringify(params.body) : undefined,";
-  }
-
-  // Find all defined 2xx responses
-  let returnType = "void";
-  let typeName = null;
-  const responseHandlers: string[] = [];
-  if (operation.responses) {
-    const successCodes = Object.keys(operation.responses)
-      .filter((code) => /^2\d\d$/.test(code))
-      .sort((a, b) => parseInt(a) - parseInt(b));
-    for (const code of successCodes) {
-      const response = operation.responses[code] as ResponseObject;
-      const responseSchema = response.content?.["application/json"]?.schema;
-      if (responseSchema && responseSchema["$ref"]) {
-        typeName = responseSchema["$ref"].split("/").pop()!;
-        returnType = typeName;
-        typeImports.add(typeName);
-        responseHandlers.push(
-          `if (response.status === ${code}) { const data = await response.json(); return ${typeName}.parse(data); }`
-        );
-      } else {
-        // If no schema, just return void
-        responseHandlers.push(`if (response.status === ${code}) { return; }`);
-      }
-    }
-  }
-
-  // If no 2xx responses, default to void
-  if (!typeName && responseHandlers.length === 0) {
-    responseHandlers.push(
-      `if (response.status >= 200 && response.status < 300) { return; }`
-    );
-  }
-
-  const functionStr = `${summary}export async function ${functionName}(
-  ${paramsInterface},
-  config: GlobalConfig = globalConfig
-): Promise<${typeName ? typeName : "void"}> {
-  const finalHeaders = { ...config.headers };
+  return `const finalHeaders = { ...config.headers };
   ${headerParamLines ? headerParamLines : ""}
   
   const url = new URL(\`${finalPath}\`, config.baseURL);
@@ -341,12 +460,162 @@ function generateOperationFunction(
   ${responseHandlers.join("\n  ")}
 
   // throw for unexpected 2xx responses
-  throw new ApiError(response.status, null, response.headers);
+  throw new ApiError(response.status, null, response.headers);`;
+}
+
+/**
+ * Generates a single operation function
+ * Returns: { functionCode: string, typeImports: Set<string> }
+ */
+function generateOperationFunction(
+  pathKey: string,
+  method: string,
+  operation: OperationObject,
+  pathLevelParameters: (ParameterObject | { $ref: string })[] = [],
+  doc: OpenAPIObject
+): { functionCode: string; typeImports: Set<string> } {
+  const functionName = operation.operationId!;
+  const summary = operation.summary ? `/** ${operation.summary} */\n` : "";
+  const typeImports = new Set<string>();
+
+  // Extract parameter groups
+  const parameterGroups = extractParameterGroups(
+    operation,
+    pathLevelParameters,
+    doc
+  );
+  const hasBody = !!operation.requestBody;
+
+  // Build parameter interface
+  let bodyTypeInfo: RequestBodyTypeInfo | undefined;
+  if (hasBody) {
+    const requestBody = operation.requestBody as RequestBodyObject;
+    bodyTypeInfo = resolveRequestBodyType(requestBody, functionName, doc);
+    bodyTypeInfo.typeImports.forEach((imp) => typeImports.add(imp));
+  }
+
+  const paramsInterface = buildParameterInterface(
+    parameterGroups,
+    hasBody,
+    bodyTypeInfo
+  );
+
+  // Generate response handlers and return type
+  const { returnType, responseHandlers } = generateResponseHandlers(
+    operation,
+    typeImports
+  );
+
+  // Generate function body
+  const functionBodyCode = generateFunctionBody(
+    pathKey,
+    method,
+    parameterGroups,
+    hasBody,
+    responseHandlers
+  );
+
+  const functionStr = `${summary}export async function ${functionName}(
+  ${paramsInterface},
+  config: GlobalConfig = globalConfig
+): Promise<${returnType}> {
+  ${functionBodyCode}
 }`;
+
   return { functionCode: functionStr, typeImports };
 }
 
-// Generates individual operation files and configuration
+/**
+ * Writes a single operation file to disk
+ */
+async function writeOperationFile(
+  operationId: string,
+  functionCode: string,
+  typeImports: Set<string>,
+  operationsDir: string
+): Promise<void> {
+  const operationContent = buildOperationFileContent(typeImports, functionCode);
+  const operationPath = path.join(operationsDir, `${operationId}.ts`);
+  await writeFormattedFile(operationPath, operationContent);
+}
+
+/**
+ * Writes the configuration file
+ */
+async function writeConfigFile(
+  authHeaders: string[],
+  baseURL: string,
+  operationsDir: string
+): Promise<void> {
+  const configContent = generateConfigTypes(authHeaders, baseURL);
+  const configPath = path.join(operationsDir, "config.ts");
+  await writeFormattedFile(configPath, configContent);
+}
+
+/**
+ * Writes the index file that exports all operations
+ */
+async function writeIndexFile(
+  operations: OperationMetadata[],
+  operationsDir: string
+): Promise<void> {
+  const operationImports: string[] = [];
+  const operationExports: string[] = [];
+
+  for (const { operationId } of operations) {
+    operationImports.push(
+      `import { ${operationId} } from './${operationId}.js';`
+    );
+    operationExports.push(operationId);
+  }
+
+  const indexContent = `${operationImports.join("\n")}
+
+export {
+  ${operationExports.join(",\n  ")},
+};`;
+  const indexPath = path.join(operationsDir, "index.ts");
+  await writeFormattedFile(indexPath, indexContent);
+}
+
+/**
+ * Processes and writes operation files
+ */
+async function processOperations(
+  doc: OpenAPIObject,
+  operationsDir: string
+): Promise<OperationMetadata[]> {
+  const operations = extractAllOperations(doc);
+
+  for (const {
+    pathKey,
+    method,
+    operation,
+    pathLevelParameters,
+    operationId,
+  } of operations) {
+    const { functionCode, typeImports } = generateOperationFunction(
+      pathKey,
+      method,
+      operation,
+      pathLevelParameters,
+      doc
+    );
+
+    await writeOperationFile(
+      operationId,
+      functionCode,
+      typeImports,
+      operationsDir
+    );
+  }
+
+  return operations;
+}
+
+/**
+ * Generates individual operation files and configuration
+ */
 export async function generateOperations(
   doc: OpenAPIObject,
   outputDir: string
@@ -356,92 +625,16 @@ export async function generateOperations(
 
   // Extract auth headers for configuration types
   const authHeaders = extractAuthHeaders(doc);
-
-  // Generate each operation as a separate file
-  if (doc.paths) {
-    for (const [pathKey, pathItem] of Object.entries(doc.paths)) {
-      const pathItemObj = pathItem as PathItemObject;
-      const pathLevelParameters = (pathItemObj.parameters ||
-        []) as ParameterObject[];
-
-      for (const [method, operation] of Object.entries(pathItemObj)) {
-        if (
-          ["get", "post", "put", "delete", "patch"].includes(method) &&
-          (operation as OperationObject).operationId
-        ) {
-          const { functionCode, typeImports } = generateOperationFunction(
-            pathKey,
-            method,
-            operation as OperationObject,
-            pathLevelParameters,
-            doc
-          );
-
-          // Build imports for the operation file - import from config.js
-          const importLines = [
-            `import { globalConfig, GlobalConfig, ApiError } from './config.js';`,
-            ...Array.from(typeImports).map(
-              (type) => `import { ${type} } from '../schemas/${type}.js';`
-            ),
-          ];
-
-          const operationContent = `${importLines.join("\n")}\n\n${functionCode}`;
-          const operationPath = path.join(
-            operationsDir,
-            `${(operation as OperationObject).operationId}.ts`
-          );
-          const formattedOperationContent = await format(operationContent, {
-            parser: "typescript",
-          });
-          await fs.writeFile(operationPath, formattedOperationContent);
-        }
-      }
-    }
-  }
-
-  // Generate a separate config file
   const baseURL = extractBaseURL(doc);
-  const configContent = generateConfigTypes(authHeaders, baseURL);
-  const configPath = path.join(operationsDir, "config.ts");
-  const formattedConfigContent = await format(configContent, {
-    parser: "typescript",
-  });
-  await fs.writeFile(configPath, formattedConfigContent);
 
-  // Generate an index file that only exports operations
-  const operationImports: string[] = [];
-  const operationExports: string[] = [];
+  // Process all operations and write files
+  const operations = await processOperations(doc, operationsDir);
 
-  if (doc.paths) {
-    for (const [pathKey, pathItem] of Object.entries(doc.paths)) {
-      const pathItemObj = pathItem as PathItemObject;
+  // Write configuration file
+  await writeConfigFile(authHeaders, baseURL, operationsDir);
 
-      for (const [method, operation] of Object.entries(pathItemObj)) {
-        if (
-          ["get", "post", "put", "delete", "patch"].includes(method) &&
-          (operation as OperationObject).operationId
-        ) {
-          const operationId = (operation as OperationObject).operationId!;
-          operationImports.push(
-            `import { ${operationId} } from './${operationId}.js';`
-          );
-          operationExports.push(operationId);
-        }
-      }
-    }
-  }
-
-  // Index file now only contains operation exports
-  const indexContent = `${operationImports.join("\n")}
-
-export {
-  ${operationExports.join(",\n  ")},
-};`;
-  const indexPath = path.join(operationsDir, "index.ts");
-  const formattedIndexContent = await format(indexContent, {
-    parser: "typescript",
-  });
-  await fs.writeFile(indexPath, formattedIndexContent);
+  // Write index file that exports all operations
+  await writeIndexFile(operations, operationsDir);
 }
 
 // Legacy function for backwards compatibility - now generates operations instead

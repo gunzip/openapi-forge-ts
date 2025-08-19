@@ -368,10 +368,10 @@ components:
   # Schemas
   # -------------
   schemas:
-    # Person:
-    #  $ref: "definitions.yaml#/Person"
-    # Book:
-    #  $ref: "definitions.yaml#/Book"
+    Person:
+      $ref: "./definitions.yaml#/Person"
+    Book:
+      $ref: "./definitions.yaml#/Book"
 
     FiscalCode:
       type: string

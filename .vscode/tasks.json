@@ -251,6 +251,47 @@
 			"args": [
 				"test"
 			]
+		},
+		{
+			"label": "Install new dependency",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"install"
+			]
+		},
+		{
+			"label": "Test external refs resolution",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"test-external-refs.mjs"
+			]
+		},
+		{
+			"label": "Clean up test file",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"test-external-refs.mjs"
+			]
+		},
+		{
+			"label": "Clean old generated test",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"-rf",
+				"generated-test"
+			]
+		},
+		{
+			"label": "Run final tests",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			]
 		}
 	]
 }

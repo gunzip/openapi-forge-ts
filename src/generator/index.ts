@@ -5,6 +5,7 @@ import { parseOpenAPI } from "./parser.js";
 import { zodSchemaToCode } from "./zod-schema-generator.js";
 import { generateClient } from "./client-generator.js";
 import { format } from "prettier";
+import $RefParser from "@apidevtools/json-schema-ref-parser";
 
 export interface GenerationOptions {
   input: string;
@@ -19,7 +20,19 @@ export async function generate(options: GenerationOptions): Promise<void> {
 
   await fs.mkdir(output, { recursive: true });
 
-  const openApiDoc = await parseOpenAPI(input);
+  // Parse the OpenAPI document first
+  let openApiDoc = await parseOpenAPI(input);
+
+  // Pre-process: Resolve external $ref pointers using json-schema-ref-parser
+  try {
+    openApiDoc = await $RefParser.dereference(openApiDoc, {
+      mutateInputSchema: false, // Don't modify the original
+    });
+    console.log("✅ Successfully resolved external $ref pointers");
+  } catch (error) {
+    console.warn("⚠️ Failed to resolve external $ref pointers:", error);
+    // Continue with original document if dereferencing fails
+  }
 
   if (openApiDoc.components?.schemas) {
     const schemasDir = path.join(output, "schemas");

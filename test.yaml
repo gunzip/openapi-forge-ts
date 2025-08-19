@@ -25,7 +25,7 @@ paths:
           in: query
           description: An opaque identifier that points to the next item in the collection.
           schema:
-            minimum: 1
+            minLength: 1
             type: string
       responses:
         200:
@@ -51,7 +51,7 @@ paths:
           in: query
           description: An opaque identifier that points to the next item in the collection.
           schema:
-            minimum: 1
+            minLength: 1
             type: string
       responses:
         200:
@@ -139,6 +139,7 @@ paths:
       operationId: testBinaryFileDownload
       responses:
         "200":
+          description: "Binary file download"
           content:
             application/octet-stream:
               schema:

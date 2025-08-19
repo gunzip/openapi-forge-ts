@@ -5,7 +5,7 @@ Generate a TypeScript API client from an OpenAPI 3.1.0 specification, with Zod v
 ## Features
 
 - **Operation-based client generation** from OpenAPI 3.1.0 (one function per operation)
-- **Zod v4 runtime validation** for response (and optionally request) payloads  
+- **Zod v4 runtime validation** for response (and optionally request) payloads
 - **Modular output**: generate schemas/types in separate files
 - **Type-safe configuration** with immutable global defaults and per-operation configuration
 - **Tree-shakeable**: only import the operations you use
@@ -57,6 +57,7 @@ await generate({
 ## Generated Architecture
 
 The generator creates:
+
 - **`operations/index.ts`** - Configuration types, immutable global config, and operation exports
 - **`operations/`** - Individual operation functions
 - **`schemas/`** - Zod schemas and TypeScript types
@@ -65,20 +66,21 @@ The generator creates:
 
 ### Define Configuration
 
-```ts
+````ts
 import { testAuthBearer, testMultipleSuccess } from "./generated/operations/index.js";
 
 ```ts
 // Define your API configuration (all fields required)
 const apiConfig = {
   baseURL: "https://api.example.com/v1",
-  fetch: fetch, 
+  fetch: fetch,
   headers: {
     Authorization: "Bearer your-token"
   }
 };
-```
-```
+````
+
+````
 
 ### Call Operations
 
@@ -96,7 +98,7 @@ const newPet = await createPet({
 
 // Use default empty config (operations work without configuration)
 const result = await someOperation({ param: "value" });
-```
+````
 
 ## Example: Using Generated Zod Schemas
 

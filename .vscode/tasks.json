@@ -358,6 +358,14 @@
 			"args": [
 				"test"
 			]
+		},
+		{
+			"label": "Final verification test",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			]
 		}
 	]
 }

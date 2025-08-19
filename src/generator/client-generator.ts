@@ -96,8 +96,16 @@ function extractAuthHeaders(doc: OpenAPIObject): string[] {
   return [...new Set(authHeaders)]; // Remove duplicates
 }
 
+// Extract base URL from the first server in OpenAPI spec
+function extractBaseURL(doc: OpenAPIObject): string {
+  if (doc.servers && doc.servers.length > 0) {
+    return doc.servers[0].url || "";
+  }
+  return "";
+}
+
 // Generate configuration types
-function generateConfigTypes(authHeaders: string[]): string {
+function generateConfigTypes(authHeaders: string[], baseURL: string): string {
   const authHeadersType =
     authHeaders.length > 0
       ? authHeaders.map((h) => `'${h}'`).join(" | ")
@@ -117,7 +125,7 @@ ${authHeaders.length > 0 ? `export type AuthHeaders = ${authHeadersType};` : ""}
 
 // Default global configuration - immutable
 export const globalConfig: GlobalConfig = {
-  baseURL: '',
+  baseURL: '${baseURL}',
   fetch: fetch,
   headers: {}
 };
@@ -395,8 +403,11 @@ export async function generateOperations(
     }
   }
 
+  // Extract base URL from OpenAPI spec
+  const baseURL = extractBaseURL(doc);
+
   // Generate config types content
-  const configContent = generateConfigTypes(authHeaders);
+  const configContent = generateConfigTypes(authHeaders, baseURL);
 
   const indexContent = `${configContent}\n\n${operationImports.join("\n")}\n\nexport {\n  ${operationExports.join(",\n  ")}\n};`;
   const indexPath = path.join(operationsDir, "index.ts");

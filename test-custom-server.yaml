@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info:
+  title: Custom Server Test API
+  description: Test API with custom server URL.
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v2
+    description: Production server
+  - url: https://staging.example.com/v2
+    description: Staging server
+paths:
+  /users:
+    get:
+      operationId: getUsers
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string

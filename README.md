@@ -74,19 +74,25 @@ The generator creates:
 
 ### Define Configuration
 
-````ts
-import { testAuthBearer, testMultipleSuccess } from "./generated/operations/index.js";
+```ts
+import {
+  testAuthBearer,
+  testMultipleSuccess,
+} from "./generated/operations/index.js";
+```
 
 ```ts
-// Define your API configuration (all fields required)
+// You can define your API configuration (all fields required)
+// or just use the default configuration to avoid passing it
+// as parameter to every operation
 const apiConfig = {
   baseURL: "https://api.example.com/v1",
   fetch: fetch,
   headers: {
-    Authorization: "Bearer your-token"
-  }
+    Authorization: "Bearer your-token",
+  },
 };
-````
+```
 
 ````
 

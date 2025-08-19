@@ -213,7 +213,7 @@ export function zodSchemaToCode(
     let code = `z.object({${shape.join(", ")}})`;
     if (schema.additionalProperties) {
       if (typeof schema.additionalProperties === "boolean") {
-        code += ".catchall(z.any())";
+        code += ".catchall(z.unknown())";
       } else {
         const additionalResult = zodSchemaToCode(
           schema.additionalProperties as SchemaObject,
@@ -231,7 +231,7 @@ export function zodSchemaToCode(
     return result;
   }
 
-  result.code = "z.any()";
+  result.code = "z.unknown()";
   return result;
 }
 

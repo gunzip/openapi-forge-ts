@@ -19,8 +19,8 @@ All operations now return a discriminated union of `ApiResponse` types:
 
 ```typescript
 type ApiResponse<S extends number, T> = {
-  readonly status: S;      // Discriminant property
-  readonly data: T;        // Typed response data
+  readonly status: S; // Discriminant property
+  readonly data: T; // Typed response data
   readonly response: Response; // Raw fetch Response
 };
 ```
@@ -29,7 +29,7 @@ type ApiResponse<S extends number, T> = {
 
 ```typescript
 // Before: Single success type, exceptions for errors
-async function someOperation(): Promise<SuccessType>
+async function someOperation(): Promise<SuccessType>;
 
 // After: All responses as discriminated union
 async function someOperation(): Promise<
@@ -37,7 +37,7 @@ async function someOperation(): Promise<
   | ApiResponse<201, SuccessType2>
   | ApiResponse<404, ProblemDetails>
   | ApiResponse<500, ServerError>
->
+>;
 ```
 
 ## Usage Examples
@@ -45,42 +45,42 @@ async function someOperation(): Promise<
 ### Type-Safe Status Checking
 
 ```typescript
-import { testMultipleSuccess } from './operations/testMultipleSuccess.js';
-import { isStatus } from './operations/config.js';
+import { testMultipleSuccess } from "./operations/testMultipleSuccess.js";
+import { isStatus } from "./operations/config.js";
 
 const result = await testMultipleSuccess();
 
 if (isStatus<200, Message>(result, 200)) {
   // result.data is typed as Message
-  console.log('Message:', result.data.content.markdown);
+  console.log("Message:", result.data.content.markdown);
 } else if (isStatus<202, void>(result, 202)) {
   // result.data is typed as void
-  console.log('Accepted without content');
+  console.log("Accepted without content");
 } else if (isStatus<403, OneOfTest>(result, 403)) {
   // result.data is typed as OneOfTest
-  console.log('Forbidden:', result.data);
+  console.log("Forbidden:", result.data);
 }
 ```
 
 ### Error Handling Without Exceptions
 
 ```typescript
-import { testAuthBearerHttp } from './operations/testAuthBearerHttp.js';
-import { isSuccessResponse, isStatus } from './operations/config.js';
+import { testAuthBearerHttp } from "./operations/testAuthBearerHttp.js";
+import { isSuccessResponse, isStatus } from "./operations/config.js";
 
-const result = await testAuthBearerHttp({ qr: 'required-param' });
+const result = await testAuthBearerHttp({ qr: "required-param" });
 
 if (isSuccessResponse(result)) {
-  console.log('Authentication successful');
+  console.log("Authentication successful");
 } else if (isStatus<504, ProblemDetails>(result, 504)) {
   // result.data is typed as ProblemDetails
-  console.error('Gateway timeout:', {
+  console.error("Gateway timeout:", {
     type: result.data.type,
     title: result.data.title,
-    detail: result.data.detail
+    detail: result.data.detail,
   });
 } else {
-  console.log('Other error:', result.status);
+  console.log("Other error:", result.status);
 }
 ```
 
@@ -112,16 +112,16 @@ isServerErrorResponse(result): result is ApiResponse<5xx, T>
 ### Exhaustive Response Handler
 
 ```typescript
-import { handleResponse } from './operations/config.js';
+import { handleResponse } from "./operations/config.js";
 
 const result = await testMultipleSuccess();
 
 handleResponse(result, {
-  200: (data: Message) => console.log('Success:', data.content.markdown),
-  202: (data: void) => console.log('Accepted'),
-  403: (data: OneOfTest) => console.log('Forbidden:', data),
-  404: (data: void) => console.log('Not found'),
-  default: (result) => console.log('Other:', result.status)
+  200: (data: Message) => console.log("Success:", data.content.markdown),
+  202: (data: void) => console.log("Accepted"),
+  403: (data: OneOfTest) => console.log("Forbidden:", data),
+  404: (data: void) => console.log("Not found"),
+  default: (result) => console.log("Other:", result.status),
 });
 ```
 

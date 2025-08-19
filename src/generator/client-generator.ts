@@ -196,18 +196,18 @@ function generateHeaderParamHandling(headerParams: ParameterObject[]): string {
  */
 function getResponseContentType(response: ResponseObject): string | null {
   if (!response.content) return null;
-  
+
   // Check for JSON content types in order of preference
-  const jsonTypes = ['application/json', 'application/problem+json'];
+  const jsonTypes = ["application/json", "application/problem+json"];
   for (const type of jsonTypes) {
     if (response.content[type]) return type;
   }
-  
+
   // Check for other JSON-like content types
   for (const [contentType] of Object.entries(response.content)) {
-    if (contentType.includes('+json')) return contentType;
+    if (contentType.includes("+json")) return contentType;
   }
-  
+
   // Return the first content type if no JSON found
   const contentTypes = Object.keys(response.content);
   return contentTypes.length > 0 ? contentTypes[0] : null;
@@ -225,40 +225,42 @@ function generateResponseHandlers(
 
   if (operation.responses) {
     // Sort all response codes (both success and error)
-    const responseCodes = Object.keys(operation.responses).filter(code => code !== 'default');
+    const responseCodes = Object.keys(operation.responses).filter(
+      (code) => code !== "default"
+    );
     responseCodes.sort((a, b) => parseInt(a) - parseInt(b));
 
     for (const code of responseCodes) {
       const response = operation.responses[code] as ResponseObject;
       const contentType = getResponseContentType(response);
-      
+
       let typeName: string | null = null;
-      let parseCode = 'undefined';
-      
+      let parseCode = "undefined";
+
       if (contentType && response.content?.[contentType]?.schema) {
         const schema = response.content[contentType].schema;
-        
+
         if (schema["$ref"]) {
           typeName = schema["$ref"].split("/").pop()!;
           typeImports.add(typeName);
-          
-          if (contentType.includes('json')) {
+
+          if (contentType.includes("json")) {
             parseCode = `${typeName}.parse(await parseResponseBody(response))`;
           } else {
             parseCode = `await parseResponseBody(response) as ${typeName}`;
           }
-        } else if (contentType.includes('json')) {
+        } else if (contentType.includes("json")) {
           // For inline schemas, we'll parse as unknown and let runtime validation handle it
-          parseCode = 'await parseResponseBody(response)';
+          parseCode = "await parseResponseBody(response)";
         } else {
-          parseCode = 'await parseResponseBody(response)';
+          parseCode = "await parseResponseBody(response)";
         }
       }
-      
+
       // Build the discriminated union type
-      const dataType = typeName || (contentType ? 'unknown' : 'void');
+      const dataType = typeName || (contentType ? "unknown" : "void");
       unionTypes.push(`ApiResponse<${code}, ${dataType}>`);
-      
+
       // Generate the response handler with status as const to help with discrimination
       if (typeName || contentType) {
         responseHandlers.push(`    case ${code}: {
@@ -273,9 +275,10 @@ function generateResponseHandlers(
   }
 
   // Don't add a catch-all to the union type to ensure proper narrowing
-  const returnType = unionTypes.length > 0 
-    ? unionTypes.join(' | ')
-    : 'ApiResponse<number, unknown>';
+  const returnType =
+    unionTypes.length > 0
+      ? unionTypes.join(" | ")
+      : "ApiResponse<number, unknown>";
 
   return { returnType, responseHandlers };
 }
@@ -641,8 +644,12 @@ function generateFunctionBody(
 
   const response = await config.fetch(url.toString(), {
     method: "${method.toUpperCase()}",
-    headers: finalHeaders,${bodyContent ? `
-${bodyContent}` : ""}
+    headers: finalHeaders,${
+      bodyContent
+        ? `
+${bodyContent}`
+        : ""
+    }
   });
 
   switch (response.status) {

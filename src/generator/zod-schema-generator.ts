@@ -32,9 +32,19 @@ export function zodSchemaToCode(
   }
 
   // Handle OpenAPI 3.1.0 union types, e.g., type: ["string", "null"]
-  if (Array.isArray(schema.type)) {
-    const types = schema.type;
-    const nonNullTypes = types.filter((t) => t !== "null");
+  // Infer type if missing: object if properties/additionalProperties, array if items
+  let effectiveType = schema.type;
+  if (!effectiveType) {
+    if (schema.properties || schema.additionalProperties) {
+      effectiveType = "object";
+    } else if (schema.items) {
+      effectiveType = "array";
+    }
+  }
+
+  if (Array.isArray(effectiveType)) {
+    const types = effectiveType;
+    const nonNullTypes = types.filter((t: string) => t !== "null");
     if (nonNullTypes.length === 1 && types.includes("null")) {
       // e.g., type: ["string", "null"]
       const clone = { ...schema, type: nonNullTypes[0] };
@@ -44,11 +54,11 @@ export function zodSchemaToCode(
       return result;
     } else {
       // e.g., type: ["string", "number"]
-      const subResults = types.map((t) =>
+      const subResults = types.map((t: string) =>
         zodSchemaToCode({ ...schema, type: t } as SchemaObject, result.imports)
       );
-      const schemas = subResults.map((r) => r.code);
-      subResults.forEach((r) => {
+      const schemas = subResults.map((r: ZodSchemaResult) => r.code);
+      subResults.forEach((r: ZodSchemaResult) => {
         result.imports = new Set([...result.imports, ...r.imports]);
       });
       result.code = `z.union([${schemas.join(", ")}])`;
@@ -132,7 +142,7 @@ export function zodSchemaToCode(
     return result;
   }
 
-  if (schema.type === "string") {
+  if (effectiveType === "string") {
     let code = "z.string()";
 
     // include minLength
@@ -151,7 +161,7 @@ export function zodSchemaToCode(
     return result;
   }
 
-  if (schema.type === "number" || schema.type === "integer") {
+  if (effectiveType === "number" || effectiveType === "integer") {
     let code = "z.number()";
     if (schema.minimum !== undefined) code += `.min(${schema.minimum})`;
     if (schema.maximum !== undefined) code += `.max(${schema.maximum})`;
@@ -165,12 +175,12 @@ export function zodSchemaToCode(
     return result;
   }
 
-  if (schema.type === "boolean") {
+  if (effectiveType === "boolean") {
     result.code = "z.boolean()";
     return result;
   }
 
-  if (schema.type === "array") {
+  if (effectiveType === "array") {
     if (!schema.items) {
       result.code = "z.array(z.unknown())";
       return result;
@@ -190,7 +200,7 @@ export function zodSchemaToCode(
     return result;
   }
 
-  if (schema.type === "object") {
+  if (effectiveType === "object") {
     const shape: string[] = [];
     const requiredFields = schema.required || [];
 

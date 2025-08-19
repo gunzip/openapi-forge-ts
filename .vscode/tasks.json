@@ -66,6 +66,101 @@
 				"generated-test"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Install openapi-types dependency",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"add",
+				"openapi-types"
+			]
+		},
+		{
+			"label": "Test OpenAPI 3.0 to 3.1 conversion",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"start",
+				"generate",
+				"-i",
+				"test-3.0.yaml",
+				"-o",
+				"test-conversion-output",
+				"--generate-client"
+			]
+		},
+		{
+			"label": "Debug conversion",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"debug-conversion.mjs"
+			]
+		},
+		{
+			"label": "Debug conversion fixed",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"debug-conversion.mjs"
+			]
+		},
+		{
+			"label": "Debug comprehensive conversion",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"debug-conversion.mjs"
+			]
+		},
+		{
+			"label": "Test comprehensive conversion with generation",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"start",
+				"generate",
+				"-i",
+				"comprehensive-test-3.0.yaml",
+				"-o",
+				"comprehensive-test-output",
+				"--generate-client"
+			]
+		},
+		{
+			"label": "Test OpenAPI 3.1 passthrough",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"start",
+				"generate",
+				"-i",
+				"test.yaml",
+				"-o",
+				"test-31-output"
+			]
+		},
+		{
+			"label": "Clean up temporary files",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"debug-conversion.mjs",
+				"test-3.0.yaml",
+				"comprehensive-test-3.0.yaml"
+			]
+		},
+		{
+			"label": "Clean up temporary directories",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"-rf",
+				"test-conversion-output",
+				"comprehensive-test-output",
+				"test-31-output"
+			]
 		}
 	]
 }

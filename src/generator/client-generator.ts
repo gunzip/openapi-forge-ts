@@ -43,32 +43,32 @@ function resolveRequestBodyType(
 ): { typeName: string | null; isRequired: boolean; typeImports: Set<string> } {
   // Check if request body is required (default is false)
   const isRequired = requestBody.required === true;
-  
+
   // Look for application/json content
   const jsonContent = requestBody.content?.["application/json"];
   if (!jsonContent?.schema) {
     return { typeName: null, isRequired, typeImports: new Set<string>() };
   }
-  
+
   const schema = jsonContent.schema;
-  
+
   // If it's a reference to a schema, use that as the type name
   if (schema["$ref"]) {
     const typeName = schema["$ref"].split("/").pop();
-    return { 
-      typeName: typeName || null, 
-      isRequired, 
-      typeImports: new Set([typeName || ""])
+    return {
+      typeName: typeName || null,
+      isRequired,
+      typeImports: new Set([typeName || ""]),
     };
   }
-  
+
   // For inline schemas, use the pre-generated request schema
   // The request schema will be generated as {operationId}Request in the main generator
   const requestTypeName = `${operationId}Request`;
-  return { 
-    typeName: requestTypeName, 
-    isRequired, 
-    typeImports: new Set([requestTypeName])
+  return {
+    typeName: requestTypeName,
+    isRequired,
+    typeImports: new Set([requestTypeName]),
   };
 }
 
@@ -205,12 +205,16 @@ function generateOperationFunction(
   let bodyTypeName: string | null = null;
   if (hasBody) {
     const requestBody = operation.requestBody as RequestBodyObject;
-    const { typeName, isRequired, typeImports: bodyTypeImports } = resolveRequestBodyType(requestBody, functionName, doc);
+    const {
+      typeName,
+      isRequired,
+      typeImports: bodyTypeImports,
+    } = resolveRequestBodyType(requestBody, functionName, doc);
     bodyTypeName = typeName;
-    
+
     // Add any imports from the body type resolution
-    bodyTypeImports.forEach(imp => typeImports.add(imp));
-    
+    bodyTypeImports.forEach((imp) => typeImports.add(imp));
+
     if (typeName) {
       parameterProperties.push(`body${isRequired ? "" : "?"}: ${typeName}`);
     } else {

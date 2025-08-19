@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: Test API with Inline Schema
+  version: 1.0.0
+paths:
+  /test-inline-schema:
+    post:
+      operationId: testInlineSchema
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                age:
+                  type: number
+              required:
+                - name
+      responses:
+        201:
+          description: Created
+components:
+  schemas:
+    NewModel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name

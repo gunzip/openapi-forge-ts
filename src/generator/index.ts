@@ -1,6 +1,10 @@
 import { promises as fs } from "fs";
 import path from "path";
-import type { SchemaObject, OperationObject, RequestBodyObject } from "openapi3-ts/oas31";
+import type {
+  SchemaObject,
+  OperationObject,
+  RequestBodyObject,
+} from "openapi3-ts/oas31";
 import { parseOpenAPI } from "./parser.js";
 import { zodSchemaToCode } from "./zod-schema-generator.js";
 import { generateOperations } from "./client-generator.js";
@@ -18,11 +22,11 @@ export interface GenerationOptions {
 // Helper function to extract request schemas from operations
 function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
   const requestSchemas = new Map<string, SchemaObject>();
-  
+
   if (!openApiDoc.paths) {
     return requestSchemas;
   }
-  
+
   for (const [pathKey, pathItem] of Object.entries(openApiDoc.paths)) {
     for (const [method, operation] of Object.entries(pathItem as any)) {
       if (
@@ -32,18 +36,21 @@ function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
       ) {
         const operationObj = operation as OperationObject;
         const requestBody = operationObj.requestBody as RequestBodyObject;
-        
+
         // Look for application/json content
         const jsonContent = requestBody.content?.["application/json"];
         if (jsonContent?.schema && !jsonContent.schema["$ref"]) {
           // Only extract inline schemas, not $ref schemas
           const requestTypeName = `${operationObj.operationId}Request`;
-          requestSchemas.set(requestTypeName, jsonContent.schema as SchemaObject);
+          requestSchemas.set(
+            requestTypeName,
+            jsonContent.schema as SchemaObject
+          );
         }
       }
     }
   }
-  
+
   return requestSchemas;
 }
 
@@ -146,7 +153,7 @@ export async function generate(options: GenerationOptions): Promise<void> {
       const schemaResult = zodSchemaToCode(schema);
 
       // Generate comment for request schema
-      const commentSection = `/**\n * Request schema for ${name.replace('Request', '')} operation\n */\n`;
+      const commentSection = `/**\n * Request schema for ${name.replace("Request", "")} operation\n */\n`;
 
       // Generate imports for dependencies
       const imports = Array.from(schemaResult.imports)

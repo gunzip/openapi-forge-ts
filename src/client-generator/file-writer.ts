@@ -3,7 +3,7 @@ import path from "path";
 import {
   writeFormattedFile,
   buildOperationFileContent,
-} from "../generator/file-writer.js";
+} from "../core-generator/file-writer.js";
 import { generateConfigTypes } from "./config-generator.js";
 import type { OperationMetadata } from "./types.js";
 

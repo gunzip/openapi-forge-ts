@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { generate } from "./generator/index.js";
+import packageInfo from "../package.json" with { type: "json" };
+import { generate } from "./core-generator/index.js";
 
 const program = new Command();
 

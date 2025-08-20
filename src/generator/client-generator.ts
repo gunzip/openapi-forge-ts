@@ -21,6 +21,16 @@ function toCamelCase(str: string): string {
   return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
+// Helper function to create a valid JavaScript variable name from any string
+function toValidVariableName(str: string): string {
+  // Replace any non-alphanumeric characters with underscore, then camelCase
+  return str
+    .replace(/[^a-zA-Z0-9]/g, "_")
+    .replace(/_+/g, "_") // Replace multiple underscores with single
+    .replace(/^_+|_+$/g, "") // Remove leading/trailing underscores
+    .replace(/_([a-zA-Z])/g, (_, letter) => letter.toUpperCase()); // camelCase after underscore
+}
+
 // Helper function to resolve parameter references
 function resolveParameterReference(
   param: ParameterObject | { $ref: string },
@@ -104,7 +114,114 @@ function extractParameterGroups(
 }
 
 /**
- * Builds the parameter interface string for a function
+ * Shared logic for processing parameter groups and determining optionality
+ */
+interface ProcessedParameterGroup {
+  pathParams: ParameterObject[];
+  queryParams: ParameterObject[];
+  headerParams: ParameterObject[];
+  securityHeaders: {
+    schemeName: string;
+    headerName: string;
+    isRequired: boolean;
+  }[];
+  isQueryOptional: boolean;
+  isHeadersOptional: boolean;
+}
+
+/**
+ * Processes parameter groups and security headers, determining optionality
+ */
+function processParameterGroups(
+  parameterGroups: ParameterGroups,
+  operationSecurityHeaders?: {
+    schemeName: string;
+    headerName: string;
+    isRequired: boolean;
+  }[]
+): ProcessedParameterGroup {
+  const { pathParams, queryParams, headerParams } = parameterGroups;
+  const securityHeaders = operationSecurityHeaders || [];
+
+  // Determine if query section is optional (all query params are optional)
+  const isQueryOptional = queryParams.every((p) => p.required !== true);
+
+  // Determine if headers section is optional (all headers are optional)
+  const isHeadersOptional =
+    headerParams.every((p) => p.required !== true) &&
+    securityHeaders.every((h) => !h.isRequired);
+
+  return {
+    pathParams,
+    queryParams,
+    headerParams,
+    securityHeaders,
+    isQueryOptional,
+    isHeadersOptional,
+  };
+}
+
+/**
+ * Builds the destructured parameter signature for a function
+ */
+function buildDestructuredParameters(
+  parameterGroups: ParameterGroups,
+  hasBody: boolean,
+  bodyTypeInfo?: RequestBodyTypeInfo,
+  operationSecurityHeaders?: {
+    schemeName: string;
+    headerName: string;
+    isRequired: boolean;
+  }[]
+): string {
+  const processed = processParameterGroups(parameterGroups, operationSecurityHeaders);
+  const destructureParams: string[] = [];
+
+  // Path parameters
+  if (processed.pathParams.length > 0) {
+    const pathProperties = processed.pathParams.map(param => toCamelCase(param.name));
+    destructureParams.push(`path: { ${pathProperties.join(", ")} }`);
+  }
+
+  // Query parameters
+  if (processed.queryParams.length > 0) {
+    const queryProperties = processed.queryParams.map(param => toCamelCase(param.name));
+    const defaultValue = processed.isQueryOptional ? " = {}" : "";
+    destructureParams.push(`query: { ${queryProperties.join(", ")} }${defaultValue}`);
+  }
+
+  // Header parameters (including operation-specific security headers)
+  if (processed.headerParams.length > 0 || processed.securityHeaders.length > 0) {
+    const headerProperties: string[] = [];
+
+    // Regular header parameters
+    processed.headerParams.forEach(param => {
+      headerProperties.push(toCamelCase(param.name));
+    });
+
+    // Operation-specific security headers - need to handle special characters
+    processed.securityHeaders.forEach(securityHeader => {
+      const varName = toValidVariableName(securityHeader.headerName);
+      headerProperties.push(`"${securityHeader.headerName}": ${varName}`);
+    });
+
+    const defaultValue = processed.isHeadersOptional ? " = {}" : "";
+    destructureParams.push(`headers: { ${headerProperties.join(", ")} }${defaultValue}`);
+  }
+
+  // Body parameter
+  if (hasBody && bodyTypeInfo) {
+    const defaultValue = bodyTypeInfo.isRequired ? "" : " = undefined";
+    destructureParams.push(`body${defaultValue}`);
+  }
+
+  return destructureParams.length > 0
+    ? `{ ${destructureParams.join(", ")} }`
+    : "{}";
+}
+
+/**
+ * Builds the parameter interface for TypeScript type checking
  */
 function buildParameterInterface(
   parameterGroups: ParameterGroups,
@@ -116,54 +233,55 @@ function buildParameterInterface(
     isRequired: boolean;
   }[]
 ): string {
-  const { pathParams, queryParams, headerParams } = parameterGroups;
-  const parameterProperties: string[] = [];
+  const processed = processParameterGroups(parameterGroups, operationSecurityHeaders);
+  const sections: string[] = [];
 
-  // Path parameters (always required)
-  for (const param of pathParams) {
-    parameterProperties.push(`${toCamelCase(param.name)}: string`);
-  }
-
-  // Query parameters
-  for (const param of queryParams) {
-    const isRequired = param.required === true;
-    parameterProperties.push(
-      `${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`
+  // Path parameters section (never optional if present)
+  if (processed.pathParams.length > 0) {
+    const pathProperties = processed.pathParams.map(param => 
+      `${toCamelCase(param.name)}: string`
     );
+    sections.push(`path: {\n    ${pathProperties.join(";\n    ")};\n  }`);
   }
 
-  // Header parameters
-  for (const param of headerParams) {
-    const isRequired = param.required === true;
-    parameterProperties.push(
-      `${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`
-    );
+  // Query parameters section
+  if (processed.queryParams.length > 0) {
+    const queryProperties = processed.queryParams.map(param => {
+      const isRequired = param.required === true;
+      return `${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`;
+    });
+    const optionalMarker = processed.isQueryOptional ? "?" : "";
+    sections.push(`query${optionalMarker}: {\n    ${queryProperties.join(";\n    ")};\n  }`);
   }
 
-  // Operation-specific security headers
-  if (operationSecurityHeaders && operationSecurityHeaders.length > 0) {
-    for (const securityHeader of operationSecurityHeaders) {
+  // Header parameters section (including operation-specific security headers)
+  if (processed.headerParams.length > 0 || processed.securityHeaders.length > 0) {
+    const headerProperties: string[] = [];
+
+    // Regular header parameters
+    processed.headerParams.forEach(param => {
+      const isRequired = param.required === true;
+      headerProperties.push(`${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`);
+    });
+
+    // Operation-specific security headers
+    processed.securityHeaders.forEach(securityHeader => {
       const requiredMarker = securityHeader.isRequired ? "" : "?";
-      parameterProperties.push(
-        `"${securityHeader.headerName}"${requiredMarker}: string`
-      );
-    }
+      headerProperties.push(`"${securityHeader.headerName}"${requiredMarker}: string`);
+    });
+
+    const optionalMarker = processed.isHeadersOptional ? "?" : "";
+    sections.push(`headers${optionalMarker}: {\n    ${headerProperties.join(";\n    ")};\n  }`);
   }
 
   // Body parameter
   if (hasBody && bodyTypeInfo) {
-    if (bodyTypeInfo.typeName) {
-      parameterProperties.push(
-        `body${bodyTypeInfo.isRequired ? "" : "?"}: ${bodyTypeInfo.typeName}`
-      );
-    } else {
-      parameterProperties.push(`body?: any`);
-    }
+    const requiredMarker = bodyTypeInfo.isRequired ? "" : "?";
+    const typeName = bodyTypeInfo.typeName || "any";
+    sections.push(`body${requiredMarker}: ${typeName}`);
   }
 
-  return parameterProperties.length > 0
-    ? `params: {\n    ${parameterProperties.join(";\n    ")};\n  }`
-    : "params?: {}";
+  return sections.length > 0 ? `{\n  ${sections.join(";\n  ")};\n}` : "{}";
 }
 
 /**
@@ -175,10 +293,8 @@ function generatePathInterpolation(
 ): string {
   let finalPath = pathKey;
   for (const param of pathParams) {
-    finalPath = finalPath.replace(
-      `{${param.name}}`,
-      `\${params.${toCamelCase(param.name)}}`
-    );
+    const varName = toCamelCase(param.name);
+    finalPath = finalPath.replace(`{${param.name}}`, `\${${varName}}`);
   }
   return finalPath;
 }
@@ -187,11 +303,13 @@ function generatePathInterpolation(
  * Generates query parameter handling code
  */
 function generateQueryParamHandling(queryParams: ParameterObject[]): string {
+  if (queryParams.length === 0) return "";
+
   return queryParams
-    .map(
-      (p) =>
-        `if (params.${toCamelCase(p.name)} !== undefined) url.searchParams.append('${p.name}', String(params.${toCamelCase(p.name)}));`
-    )
+    .map((p) => {
+      const varName = toCamelCase(p.name);
+      return `if (${varName} !== undefined) url.searchParams.append('${p.name}', String(${varName}));`;
+    })
     .join("\n    ");
 }
 
@@ -199,11 +317,13 @@ function generateQueryParamHandling(queryParams: ParameterObject[]): string {
  * Generates header parameter handling code
  */
 function generateHeaderParamHandling(headerParams: ParameterObject[]): string {
+  if (headerParams.length === 0) return "";
+
   return headerParams
-    .map(
-      (p) =>
-        `if (params.${toCamelCase(p.name)} !== undefined) finalHeaders['${p.name}'] = String(params.${toCamelCase(p.name)});`
-    )
+    .map((p) => {
+      const varName = toCamelCase(p.name);
+      return `if (${varName} !== undefined) finalHeaders['${p.name}'] = String(${varName});`;
+    })
     .join("\n    ");
 }
 
@@ -217,12 +337,15 @@ function generateSecurityHeaderHandling(
     isRequired: boolean;
   }[]
 ): string {
+  if (operationSecurityHeaders.length === 0) return "";
+
   return operationSecurityHeaders
     .map((securityHeader) => {
+      const varName = toValidVariableName(securityHeader.headerName);
       if (securityHeader.isRequired) {
-        return `finalHeaders['${securityHeader.headerName}'] = params["${securityHeader.headerName}"];`;
+        return `finalHeaders['${securityHeader.headerName}'] = ${varName};`;
       } else {
-        return `if (params["${securityHeader.headerName}"] !== undefined) finalHeaders['${securityHeader.headerName}'] = params["${securityHeader.headerName}"];`;
+        return `if (${varName} !== undefined) finalHeaders['${securityHeader.headerName}'] = ${varName};`;
       }
     })
     .join("\n    ");
@@ -799,40 +922,40 @@ function generateFunctionBody(
     // Handle different content types appropriately
     switch (requestContentType) {
       case "application/json":
-        bodyContent = `    body: params.body ? JSON.stringify(params.body) : undefined,`;
+        bodyContent = `    body: body ? JSON.stringify(body) : undefined,`;
         contentTypeHeader = `    "Content-Type": "application/json",`;
         break;
 
       case "application/x-www-form-urlencoded":
-        bodyContent = `    body: params.body ? new URLSearchParams(params.body as Record<string, string>).toString() : undefined,`;
+        bodyContent = `    body: body ? new URLSearchParams(body as Record<string, string>).toString() : undefined,`;
         contentTypeHeader = `    "Content-Type": "application/x-www-form-urlencoded",`;
         break;
 
       case "multipart/form-data":
         // For multipart/form-data, don't set Content-Type manually
         // The browser will set it automatically with the boundary
-        bodyContent = `    body: params.body as FormData,`;
+        bodyContent = `    body: body as FormData,`;
         // contentTypeHeader remains empty for multipart/form-data
         break;
 
       case "text/plain":
-        bodyContent = `    body: typeof params.body === 'string' ? params.body : String(params.body),`;
+        bodyContent = `    body: typeof body === 'string' ? body : String(body),`;
         contentTypeHeader = `    "Content-Type": "text/plain",`;
         break;
 
       case "application/xml":
-        bodyContent = `    body: typeof params.body === 'string' ? params.body : String(params.body),`;
+        bodyContent = `    body: typeof body === 'string' ? body : String(body),`;
         contentTypeHeader = `    "Content-Type": "application/xml",`;
         break;
 
       case "application/octet-stream":
-        bodyContent = `    body: params.body,`;
+        bodyContent = `    body: body,`;
         contentTypeHeader = `    "Content-Type": "application/octet-stream",`;
         break;
 
       default:
         // For unknown content types, try to handle as string or fall back to JSON
-        bodyContent = `    body: typeof params.body === 'string' ? params.body : JSON.stringify(params.body),`;
+        bodyContent = `    body: typeof body === 'string' ? body : JSON.stringify(body),`;
         contentTypeHeader = `    "Content-Type": "${requestContentType}",`;
     }
   }
@@ -910,7 +1033,16 @@ function generateOperationFunction(
     bodyTypeInfo.typeImports.forEach((imp) => typeImports.add(imp));
   }
 
+  // Build parameter interface for types
   const paramsInterface = buildParameterInterface(
+    parameterGroups,
+    hasBody,
+    bodyTypeInfo,
+    operationSecurityHeaders
+  );
+
+  // Build destructured parameters for function signature
+  const destructuredParams = buildDestructuredParameters(
     parameterGroups,
     hasBody,
     bodyTypeInfo,
@@ -941,7 +1073,7 @@ function generateOperationFunction(
   );
 
   const functionStr = `${summary}export async function ${functionName}(
-  ${paramsInterface},
+  ${destructuredParams}: ${paramsInterface},
   config: GlobalConfig = globalConfig
 ): Promise<${returnType}> {
   ${functionBodyCode}

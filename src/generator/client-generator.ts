@@ -7,12 +7,10 @@ import type {
   ResponseObject,
   SecuritySchemeObject,
 } from "openapi3-ts/oas31";
-import { format } from "prettier";
 import { promises as fs } from "fs";
 import path from "path";
 import {
   writeFormattedFile,
-  ensureDirectory,
   buildOperationFileContent,
 } from "./file-writer.js";
 

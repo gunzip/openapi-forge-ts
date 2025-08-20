@@ -224,12 +224,12 @@ Parameters are organized in a single object with typed properties:
 
 - Available as `body` when operation accepts a request body
 
-### Utility: bindAllOperationsConfig
+### Utility: configureOperations
 
 The generator provides a utility to bind all operation functions to a specific configuration, so you don't need to pass the config object to every call:
 
 ```ts
-import { bindAllOperationsConfig } from "./generated/operations/config.js";
+import { configureOperations } from "./generated/operations/config.js";
 import * as operations from "./generated/operations/index.js";
 
 const apiConfig = {
@@ -240,7 +240,7 @@ const apiConfig = {
   },
 };
 
-const bound = bindAllOperationsConfig(operations, apiConfig);
+const bound = configureOperations(operations, apiConfig);
 
 // Now you can call operations without passing config each time:
 const pet = await bound.getPetById({ petId: "123" });

@@ -742,7 +742,7 @@ export class ApiError extends Error {
 type Operation = (params: any, config?: GlobalConfig) => Promise<any>;
 
 // Bind all operations with a specific config
-export function bindAllOperationsConfig<T extends Record<string, Operation>>(
+export function configureOperations<T extends Record<string, Operation>>(
   operations: T, 
   config: GlobalConfig
 ): {

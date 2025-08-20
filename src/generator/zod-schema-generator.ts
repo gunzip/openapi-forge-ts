@@ -208,6 +208,10 @@ export function zodSchemaToCode(
     if (schema.format === "email") code = "z.email()";
     if (schema.format === "uuid") code = "z.uuid()";
     if (schema.format === "uri") code = "z.url()";
+    if (schema.format === "date") code = "z.iso.date()";
+    if (schema.format === "date-time") code = "z.iso.datetime()";
+    if (schema.format === "time") code = "z.iso.time()";
+    if (schema.format === "duration") code = "z.iso.duration()";
 
     // Handle multi-value enums for strings
     if (schema.enum && schema.enum.length > 1)

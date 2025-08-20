@@ -455,20 +455,14 @@ export type ApiResponse<S extends number, T> = {
  */
 export function isSuccessResponse<T>(
   result: ApiResponse<number, any>
-): result is ApiResponse<200 | 201 | 202 | 204, T> {
+): result is ApiResponse<number, T> {
   return result.status >= 200 && result.status < 300;
 }
 
-export function isClientErrorResponse<T>(
+export function isErrorResponse<T>(
   result: ApiResponse<number, any>
-): result is ApiResponse<400 | 401 | 403 | 404 | 409 | 422, T> {
-  return result.status >= 400 && result.status < 500;
-}
-
-export function isServerErrorResponse<T>(
-  result: ApiResponse<number, any>
-): result is ApiResponse<500 | 502 | 503 | 504, T> {
-  return result.status >= 500;
+): result is ApiResponse<number, T> {
+  return !isSuccessResponse(result);
 }
 
 /**
@@ -523,32 +517,54 @@ export function handleResponse<T extends ApiResponse<number, any>>(
 }
 
 /**
- * Helper function to determine if a response should be parsed as JSON
- */
-export function shouldParseAsJson(response: Response): boolean {
-  const contentType = response.headers.get('content-type') || '';
-  return contentType.includes('application/json') || 
-         contentType.includes('application/problem+json') ||
-         contentType.includes('+json');
-}
-
-/**
  * Helper function to parse response body based on content type
  */
-export async function parseResponseBody(response: Response): Promise<any> {
-  if (shouldParseAsJson(response)) {
+export async function parseResponseBody(response: Response): Promise<unknown | Blob | FormData | ReadableStream | Response> {
+  const contentType = response.headers.get('content-type') || '';
+
+  // Handle JSON content types
+  if (contentType.includes('application/json') || 
+      contentType.includes('+json')) {
     return response.json().catch(() => null);
   }
-  
-  const contentType = response.headers.get('content-type') || '';
-  
-  if (contentType.includes('text/')) {
+
+  // Handle text content types
+  if (contentType.includes('text/') || 
+      contentType.includes('application/xml') ||
+      contentType.includes('application/xhtml+xml')) {
     return response.text().catch(() => null);
   }
   
-  if (contentType.includes('application/octet-stream') || 
+  // Handle binary file types that should be returned as Blob
+  if (contentType.includes('image/') ||
+      contentType.includes('video/') ||
+      contentType.includes('audio/') ||
+      contentType.includes('application/pdf') ||
+      contentType.includes('application/zip') ||
+      contentType.includes('application/x-zip-compressed') ||
+      contentType.includes('application/octet-stream') ||
+      contentType.includes('application/msword') ||
+      contentType.includes('application/vnd.') ||
       contentType.includes('binary')) {
-    return response.arrayBuffer().catch(() => null);
+    return response.blob().catch(() => null);
+  }
+  
+  // Handle form data
+  if (contentType.includes('multipart/form-data')) {
+    return response.formData().catch(() => null);
+  }
+  
+  // Handle URL encoded data
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    return response.text().catch(() => null);
+  }
+  
+  // For very large responses or streaming, you might want to return the response itself
+  // to let the caller decide how to handle it
+  if (contentType.includes('application/octet-stream') && 
+      parseInt(response.headers.get('content-length') || '0') > 10 * 1024 * 1024) {
+    // For files larger than 10MB, return the response to allow streaming
+    return response;
   }
   
   // Default to text for unknown content types

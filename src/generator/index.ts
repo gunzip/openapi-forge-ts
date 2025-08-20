@@ -4,6 +4,7 @@ import type {
   SchemaObject,
   OperationObject,
   RequestBodyObject,
+  ResponseObject,
 } from "openapi3-ts/oas31";
 import { parseOpenAPI } from "./parser.js";
 import { zodSchemaToCode } from "./zod-schema-generator.js";
@@ -50,6 +51,59 @@ function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
   }
 
   return requestSchemas;
+}
+
+// Helper function to extract response schemas from operations
+function extractResponseSchemas(openApiDoc: any): Map<string, SchemaObject> {
+  const responseSchemas = new Map<string, SchemaObject>();
+
+  if (!openApiDoc.paths) {
+    return responseSchemas;
+  }
+
+  for (const [, pathItem] of Object.entries(openApiDoc.paths)) {
+    for (const [method, operation] of Object.entries(pathItem as any)) {
+      if (
+        ["get", "post", "put", "delete", "patch"].includes(method) &&
+        (operation as OperationObject).operationId &&
+        (operation as OperationObject).responses
+      ) {
+        const operationObj = operation as OperationObject;
+        const operationId = operationObj.operationId!; // We already checked it exists above
+
+        for (const [statusCode, response] of Object.entries(
+          operationObj.responses!
+        )) {
+          if (statusCode === "default") continue;
+
+          const responseObj = response as ResponseObject;
+          if (!responseObj.content) continue;
+
+          // Check for JSON content types
+          const jsonTypes = ["application/json", "application/problem+json"];
+          for (const contentType of Object.keys(responseObj.content)) {
+            if (
+              jsonTypes.includes(contentType) ||
+              contentType.includes("+json")
+            ) {
+              const content = responseObj.content[contentType];
+              if (content?.schema && !content.schema["$ref"]) {
+                // Only extract inline schemas, not $ref schemas
+                const responseTypeName = `${operationId.charAt(0).toUpperCase() + operationId.slice(1)}${statusCode}Response`;
+                responseSchemas.set(
+                  responseTypeName,
+                  content.schema as SchemaObject
+                );
+              }
+              break; // Only process the first matching JSON content type
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return responseSchemas;
 }
 
 export async function generate(options: GenerationOptions): Promise<void> {
@@ -149,6 +203,37 @@ export async function generate(options: GenerationOptions): Promise<void> {
 
       // Generate comment for request schema
       const commentSection = `/**\n * Request schema for ${name.replace("Request", "")} operation\n */\n`;
+
+      // Generate imports for dependencies
+      const imports = Array.from(schemaResult.imports)
+        .filter((importName) => importName !== name) // Don't import self
+        .map(
+          (importName) => `import { ${importName} } from "./${importName}.js";`
+        )
+        .join("\n");
+
+      const importsSection = imports ? `${imports}\n` : "";
+      const schemaContent = `${commentSection}export const ${schemaVar} = ${schemaResult.code};`;
+      const typeContent = `export type ${schemaVar} = z.infer<typeof ${schemaVar}>;`;
+
+      const filePath = path.join(schemasDir, `${schemaVar}.ts`);
+      const formattedContent = await format(
+        `import { z } from 'zod';\n${importsSection}\n${schemaContent}\n${typeContent}`,
+        {
+          parser: "typescript",
+        }
+      );
+      await fs.writeFile(filePath, formattedContent);
+    }
+
+    // Generate response schemas from operations
+    const responseSchemas = extractResponseSchemas(openApiDoc);
+    for (const [name, schema] of responseSchemas) {
+      const schemaVar = `${name}`;
+      const schemaResult = zodSchemaToCode(schema);
+
+      // Generate comment for response schema
+      const commentSection = `/**\n * Response schema for ${name.replace(/Response$/, "").replace(/\d+Response/, " operation")} \n */\n`;
 
       // Generate imports for dependencies
       const imports = Array.from(schemaResult.imports)

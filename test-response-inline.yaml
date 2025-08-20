@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /test-auth-bearer-http:
+    get:
+      operationId: testAuthBearerHttp
+      parameters:
+        - name: qo
+          in: query
+          schema:
+            type: string
+        - name: qr
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          description: An opaque identifier that points to the next item in the collection.
+          schema:
+            minLength: 1
+            type: string
+      responses:
+        200:
+          description: Will send `Authenticated`
+        403:
+          description: You do not have necessary permissions for the resource
+        503:
+          description: Another failure.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prop1:
+                    $ref: "#/components/schemas/SimpleDefinition"
+                  prop2:
+                    type: string
+                required:
+                  - prop1
+        504:
+          description: Failure.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+      security:
+        - bearerTokenHttp: []
+components:
+  schemas:
+    SimpleDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+      required:
+        - type
+        - title
+        - status
+  securitySchemes:
+    bearerTokenHttp:
+      type: http
+      scheme: bearer

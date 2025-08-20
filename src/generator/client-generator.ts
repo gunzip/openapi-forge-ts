@@ -241,6 +241,7 @@ function generateResponseHandlers(
         const schema = response.content[contentType].schema;
 
         if (schema["$ref"]) {
+          // Use referenced schema
           typeName = schema["$ref"].split("/").pop()!;
           typeImports.add(typeName);
 
@@ -249,11 +250,18 @@ function generateResponseHandlers(
           } else {
             parseCode = `await parseResponseBody(response) as ${typeName}`;
           }
-        } else if (contentType.includes("json")) {
-          // For inline schemas, we'll parse as unknown and let runtime validation handle it
-          parseCode = "await parseResponseBody(response)";
         } else {
-          parseCode = "await parseResponseBody(response)";
+          // Use generated response schema for inline schemas
+          const operationId = operation.operationId!;
+          const responseTypeName = `${operationId.charAt(0).toUpperCase() + operationId.slice(1)}${code}Response`;
+          typeName = responseTypeName;
+          typeImports.add(typeName);
+
+          if (contentType.includes("json")) {
+            parseCode = `${typeName}.parse(await parseResponseBody(response))`;
+          } else {
+            parseCode = `await parseResponseBody(response) as ${typeName}`;
+          }
         }
       }
 

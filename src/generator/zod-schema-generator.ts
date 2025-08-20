@@ -1,10 +1,24 @@
 import type { SchemaObject, ReferenceObject } from "openapi3-ts/oas31";
 
+/**
+ * Result of converting an OpenAPI schema to Zod code
+ *
+ * @example
+ * ```javascript
+ * const result: ZodSchemaResult = {
+ *   code: "z.object({ name: z.string(), age: z.number().optional() })",
+ *   imports: new Set(['UserType', 'AddressSchema'])
+ * };
+ * ```
+ */
 export interface ZodSchemaResult {
   code: string;
   imports: Set<string>;
 }
 
+/**
+ * Converts an OpenAPI schema object to Zod validation code
+ */
 export function zodSchemaToCode(
   schema: SchemaObject | ReferenceObject,
   imports?: Set<string>
@@ -343,6 +357,18 @@ export function zodSchemaToCode(
   return result;
 }
 
+/**
+ * Type guard to check if an object is a SchemaObject (not a ReferenceObject)
+ *
+ * @example
+ * ```javascript
+ * const schema1 = { type: 'string' };
+ * const schema2 = { $ref: '#/components/schemas/User' };
+ *
+ * isSchemaObject(schema1); // returns true
+ * isSchemaObject(schema2); // returns false
+ * ```
+ */
 function isSchemaObject(
   obj: SchemaObject | ReferenceObject
 ): obj is SchemaObject {

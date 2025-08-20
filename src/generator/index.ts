@@ -12,13 +12,53 @@ import { generateOperations } from "../client-generator/index.js";
 import { format } from "prettier";
 import $RefParser from "@apidevtools/json-schema-ref-parser";
 
+/**
+ * Configuration options for code generation
+ *
+ * @example
+ * ```javascript
+ * const options: GenerationOptions = {
+ *   input: './openapi.yaml',
+ *   output: './generated',
+ *   generateClient: true
+ * };
+ * ```
+ */
 export interface GenerationOptions {
   input: string;
   output: string;
   generateClient: boolean;
 }
 
-// Helper function to extract request schemas from operations
+/**
+ * Extracts request schemas from operations for inline request body schemas
+ *
+ * @example
+ * ```javascript
+ * const openApiDoc = {
+ *   paths: {
+ *     '/users': {
+ *       post: {
+ *         operationId: 'createUser',
+ *         requestBody: {
+ *           content: {
+ *             'application/json': {
+ *               schema: {
+ *                 type: 'object',
+ *                 properties: { name: { type: 'string' } }
+ *               }
+ *             }
+ *           }
+ *         }
+ *       }
+ *     }
+ *   }
+ * };
+ *
+ * const schemas = extractRequestSchemas(openApiDoc);
+ * // Result: Map with entry 'CreateUserRequest' -> schema object
+ * ```
+ */
 function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
   const requestSchemas = new Map<string, SchemaObject>();
 
@@ -53,7 +93,37 @@ function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
   return requestSchemas;
 }
 
-// Helper function to extract response schemas from operations
+/**
+ * Extracts response schemas from operations for inline response schemas
+ *
+ * @example
+ * ```javascript
+ * const openApiDoc = {
+ *   paths: {
+ *     '/users/{id}': {
+ *       get: {
+ *         operationId: 'getUser',
+ *         responses: {
+ *           '200': {
+ *             content: {
+ *               'application/json': {
+ *                 schema: {
+ *                   type: 'object',
+ *                   properties: { id: { type: 'string' }, name: { type: 'string' } }
+ *                 }
+ *               }
+ *             }
+ *           }
+ *         }
+ *       }
+ *     }
+ *   }
+ * };
+ *
+ * const schemas = extractResponseSchemas(openApiDoc);
+ * // Result: Map with entry 'GetUser200Response' -> schema object
+ * ```
+ */
 function extractResponseSchemas(openApiDoc: any): Map<string, SchemaObject> {
   const responseSchemas = new Map<string, SchemaObject>();
 
@@ -106,6 +176,9 @@ function extractResponseSchemas(openApiDoc: any): Map<string, SchemaObject> {
   return responseSchemas;
 }
 
+/**
+ * Generates TypeScript schemas and optional API client from OpenAPI specification
+ */
 export async function generate(options: GenerationOptions): Promise<void> {
   const { input, output, generateClient: genClient } = options;
 

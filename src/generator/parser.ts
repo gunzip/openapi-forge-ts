@@ -9,6 +9,9 @@ import {
   isOpenAPI31,
 } from "./converter.js";
 
+/**
+ * Checks if the input string is a valid URL
+ */
 function isUrl(input: string): boolean {
   try {
     new URL(input);
@@ -18,6 +21,9 @@ function isUrl(input: string): boolean {
   }
 }
 
+/**
+ * Fetches content from a URL or reads from a local file
+ */
 async function fetchContent(input: string): Promise<string> {
   if (isUrl(input)) {
     console.log(`🌐 Fetching OpenAPI specification from: ${input}`);
@@ -33,6 +39,9 @@ async function fetchContent(input: string): Promise<string> {
   }
 }
 
+/**
+ * Extracts file extension from a path or URL
+ */
 function getFileExtension(input: string): string | undefined {
   // For URLs, check Content-Type or URL path
   if (isUrl(input)) {
@@ -44,6 +53,9 @@ function getFileExtension(input: string): string | undefined {
   }
 }
 
+/**
+ * Parses an OpenAPI specification from a file path or URL and converts it to OpenAPI 3.1
+ */
 export async function parseOpenAPI(
   filePathOrUrl: string
 ): Promise<OpenAPIObject> {

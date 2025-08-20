@@ -9,9 +9,46 @@ import {
   isOpenAPI31,
 } from "./converter.js";
 
-export async function parseOpenAPI(filePath: string): Promise<OpenAPIObject> {
-  const fileContent = await fs.readFile(filePath, "utf-8");
-  const extension = filePath.split(".").pop()?.toLowerCase();
+function isUrl(input: string): boolean {
+  try {
+    new URL(input);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchContent(input: string): Promise<string> {
+  if (isUrl(input)) {
+    console.log(`🌐 Fetching OpenAPI specification from: ${input}`);
+    const response = await fetch(input);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch from ${input}: ${response.status} ${response.statusText}`
+      );
+    }
+    return await response.text();
+  } else {
+    return await fs.readFile(input, "utf-8");
+  }
+}
+
+function getFileExtension(input: string): string | undefined {
+  // For URLs, check Content-Type or URL path
+  if (isUrl(input)) {
+    const url = new URL(input);
+    const pathname = url.pathname;
+    return pathname.split(".").pop()?.toLowerCase();
+  } else {
+    return input.split(".").pop()?.toLowerCase();
+  }
+}
+
+export async function parseOpenAPI(
+  filePathOrUrl: string
+): Promise<OpenAPIObject> {
+  const fileContent = await fetchContent(filePathOrUrl);
+  const extension = getFileExtension(filePathOrUrl);
 
   let parsed: any;
 
@@ -20,7 +57,22 @@ export async function parseOpenAPI(filePath: string): Promise<OpenAPIObject> {
   } else if (extension === "json") {
     parsed = JSON.parse(fileContent);
   } else {
-    throw new Error(`Unsupported file extension: ${extension}`);
+    // For URLs without clear extension, try to parse as YAML first, then JSON
+    if (isUrl(filePathOrUrl)) {
+      try {
+        parsed = yaml.load(fileContent);
+      } catch {
+        try {
+          parsed = JSON.parse(fileContent);
+        } catch {
+          throw new Error(
+            `Unable to parse content from ${filePathOrUrl} as YAML or JSON`
+          );
+        }
+      }
+    } else {
+      throw new Error(`Unsupported file extension: ${extension}`);
+    }
   }
 
   // Automatically convert to OpenAPI 3.1 regardless of input version

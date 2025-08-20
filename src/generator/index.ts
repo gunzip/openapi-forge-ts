@@ -8,7 +8,7 @@ import type {
 } from "openapi3-ts/oas31";
 import { parseOpenAPI } from "./parser.js";
 import { zodSchemaToCode } from "./zod-schema-generator.js";
-import { generateOperations } from "./client-generator.js";
+import { generateOperations } from "../client-generator/index.js";
 import { format } from "prettier";
 import $RefParser from "@apidevtools/json-schema-ref-parser";
 

@@ -1,486 +1,391 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "TypeScript Build",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"run",
-				"build"
-			],
-			"problemMatcher": [
-				"$tsc"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Run Tests",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			],
-			"group": "test"
-		},
-		{
-			"label": "Test OpenAPI Conversion",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"test.yaml"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Test OpenAPI 3.1 Generation",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test.yaml",
-				"-o",
-				"generated-test",
-				"--generate-client"
-			],
-			"group": "test"
-		},
-		{
-			"label": "Remove corrupted file",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"src/generator/client-generator.ts"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Remove old generated test",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"generated-test"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Test OpenAPI 3.0 to 3.1 conversion",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test-3.0.yaml",
-				"-o",
-				"test-conversion-output",
-				"--generate-client"
-			]
-		},
-		{
-			"label": "Debug conversion",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-conversion.mjs"
-			]
-		},
-		{
-			"label": "Debug conversion fixed",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-conversion.mjs"
-			]
-		},
-		{
-			"label": "Debug comprehensive conversion",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-conversion.mjs"
-			]
-		},
-		{
-			"label": "Test comprehensive conversion with generation",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"comprehensive-test-3.0.yaml",
-				"-o",
-				"comprehensive-test-output",
-				"--generate-client"
-			]
-		},
-		{
-			"label": "Test OpenAPI 3.1 passthrough",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test.yaml",
-				"-o",
-				"test-31-output"
-			]
-		},
-		{
-			"label": "Clean up temporary files",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"debug-conversion.mjs",
-				"test-3.0.yaml",
-				"comprehensive-test-3.0.yaml"
-			]
-		},
-		{
-			"label": "Clean up temporary directories",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"test-conversion-output",
-				"comprehensive-test-output",
-				"test-31-output"
-			]
-		},
-		{
-			"label": "Update dependencies",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"install"
-			]
-		},
-		{
-			"label": "Test refactored conversion",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test-3.0-simple.yaml",
-				"-o",
-				"test-refactor-output",
-				"--generate-client"
-			]
-		},
-		{
-			"label": "Clean up test files",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"test-3.0-simple.yaml"
-			]
-		},
-		{
-			"label": "Clean up test output",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"test-refactor-output"
-			]
-		},
-		{
-			"label": "Run all tests",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			]
-		},
-		{
-			"label": "Debug Required Fields",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-required.mjs"
-			]
-		},
-		{
-			"label": "Test Edge Case Generation",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test-edge-case.yaml",
-				"-o",
-				"test-edge-case-output"
-			]
-		},
-		{
-			"label": "Test Edge Case Generation Again",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test-edge-case.yaml",
-				"-o",
-				"test-edge-case-output"
-			]
-		},
-		{
-			"label": "Clean up edge case test",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"test-edge-case.yaml",
-				"test-edge-case-output"
-			]
-		},
-		{
-			"label": "Run tests manually",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			]
-		},
-		{
-			"label": "Install new dependency",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"install"
-			]
-		},
-		{
-			"label": "Test external refs resolution",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"test-external-refs.mjs"
-			]
-		},
-		{
-			"label": "Clean up test file",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"test-external-refs.mjs"
-			]
-		},
-		{
-			"label": "Clean old generated test",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"generated-test"
-			]
-		},
-		{
-			"label": "Run final tests",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			]
-		},
-		{
-			"label": "Test new operation-based API",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"test-new-api.mjs"
-			]
-		},
-		{
-			"label": "Debug path parameters",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-path-params.mjs"
-			]
-		},
-		{
-			"label": "Debug bundling process",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-bundling.mjs"
-			]
-		},
-		{
-			"label": "Run unit tests",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			]
-		},
-		{
-			"label": "Clean up debug files",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"debug-path-params.mjs",
-				"debug-bundling.mjs",
-				"test-new-api.mjs"
-			]
-		},
-		{
-			"label": "Final test run",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			]
-		},
-		{
-			"label": "Final test verification",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			]
-		},
-		{
-			"label": "Test after removing OperationConfig",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			]
-		},
-		{
-			"label": "Final verification test",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			]
-		},
-		{
-			"label": "Debug zod",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-zod.mjs"
-			]
-		},
-		{
-			"label": "Debug zod simple",
-			"type": "shell",
-			"command": "node",
-			"args": [
-				"debug-zod.mjs"
-			]
-		},
-		{
-			"label": "Clean debug file",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"debug-zod.mjs"
-			]
-		},
-		{
-			"label": "Test inline schema",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test-inline.yaml",
-				"-o",
-				"test-inline-output",
-				"--generate-client"
-			]
-		},
-		{
-			"label": "Clean up test files",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"test-inline.yaml",
-				"test-inline-output"
-			]
-		},
-		{
-			"label": "Clean test files",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"test-inline.yaml",
-				"test-inline-output"
-			]
-		},
-		{
-			"label": "Test schema generation only",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test-request-schemas.yaml",
-				"-o",
-				"test-schemas-only"
-			]
-		},
-		{
-			"label": "Test with client generation",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"start",
-				"generate",
-				"-i",
-				"test-request-schemas.yaml",
-				"-o",
-				"test-with-client",
-				"--generate-client"
-			]
-		},
-		{
-			"label": "Clean test files",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"test-request-schemas.yaml",
-				"test-schemas-only",
-				"test-with-client"
-			]
-		},
-		{
-			"label": "Clean test files 2",
-			"type": "shell",
-			"command": "rm",
-			"args": [
-				"-rf",
-				"test-request-schemas.yaml",
-				"test-schemas-only",
-				"test-with-client"
-			]
-		},
-		{
-			"label": "Run tests",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"test"
-			]
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "TypeScript Build",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["run", "build"],
+      "problemMatcher": ["$tsc"],
+      "group": "build"
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"],
+      "group": "test"
+    },
+    {
+      "label": "Test OpenAPI Conversion",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["start", "test.yaml"],
+      "group": "build"
+    },
+    {
+      "label": "Test OpenAPI 3.1 Generation",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test.yaml",
+        "-o",
+        "generated-test",
+        "--generate-client"
+      ],
+      "group": "test"
+    },
+    {
+      "label": "Remove old generated test",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "generated-test"],
+      "group": "build"
+    },
+    {
+      "label": "Test OpenAPI 3.0 to 3.1 conversion",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test-3.0.yaml",
+        "-o",
+        "test-conversion-output",
+        "--generate-client"
+      ]
+    },
+    {
+      "label": "Debug conversion",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-conversion.mjs"]
+    },
+    {
+      "label": "Debug conversion fixed",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-conversion.mjs"]
+    },
+    {
+      "label": "Debug comprehensive conversion",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-conversion.mjs"]
+    },
+    {
+      "label": "Test comprehensive conversion with generation",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "comprehensive-test-3.0.yaml",
+        "-o",
+        "comprehensive-test-output",
+        "--generate-client"
+      ]
+    },
+    {
+      "label": "Test OpenAPI 3.1 passthrough",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["start", "generate", "-i", "test.yaml", "-o", "test-31-output"]
+    },
+    {
+      "label": "Clean up temporary files",
+      "type": "shell",
+      "command": "rm",
+      "args": [
+        "debug-conversion.mjs",
+        "test-3.0.yaml",
+        "comprehensive-test-3.0.yaml"
+      ]
+    },
+    {
+      "label": "Clean up temporary directories",
+      "type": "shell",
+      "command": "rm",
+      "args": [
+        "-rf",
+        "test-conversion-output",
+        "comprehensive-test-output",
+        "test-31-output"
+      ]
+    },
+    {
+      "label": "Update dependencies",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["install"]
+    },
+    {
+      "label": "Test refactored conversion",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test-3.0-simple.yaml",
+        "-o",
+        "test-refactor-output",
+        "--generate-client"
+      ]
+    },
+    {
+      "label": "Clean up test files",
+      "type": "shell",
+      "command": "rm",
+      "args": ["test-3.0-simple.yaml"]
+    },
+    {
+      "label": "Clean up test output",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "test-refactor-output"]
+    },
+    {
+      "label": "Run all tests",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"]
+    },
+    {
+      "label": "Debug Required Fields",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-required.mjs"]
+    },
+    {
+      "label": "Test Edge Case Generation",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test-edge-case.yaml",
+        "-o",
+        "test-edge-case-output"
+      ]
+    },
+    {
+      "label": "Test Edge Case Generation Again",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test-edge-case.yaml",
+        "-o",
+        "test-edge-case-output"
+      ]
+    },
+    {
+      "label": "Clean up edge case test",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "test-edge-case.yaml", "test-edge-case-output"]
+    },
+    {
+      "label": "Run tests manually",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"]
+    },
+    {
+      "label": "Install new dependency",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["install"]
+    },
+    {
+      "label": "Test external refs resolution",
+      "type": "shell",
+      "command": "node",
+      "args": ["test-external-refs.mjs"]
+    },
+    {
+      "label": "Clean up test file",
+      "type": "shell",
+      "command": "rm",
+      "args": ["test-external-refs.mjs"]
+    },
+    {
+      "label": "Clean old generated test",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "generated-test"]
+    },
+    {
+      "label": "Run final tests",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"]
+    },
+    {
+      "label": "Test new operation-based API",
+      "type": "shell",
+      "command": "node",
+      "args": ["test-new-api.mjs"]
+    },
+    {
+      "label": "Debug path parameters",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-path-params.mjs"]
+    },
+    {
+      "label": "Debug bundling process",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-bundling.mjs"]
+    },
+    {
+      "label": "Run unit tests",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"]
+    },
+    {
+      "label": "Clean up debug files",
+      "type": "shell",
+      "command": "rm",
+      "args": [
+        "debug-path-params.mjs",
+        "debug-bundling.mjs",
+        "test-new-api.mjs"
+      ]
+    },
+    {
+      "label": "Final test run",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"]
+    },
+    {
+      "label": "Final test verification",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"]
+    },
+    {
+      "label": "Test after removing OperationConfig",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"]
+    },
+    {
+      "label": "Final verification test",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"]
+    },
+    {
+      "label": "Debug zod",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-zod.mjs"]
+    },
+    {
+      "label": "Debug zod simple",
+      "type": "shell",
+      "command": "node",
+      "args": ["debug-zod.mjs"]
+    },
+    {
+      "label": "Clean debug file",
+      "type": "shell",
+      "command": "rm",
+      "args": ["debug-zod.mjs"]
+    },
+    {
+      "label": "Test inline schema",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test-inline.yaml",
+        "-o",
+        "test-inline-output",
+        "--generate-client"
+      ]
+    },
+    {
+      "label": "Clean up test files",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "test-inline.yaml", "test-inline-output"]
+    },
+    {
+      "label": "Clean test files",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "test-inline.yaml", "test-inline-output"]
+    },
+    {
+      "label": "Test schema generation only",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test-request-schemas.yaml",
+        "-o",
+        "test-schemas-only"
+      ]
+    },
+    {
+      "label": "Test with client generation",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "start",
+        "generate",
+        "-i",
+        "test-request-schemas.yaml",
+        "-o",
+        "test-with-client",
+        "--generate-client"
+      ]
+    },
+    {
+      "label": "Clean test files",
+      "type": "shell",
+      "command": "rm",
+      "args": [
+        "-rf",
+        "test-request-schemas.yaml",
+        "test-schemas-only",
+        "test-with-client"
+      ]
+    },
+    {
+      "label": "Clean test files 2",
+      "type": "shell",
+      "command": "rm",
+      "args": [
+        "-rf",
+        "test-request-schemas.yaml",
+        "test-schemas-only",
+        "test-with-client"
+      ]
+    },
+    {
+      "label": "Run tests",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"]
+    }
+  ]
 }

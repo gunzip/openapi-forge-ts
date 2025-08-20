@@ -133,6 +133,43 @@ if (!result.success) {
 - **Maintainability**: Each operation in its own file
 - **Testing**: Simple to mock individual operations
 
+## Current Limitations
+
+### Request Content Types
+
+Currently, the generator supports only a **single content type per request body**. If an OpenAPI specification defines multiple content types for the same request body, the generator will select one based on the following priority order:
+
+1. `application/json`
+2. `application/x-www-form-urlencoded`
+3. `multipart/form-data`
+4. `text/plain`
+5. `application/xml`
+6. `application/octet-stream`
+7. First available content type (if none of the above match)
+
+**Example:**
+
+```yaml
+# This OpenAPI spec defines multiple content types
+requestBody:
+  content:
+    application/json: # ← This will be selected (highest priority)
+      schema:
+        type: object
+    application/xml: # ← This will be ignored
+      schema:
+        type: string
+```
+
+The generated operation will only handle the `application/json` content type in this case.
+
+**Workaround**: If you need to support multiple content types for the same endpoint, you can:
+
+1. Define separate operations for each content type in your OpenAPI spec
+2. Manually modify the generated code after generation
+
+This limitation may be addressed in future versions.
+
 ## Migration from Class-Based Clients
 
 See [NEW_API_DOCUMENTATION.md](./NEW_API_DOCUMENTATION.md) for detailed migration guide and advanced usage examples.

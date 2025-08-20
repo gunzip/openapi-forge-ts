@@ -62,6 +62,7 @@ interface RequestBodyTypeInfo {
   typeName: string | null;
   isRequired: boolean;
   typeImports: Set<string>;
+  contentType: string;
 }
 
 interface ParameterInterfaceResult {
@@ -292,23 +293,72 @@ function generateResponseHandlers(
 }
 
 /**
+ * Extracts the request body content type from the OpenAPI spec
+ *
+ * NOTE: Currently, we only support a single content type per request body.
+ * If multiple content types are specified in the OpenAPI spec, we select
+ * one based on priority order. This is a known limitation.
+ *
+ * @param requestBody - The OpenAPI request body object
+ * @returns The selected content type string
+ */
+function getRequestBodyContentType(requestBody: RequestBodyObject): string {
+  if (!requestBody.content) {
+    return "application/json"; // fallback default
+  }
+
+  // LIMITATION: We don't support multiple content types for the same request.
+  // We prioritize common content types and select the first available one.
+  const preferredTypes = [
+    "application/json",
+    "application/x-www-form-urlencoded",
+    "multipart/form-data",
+    "text/plain",
+    "application/xml",
+    "application/octet-stream",
+  ];
+
+  // Check if any of the preferred types are available
+  for (const type of preferredTypes) {
+    if (requestBody.content[type]) {
+      return type;
+    }
+  }
+
+  // Return the first available content type
+  const availableTypes = Object.keys(requestBody.content);
+  return availableTypes[0] || "application/json";
+}
+
+/**
  * Resolves request body schema and extracts type information
  */
 function resolveRequestBodyType(
   requestBody: RequestBodyObject,
   operationId: string,
   doc: OpenAPIObject
-): { typeName: string | null; isRequired: boolean; typeImports: Set<string> } {
+): {
+  typeName: string | null;
+  isRequired: boolean;
+  typeImports: Set<string>;
+  contentType: string;
+} {
   // Check if request body is required (default is false)
   const isRequired = requestBody.required === true;
+  const contentType = getRequestBodyContentType(requestBody);
 
-  // Look for application/json content
-  const jsonContent = requestBody.content?.["application/json"];
-  if (!jsonContent?.schema) {
-    return { typeName: null, isRequired, typeImports: new Set<string>() };
+  // Look for the determined content type
+  const content = requestBody.content?.[contentType];
+  if (!content?.schema) {
+    return {
+      typeName: null,
+      isRequired,
+      typeImports: new Set<string>(),
+      contentType,
+    };
   }
 
-  const schema = jsonContent.schema;
+  const schema = content.schema;
 
   // If it's a reference to a schema, use that as the type name
   if (schema["$ref"]) {
@@ -317,6 +367,7 @@ function resolveRequestBodyType(
       typeName: typeName || null,
       isRequired,
       typeImports: new Set([typeName || ""]),
+      contentType,
     };
   }
 
@@ -327,6 +378,7 @@ function resolveRequestBodyType(
     typeName: requestTypeName,
     isRequired,
     typeImports: new Set([requestTypeName]),
+    contentType,
   };
 }
 
@@ -607,13 +659,19 @@ export function bindAllOperationsConfig<T extends Record<string, Operation>>(
 
 /**
  * Generates the function body for an operation with explicit exhaustive handling
+ *
+ * NOTE: This function currently supports only a single content type per request.
+ * Multiple content types in the same request body are not supported. The content
+ * type is determined by the getRequestBodyContentType function which selects
+ * one content type based on priority order.
  */
 function generateFunctionBody(
   pathKey: string,
   method: string,
   parameterGroups: ParameterGroups,
   hasBody: boolean,
-  responseHandlers: string[]
+  responseHandlers: string[],
+  requestContentType?: string
 ): string {
   const { pathParams, queryParams, headerParams } = parameterGroups;
 
@@ -621,13 +679,50 @@ function generateFunctionBody(
   const queryParamLines = generateQueryParamHandling(queryParams);
   const headerParamLines = generateHeaderParamHandling(headerParams);
 
-  const bodyContent = hasBody
-    ? `    body: params.body ? JSON.stringify(params.body) : undefined,`
-    : "";
+  let bodyContent = "";
+  let contentTypeHeader = "";
 
-  const contentTypeHeader = hasBody
-    ? `    "Content-Type": "application/json",`
-    : "";
+  if (hasBody && requestContentType) {
+    // Handle different content types appropriately
+    switch (requestContentType) {
+      case "application/json":
+        bodyContent = `    body: params.body ? JSON.stringify(params.body) : undefined,`;
+        contentTypeHeader = `    "Content-Type": "application/json",`;
+        break;
+
+      case "application/x-www-form-urlencoded":
+        bodyContent = `    body: params.body ? new URLSearchParams(params.body as Record<string, string>).toString() : undefined,`;
+        contentTypeHeader = `    "Content-Type": "application/x-www-form-urlencoded",`;
+        break;
+
+      case "multipart/form-data":
+        // For multipart/form-data, don't set Content-Type manually
+        // The browser will set it automatically with the boundary
+        bodyContent = `    body: params.body as FormData,`;
+        // contentTypeHeader remains empty for multipart/form-data
+        break;
+
+      case "text/plain":
+        bodyContent = `    body: typeof params.body === 'string' ? params.body : String(params.body),`;
+        contentTypeHeader = `    "Content-Type": "text/plain",`;
+        break;
+
+      case "application/xml":
+        bodyContent = `    body: typeof params.body === 'string' ? params.body : String(params.body),`;
+        contentTypeHeader = `    "Content-Type": "application/xml",`;
+        break;
+
+      case "application/octet-stream":
+        bodyContent = `    body: params.body,`;
+        contentTypeHeader = `    "Content-Type": "application/octet-stream",`;
+        break;
+
+      default:
+        // For unknown content types, try to handle as string or fall back to JSON
+        bodyContent = `    body: typeof params.body === 'string' ? params.body : JSON.stringify(params.body),`;
+        contentTypeHeader = `    "Content-Type": "${requestContentType}",`;
+    }
+  }
 
   return `  const finalHeaders = {
     ...config.headers,${contentTypeHeader}
@@ -682,9 +777,12 @@ function generateOperationFunction(
 
   // Build parameter interface
   let bodyTypeInfo: RequestBodyTypeInfo | undefined;
+  let requestContentType: string | undefined;
+
   if (hasBody) {
     const requestBody = operation.requestBody as RequestBodyObject;
     bodyTypeInfo = resolveRequestBodyType(requestBody, functionName, doc);
+    requestContentType = bodyTypeInfo.contentType;
     bodyTypeInfo.typeImports.forEach((imp) => typeImports.add(imp));
   }
 
@@ -700,13 +798,14 @@ function generateOperationFunction(
     typeImports
   );
 
-  // Generate function body
+  // Generate function body with content type information
   const functionBodyCode = generateFunctionBody(
     pathKey,
     method,
     parameterGroups,
     hasBody,
-    responseHandlers
+    responseHandlers,
+    requestContentType
   );
 
   const functionStr = `${summary}export async function ${functionName}(

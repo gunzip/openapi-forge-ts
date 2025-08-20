@@ -76,10 +76,10 @@ function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
         const operationObj = operation as OperationObject;
         const requestBody = operationObj.requestBody as RequestBodyObject;
 
-        // Look for different content types
+        // Look for different content types, but skip multipart/form-data
+        // since FormData is a native web API type, not a schema
         const supportedContentTypes = [
           "application/json",
-          "multipart/form-data",
           "application/x-www-form-urlencoded"
         ];
         

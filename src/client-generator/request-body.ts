@@ -64,6 +64,16 @@ export function resolveRequestBodyType(
     };
   }
 
+  // Special handling for multipart/form-data
+  if (contentType === "multipart/form-data") {
+    return {
+      typeName: "FormData",
+      isRequired,
+      typeImports: new Set<string>(), // FormData is a global type
+      contentType,
+    };
+  }
+
   const schema = content.schema;
 
   // If it's a reference to a schema, use that as the type name
@@ -114,7 +124,7 @@ export function generateRequestBodyHandling(
       case "multipart/form-data":
         // For multipart/form-data, don't set Content-Type manually
         // The browser will set it automatically with the boundary
-        bodyContent = `    body: body as FormData,`;
+        bodyContent = `    body: body,`;
         // contentTypeHeader remains empty for multipart/form-data
         break;
 

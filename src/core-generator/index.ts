@@ -76,15 +76,24 @@ function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
         const operationObj = operation as OperationObject;
         const requestBody = operationObj.requestBody as RequestBodyObject;
 
-        // Look for application/json content
-        const jsonContent = requestBody.content?.["application/json"];
-        if (jsonContent?.schema && !jsonContent.schema["$ref"]) {
-          // Only extract inline schemas, not $ref schemas
-          const requestTypeName = `${operationObj.operationId}Request`;
-          requestSchemas.set(
-            requestTypeName,
-            jsonContent.schema as SchemaObject
-          );
+        // Look for different content types
+        const supportedContentTypes = [
+          "application/json",
+          "multipart/form-data",
+          "application/x-www-form-urlencoded"
+        ];
+        
+        for (const contentType of supportedContentTypes) {
+          const content = requestBody.content?.[contentType];
+          if (content?.schema && !content.schema["$ref"]) {
+            // Only extract inline schemas, not $ref schemas
+            const requestTypeName = `${operationObj.operationId}Request`;
+            requestSchemas.set(
+              requestTypeName,
+              content.schema as SchemaObject
+            );
+            break; // Only process the first matching content type
+          }
         }
       }
     }
@@ -149,11 +158,17 @@ function extractResponseSchemas(openApiDoc: any): Map<string, SchemaObject> {
           const responseObj = response as ResponseObject;
           if (!responseObj.content) continue;
 
-          // Check for JSON content types
-          const jsonTypes = ["application/json", "application/problem+json"];
+          // Check for various content types
+          const supportedContentTypes = [
+            "application/json", 
+            "application/problem+json",
+            "application/octet-stream",
+            "multipart/form-data"
+          ];
+          
           for (const contentType of Object.keys(responseObj.content)) {
             if (
-              jsonTypes.includes(contentType) ||
+              supportedContentTypes.includes(contentType) ||
               contentType.includes("+json")
             ) {
               const content = responseObj.content[contentType];
@@ -165,7 +180,7 @@ function extractResponseSchemas(openApiDoc: any): Map<string, SchemaObject> {
                   content.schema as SchemaObject
                 );
               }
-              break; // Only process the first matching JSON content type
+              break; // Only process the first matching content type
             }
           }
         }

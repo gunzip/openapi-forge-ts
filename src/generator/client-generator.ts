@@ -461,6 +461,13 @@ function extractAuthHeaders(doc: OpenAPIObject): string[] {
 }
 
 /**
+ * Checks if an operation overrides global security (either empty or with specific schemes)
+ */
+function hasSecurityOverride(operation: OperationObject): boolean {
+  return operation.security !== undefined;
+}
+
+/**
  * Gets operation-specific security schemes that are not global
  */
 function getOperationSecuritySchemes(
@@ -771,7 +778,9 @@ function generateFunctionBody(
     schemeName: string;
     headerName: string;
     isRequired: boolean;
-  }[]
+  }[],
+  overridesSecurity?: boolean,
+  authHeaders?: string[]
 ): string {
   const { pathParams, queryParams, headerParams } = parameterGroups;
 
@@ -829,7 +838,15 @@ function generateFunctionBody(
   }
 
   return `  const finalHeaders = {
-    ...config.headers,${contentTypeHeader}
+    ${
+      overridesSecurity && authHeaders && authHeaders.length > 0
+        ? `...Object.fromEntries(
+      Object.entries(config.headers).filter(([key]) => 
+        !['${authHeaders.join("', '")}'].includes(key)
+      )
+    ),`
+        : "...config.headers,"
+    }${contentTypeHeader}
   };
   ${headerParamLines ? `  ${headerParamLines}` : ""}${securityHeaderLines ? `  ${securityHeaderLines}` : ""}
 
@@ -906,6 +923,10 @@ function generateOperationFunction(
     typeImports
   );
 
+  // Check if operation overrides security (empty or specific schemes)
+  const overridesSecurity = hasSecurityOverride(operation);
+  const authHeaders = extractAuthHeaders(doc);
+
   // Generate function body with content type information
   const functionBodyCode = generateFunctionBody(
     pathKey,
@@ -914,7 +935,9 @@ function generateOperationFunction(
     hasBody,
     responseHandlers,
     requestContentType,
-    operationSecurityHeaders
+    operationSecurityHeaders,
+    overridesSecurity,
+    authHeaders
   );
 
   const functionStr = `${summary}export async function ${functionName}(

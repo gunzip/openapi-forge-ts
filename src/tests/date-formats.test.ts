@@ -74,7 +74,7 @@ describe("Date format handling", () => {
     };
 
     const result = zodSchemaToCode(schema);
-    expect(result.code).toBe("z.string().email()");
+    expect(result.code).toBe("z.email()");
   });
 
   it("should handle existing uuid format correctly", () => {
@@ -84,7 +84,7 @@ describe("Date format handling", () => {
     };
 
     const result = zodSchemaToCode(schema);
-    expect(result.code).toBe("z.string().uuid()");
+    expect(result.code).toBe("z.uuid()");
   });
 
   it("should handle existing uri format correctly", () => {
@@ -94,6 +94,6 @@ describe("Date format handling", () => {
     };
 
     const result = zodSchemaToCode(schema);
-    expect(result.code).toBe("z.string().url()");
+    expect(result.code).toBe("z.url()");
   });
 });

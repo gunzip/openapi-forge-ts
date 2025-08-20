@@ -109,7 +109,12 @@ function extractParameterGroups(
 function buildParameterInterface(
   parameterGroups: ParameterGroups,
   hasBody: boolean,
-  bodyTypeInfo?: RequestBodyTypeInfo
+  bodyTypeInfo?: RequestBodyTypeInfo,
+  operationSecurityHeaders?: {
+    schemeName: string;
+    headerName: string;
+    isRequired: boolean;
+  }[]
 ): string {
   const { pathParams, queryParams, headerParams } = parameterGroups;
   const parameterProperties: string[] = [];
@@ -133,6 +138,16 @@ function buildParameterInterface(
     parameterProperties.push(
       `${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`
     );
+  }
+
+  // Operation-specific security headers
+  if (operationSecurityHeaders && operationSecurityHeaders.length > 0) {
+    for (const securityHeader of operationSecurityHeaders) {
+      const requiredMarker = securityHeader.isRequired ? "" : "?";
+      parameterProperties.push(
+        `"${securityHeader.headerName}"${requiredMarker}: string`
+      );
+    }
   }
 
   // Body parameter
@@ -189,6 +204,27 @@ function generateHeaderParamHandling(headerParams: ParameterObject[]): string {
       (p) =>
         `if (params.${toCamelCase(p.name)} !== undefined) finalHeaders['${p.name}'] = String(params.${toCamelCase(p.name)});`
     )
+    .join("\n    ");
+}
+
+/**
+ * Generates security header handling code from params
+ */
+function generateSecurityHeaderHandling(
+  operationSecurityHeaders: {
+    schemeName: string;
+    headerName: string;
+    isRequired: boolean;
+  }[]
+): string {
+  return operationSecurityHeaders
+    .map((securityHeader) => {
+      if (securityHeader.isRequired) {
+        return `finalHeaders['${securityHeader.headerName}'] = params["${securityHeader.headerName}"];`;
+      } else {
+        return `if (params["${securityHeader.headerName}"] !== undefined) finalHeaders['${securityHeader.headerName}'] = params["${securityHeader.headerName}"];`;
+      }
+    })
     .join("\n    ");
 }
 
@@ -383,32 +419,91 @@ function resolveRequestBodyType(
 }
 
 /**
- * Extracts auth header names from security schemes
+ * Extracts global auth header names from security schemes (only those used globally)
  */
 function extractAuthHeaders(doc: OpenAPIObject): string[] {
   const authHeaders: string[] = [];
 
-  if (doc.components?.securitySchemes) {
+  // Only include headers from global security schemes
+  if (doc.security && doc.components?.securitySchemes) {
+    const globalSecuritySchemes = new Set<string>();
+
+    // Collect all globally required security schemes
+    for (const securityRequirement of doc.security) {
+      for (const schemeName of Object.keys(securityRequirement)) {
+        globalSecuritySchemes.add(schemeName);
+      }
+    }
+
+    // Map global security schemes to their headers
     for (const [name, scheme] of Object.entries(
       doc.components.securitySchemes
     )) {
-      const securityScheme = scheme as SecuritySchemeObject;
-      if (
-        securityScheme.type === "apiKey" &&
-        securityScheme.in === "header" &&
-        securityScheme.name
-      ) {
-        authHeaders.push(securityScheme.name);
-      } else if (
-        securityScheme.type === "http" &&
-        securityScheme.scheme === "bearer"
-      ) {
-        authHeaders.push("Authorization");
+      if (globalSecuritySchemes.has(name)) {
+        const securityScheme = scheme as SecuritySchemeObject;
+        if (
+          securityScheme.type === "apiKey" &&
+          securityScheme.in === "header" &&
+          securityScheme.name
+        ) {
+          authHeaders.push(securityScheme.name);
+        } else if (
+          securityScheme.type === "http" &&
+          securityScheme.scheme === "bearer"
+        ) {
+          authHeaders.push("Authorization");
+        }
       }
     }
   }
 
   return [...new Set(authHeaders)]; // Remove duplicates
+}
+
+/**
+ * Gets operation-specific security schemes that are not global
+ */
+function getOperationSecuritySchemes(
+  operation: OperationObject,
+  doc: OpenAPIObject
+): { schemeName: string; headerName: string; isRequired: boolean }[] {
+  const operationSecurityHeaders: {
+    schemeName: string;
+    headerName: string;
+    isRequired: boolean;
+  }[] = [];
+
+  if (!operation.security || !doc.components?.securitySchemes) {
+    return operationSecurityHeaders;
+  }
+
+  // Process operation-specific security schemes
+  for (const securityRequirement of operation.security) {
+    for (const schemeName of Object.keys(securityRequirement)) {
+      const scheme = doc.components.securitySchemes[
+        schemeName
+      ] as SecuritySchemeObject;
+      if (!scheme) continue;
+
+      let headerName: string | null = null;
+
+      if (scheme.type === "apiKey" && scheme.in === "header" && scheme.name) {
+        headerName = scheme.name;
+      } else if (scheme.type === "http" && scheme.scheme === "bearer") {
+        headerName = "Authorization";
+      }
+
+      if (headerName) {
+        operationSecurityHeaders.push({
+          schemeName,
+          headerName,
+          isRequired: true, // Operation-specific security is always required
+        });
+      }
+    }
+  }
+
+  return operationSecurityHeaders;
 }
 
 /**
@@ -671,13 +766,22 @@ function generateFunctionBody(
   parameterGroups: ParameterGroups,
   hasBody: boolean,
   responseHandlers: string[],
-  requestContentType?: string
+  requestContentType?: string,
+  operationSecurityHeaders?: {
+    schemeName: string;
+    headerName: string;
+    isRequired: boolean;
+  }[]
 ): string {
   const { pathParams, queryParams, headerParams } = parameterGroups;
 
   const finalPath = generatePathInterpolation(pathKey, pathParams);
   const queryParamLines = generateQueryParamHandling(queryParams);
   const headerParamLines = generateHeaderParamHandling(headerParams);
+  const securityHeaderLines =
+    operationSecurityHeaders && operationSecurityHeaders.length > 0
+      ? generateSecurityHeaderHandling(operationSecurityHeaders)
+      : "";
 
   let bodyContent = "";
   let contentTypeHeader = "";
@@ -727,7 +831,7 @@ function generateFunctionBody(
   return `  const finalHeaders = {
     ...config.headers,${contentTypeHeader}
   };
-  ${headerParamLines ? `  ${headerParamLines}` : ""}
+  ${headerParamLines ? `  ${headerParamLines}` : ""}${securityHeaderLines ? `  ${securityHeaderLines}` : ""}
 
   const url = new URL(\`${finalPath}\`, config.baseURL);
   ${queryParamLines ? `  ${queryParamLines}` : ""}
@@ -775,6 +879,9 @@ function generateOperationFunction(
   );
   const hasBody = !!operation.requestBody;
 
+  // Get operation-specific security headers
+  const operationSecurityHeaders = getOperationSecuritySchemes(operation, doc);
+
   // Build parameter interface
   let bodyTypeInfo: RequestBodyTypeInfo | undefined;
   let requestContentType: string | undefined;
@@ -789,7 +896,8 @@ function generateOperationFunction(
   const paramsInterface = buildParameterInterface(
     parameterGroups,
     hasBody,
-    bodyTypeInfo
+    bodyTypeInfo,
+    operationSecurityHeaders
   );
 
   // Generate response handlers and return type
@@ -805,7 +913,8 @@ function generateOperationFunction(
     parameterGroups,
     hasBody,
     responseHandlers,
-    requestContentType
+    requestContentType,
+    operationSecurityHeaders
   );
 
   const functionStr = `${summary}export async function ${functionName}(

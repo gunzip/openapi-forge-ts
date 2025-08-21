@@ -95,8 +95,18 @@ export function generateOperationFunction(
     authHeaders
   );
 
+  // Handle empty parameters case - use simple destructuring with default
+  let parameterDeclaration;
+
+  if (destructuredParams === "{}" && paramsInterface === "{}") {
+    // For functions with no parameters, use simple empty object destructuring with default
+    parameterDeclaration = "{}: {} = {}";
+  } else {
+    parameterDeclaration = `${destructuredParams}: ${paramsInterface}`;
+  }
+
   const functionStr = `${summary}export async function ${functionName}(
-  ${destructuredParams}: ${paramsInterface},
+  ${parameterDeclaration},
   config: GlobalConfig = globalConfig
 ): Promise<${returnType}> {
   ${functionBodyCode}

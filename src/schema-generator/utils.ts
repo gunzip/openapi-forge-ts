@@ -50,7 +50,7 @@ export function inferEffectiveType(schema: SchemaObject): EffectiveType {
  * Check if a schema has nullable property (OpenAPI 3.0 style)
  */
 export function isNullable(schema: SchemaObject): boolean {
-  return "nullable" in schema && (schema as any).nullable === true;
+  return "nullable" in schema && schema.nullable === true;
 }
 
 /**
@@ -58,7 +58,9 @@ export function isNullable(schema: SchemaObject): boolean {
  */
 export function cloneWithoutNullable(schema: SchemaObject): SchemaObject {
   const clone = { ...schema };
-  delete (clone as any).nullable;
+  if ("nullable" in clone) {
+    delete clone.nullable;
+  }
   return clone;
 }
 

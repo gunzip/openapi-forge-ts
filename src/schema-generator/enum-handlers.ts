@@ -16,7 +16,7 @@ export interface ExtensibleEnumResult {
 export function handleExtensibleEnum(
   schema: SchemaObject
 ): ExtensibleEnumResult | null {
-  const extensibleEnum = (schema as any)["x-extensible-enum"];
+  const extensibleEnum = schema["x-extensible-enum"];
   if (!extensibleEnum || !Array.isArray(extensibleEnum)) {
     return null;
   }

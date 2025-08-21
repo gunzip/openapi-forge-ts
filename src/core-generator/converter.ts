@@ -129,8 +129,8 @@ function convertSchema(
   const converted = { ...schema } as V31SchemaObject;
 
   // 1. Convert nullable to type arrays
-  if (schema.nullable === true && schema.type) {
-    delete (converted as any).nullable;
+  if (schema.nullable === true && schema.type && "nullable" in converted) {
+    delete converted.nullable;
     if (Array.isArray(schema.type)) {
       if (!schema.type.includes("null")) {
         converted.type = [...schema.type, "null"];
@@ -138,8 +138,8 @@ function convertSchema(
     } else {
       converted.type = [schema.type, "null"];
     }
-  } else if (schema.nullable === false) {
-    delete (converted as any).nullable;
+  } else if (schema.nullable === false && "nullable" in converted) {
+    delete converted.nullable;
   }
 
   // 2. Convert exclusiveMinimum/exclusiveMaximum from boolean to numeric

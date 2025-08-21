@@ -1,4 +1,4 @@
-import type { SchemaObject, ReferenceObject } from "openapi3-ts/oas31";
+import type { SchemaObject } from "openapi3-ts/oas31";
 
 /**
  * Effective type after resolving union types and inference
@@ -12,24 +12,6 @@ export type EffectiveType =
   | "object"
   | string[]
   | undefined;
-
-/**
- * Type guard to check if an object is a SchemaObject (not a ReferenceObject)
- *
- * @example
- * ```javascript
- * const schema1 = { type: 'string' };
- * const schema2 = { $ref: '#/components/schemas/User' };
- *
- * isSchemaObject(schema1); // returns true
- * isSchemaObject(schema2); // returns false
- * ```
- */
-export function isSchemaObject(
-  obj: SchemaObject | ReferenceObject
-): obj is SchemaObject {
-  return !("$ref" in obj);
-}
 
 /**
  * Determine the type of a schema when it's not explicitly defined

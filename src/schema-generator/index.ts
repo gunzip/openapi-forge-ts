@@ -22,7 +22,6 @@ export type { UnionType, DiscriminatorConfig } from "./union-types.js";
 
 // Utility exports
 export {
-  isSchemaObject,
   inferEffectiveType,
   isNullable,
   cloneWithoutNullable,

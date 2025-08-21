@@ -25,7 +25,6 @@ export {
 
 // Re-export utility functions for advanced usage
 export {
-  isSchemaObject,
   inferEffectiveType,
   isNullable,
   cloneWithoutNullable,

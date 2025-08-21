@@ -29,8 +29,8 @@ export interface ZodSchemaCodeOptions {
  * Union type for OpenAPI schema types
  */
 export type OpenAPISchema = SchemaObject | ReferenceObject;
+import { isSchemaObject } from "openapi3-ts/oas31";
 import {
-  isSchemaObject,
   inferEffectiveType,
   isNullable,
   cloneWithoutNullable,

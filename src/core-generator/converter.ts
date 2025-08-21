@@ -1,5 +1,27 @@
 import type { OpenAPIObject as OpenAPIV3Document } from "openapi3-ts/oas30";
 import type { OpenAPIObject as OpenAPIV3_1Document } from "openapi3-ts/oas31";
+import type {
+  PathItemObject as V3PathItemObject,
+  OperationObject as V3OperationObject,
+  ParameterObject as V3ParameterObject,
+  RequestBodyObject as V3RequestBodyObject,
+  ResponseObject as V3ResponseObject,
+  MediaTypeObject as V3MediaTypeObject,
+  SchemaObject as V3SchemaObject,
+  ReferenceObject as V3ReferenceObject,
+  ComponentsObject as V3ComponentsObject,
+} from "openapi3-ts/oas30";
+import type {
+  PathItemObject as V31PathItemObject,
+  OperationObject as V31OperationObject,
+  ParameterObject as V31ParameterObject,
+  RequestBodyObject as V31RequestBodyObject,
+  ResponseObject as V31ResponseObject,
+  MediaTypeObject as V31MediaTypeObject,
+  SchemaObject as V31SchemaObject,
+  ReferenceObject as V31ReferenceObject,
+} from "openapi3-ts/oas31";
+import { isReferenceObject as isV3ReferenceObject } from "openapi3-ts/oas30";
 import { convertObj } from "swagger2openapi";
 
 /**
@@ -56,72 +78,83 @@ export async function convertToOpenAPI31(
 export function convertOpenAPI30to31(
   openapi30: OpenAPIV3Document
 ): OpenAPIV3_1Document {
-  const converted = JSON.parse(JSON.stringify(openapi30)) as any;
+  const converted = JSON.parse(
+    JSON.stringify(openapi30)
+  ) as OpenAPIV3_1Document;
 
   // Update version
   converted.openapi = "3.1.0";
 
   // Convert components schemas
-  if (converted.components?.schemas) {
+  if (openapi30.components?.schemas) {
+    const convertedSchemas: Record<
+      string,
+      V31SchemaObject | V31ReferenceObject
+    > = {};
     for (const [schemaName, schema] of Object.entries(
-      converted.components.schemas
+      openapi30.components.schemas
     )) {
-      converted.components.schemas[schemaName] = convertSchema(schema as any);
+      convertedSchemas[schemaName] = convertSchema(schema);
+    }
+    if (converted.components) {
+      converted.components.schemas = convertedSchemas;
     }
   }
 
   // Convert path schemas (request/response bodies, parameters)
-  if (converted.paths) {
-    for (const [pathName, pathItem] of Object.entries(converted.paths)) {
-      converted.paths[pathName] = convertPathItem(pathItem as any);
-    }
+  const convertedPaths: Record<string, V31PathItemObject> = {};
+  for (const [pathName, pathItem] of Object.entries(openapi30.paths)) {
+    convertedPaths[pathName] = convertPathItem(pathItem);
   }
+  converted.paths = convertedPaths;
 
-  return converted as OpenAPIV3_1Document;
+  return converted;
 }
 
 /**
  * Recursively converts a schema object from 3.0 to 3.1 format
  */
-function convertSchema(schema: any): any {
+function convertSchema(
+  schema: V3SchemaObject | V3ReferenceObject
+): V31SchemaObject | V31ReferenceObject {
   if (!schema || typeof schema !== "object") {
     return schema;
   }
 
   // Handle reference objects
-  if (schema.$ref) {
+  if (isV3ReferenceObject(schema)) {
     return schema;
   }
 
-  const converted = { ...schema };
+  const converted = { ...schema } as V31SchemaObject;
 
   // 1. Convert nullable to type arrays
-  if (converted.nullable === true && converted.type) {
-    delete converted.nullable;
-    if (Array.isArray(converted.type)) {
-      if (!converted.type.includes("null")) {
-        converted.type.push("null");
+  if (schema.nullable === true && schema.type) {
+    delete (converted as any).nullable;
+    if (Array.isArray(schema.type)) {
+      if (!schema.type.includes("null")) {
+        converted.type = [...schema.type, "null"];
       }
     } else {
-      converted.type = [converted.type, "null"];
+      converted.type = [schema.type, "null"];
     }
-  } else if (converted.nullable === false) {
-    delete converted.nullable;
+  } else if (schema.nullable === false) {
+    delete (converted as any).nullable;
   }
 
   // 2. Convert exclusiveMinimum/exclusiveMaximum from boolean to numeric
-  if (typeof converted.exclusiveMinimum === "boolean") {
-    if (converted.exclusiveMinimum && typeof converted.minimum === "number") {
-      converted.exclusiveMinimum = converted.minimum;
+  if (typeof schema.exclusiveMinimum === "boolean") {
+    if (schema.exclusiveMinimum && typeof schema.minimum === "number") {
+      converted.exclusiveMinimum = schema.minimum;
       delete converted.minimum;
     } else {
       delete converted.exclusiveMinimum;
     }
   }
 
-  if (typeof converted.exclusiveMaximum === "boolean") {
-    if (converted.exclusiveMaximum && typeof converted.maximum === "number") {
-      converted.exclusiveMaximum = converted.maximum;
+  if (typeof schema.exclusiveMaximum === "boolean") {
+    if (schema.exclusiveMaximum && typeof schema.maximum === "number") {
+      converted.exclusiveMaximum = schema.maximum;
       delete converted.maximum;
     } else {
       delete converted.exclusiveMaximum;
@@ -129,54 +162,57 @@ function convertSchema(schema: any): any {
   }
 
   // 3. Convert singular example to examples array
-  if (converted.example !== undefined && converted.examples === undefined) {
-    converted.examples = [converted.example];
+  if (schema.example !== undefined && schema.examples === undefined) {
+    converted.examples = [schema.example];
     delete converted.example;
   }
 
   // 4. Convert format: binary/base64 to contentEncoding/contentMediaType
-  if (converted.format === "binary") {
+  if (schema.format === "binary") {
     delete converted.format;
     converted.contentMediaType = "application/octet-stream";
-  } else if (converted.format === "base64") {
+  } else if (schema.format === "base64") {
     delete converted.format;
     converted.contentEncoding = "base64";
   }
 
   // Recursively convert nested schemas
-  if (converted.properties) {
-    for (const [propName, propSchema] of Object.entries(converted.properties)) {
-      converted.properties[propName] = convertSchema(propSchema);
+  if (schema.properties) {
+    const convertedProperties: Record<
+      string,
+      V31SchemaObject | V31ReferenceObject
+    > = {};
+    for (const [propName, propSchema] of Object.entries(schema.properties)) {
+      convertedProperties[propName] = convertSchema(propSchema);
     }
+    converted.properties = convertedProperties;
   }
 
-  if (converted.items) {
-    converted.items = convertSchema(converted.items);
+  if (schema.items) {
+    converted.items = convertSchema(schema.items);
   }
 
   if (
-    converted.additionalProperties &&
-    typeof converted.additionalProperties === "object"
+    schema.additionalProperties &&
+    typeof schema.additionalProperties === "object"
   ) {
-    converted.additionalProperties = convertSchema(
-      converted.additionalProperties
-    );
+    converted.additionalProperties = convertSchema(schema.additionalProperties);
   }
 
-  if (converted.allOf) {
-    converted.allOf = converted.allOf.map(convertSchema);
+  if (schema.allOf) {
+    converted.allOf = schema.allOf.map(convertSchema);
   }
 
-  if (converted.anyOf) {
-    converted.anyOf = converted.anyOf.map(convertSchema);
+  if (schema.anyOf) {
+    converted.anyOf = schema.anyOf.map(convertSchema);
   }
 
-  if (converted.oneOf) {
-    converted.oneOf = converted.oneOf.map(convertSchema);
+  if (schema.oneOf) {
+    converted.oneOf = schema.oneOf.map(convertSchema);
   }
 
-  if (converted.not) {
-    converted.not = convertSchema(converted.not);
+  if (schema.not) {
+    converted.not = convertSchema(schema.not);
   }
 
   return converted;
@@ -185,33 +221,30 @@ function convertSchema(schema: any): any {
 /**
  * Converts a path item from 3.0 to 3.1 format
  */
-function convertPathItem(pathItem: any): any {
+function convertPathItem(pathItem: V3PathItemObject): V31PathItemObject {
   if (!pathItem || typeof pathItem !== "object") {
-    return pathItem;
+    return pathItem as V31PathItemObject;
   }
 
-  const converted = { ...pathItem };
+  const converted = { ...pathItem } as V31PathItemObject;
 
   // Convert each operation
-  const methods = [
-    "get",
-    "post",
-    "put",
-    "patch",
-    "delete",
-    "head",
-    "options",
-    "trace",
-  ];
+  const methods: Array<
+    keyof Pick<
+      V3PathItemObject,
+      "get" | "post" | "put" | "patch" | "delete" | "head" | "options" | "trace"
+    >
+  > = ["get", "post", "put", "patch", "delete", "head", "options", "trace"];
+
   for (const method of methods) {
-    if (converted[method]) {
-      converted[method] = convertOperation(converted[method]);
+    if (pathItem[method]) {
+      converted[method] = convertOperation(pathItem[method]!);
     }
   }
 
   // Convert parameters
-  if (converted.parameters) {
-    converted.parameters = converted.parameters.map(convertParameter);
+  if (pathItem.parameters) {
+    converted.parameters = pathItem.parameters.map(convertParameter);
   }
 
   return converted;
@@ -220,28 +253,39 @@ function convertPathItem(pathItem: any): any {
 /**
  * Converts an operation from 3.0 to 3.1 format
  */
-function convertOperation(operation: any): any {
+function convertOperation(operation: V3OperationObject): V31OperationObject {
   if (!operation || typeof operation !== "object") {
-    return operation;
+    return operation as V31OperationObject;
   }
 
-  const converted = { ...operation };
+  const converted = { ...operation } as V31OperationObject;
 
   // Convert parameters
-  if (converted.parameters) {
-    converted.parameters = converted.parameters.map(convertParameter);
+  if (operation.parameters) {
+    converted.parameters = operation.parameters.map(convertParameter);
   }
 
   // Convert request body
-  if (converted.requestBody) {
-    converted.requestBody = convertRequestBody(converted.requestBody);
+  if (operation.requestBody) {
+    converted.requestBody = convertRequestBody(operation.requestBody);
   }
 
   // Convert responses
-  if (converted.responses) {
-    for (const [statusCode, response] of Object.entries(converted.responses)) {
-      converted.responses[statusCode] = convertResponse(response as any);
+  if (operation.responses) {
+    const convertedResponses: Record<
+      string,
+      V31ResponseObject | V31ReferenceObject
+    > = {};
+    for (const [statusCode, response] of Object.entries(operation.responses)) {
+      if (statusCode === "default") {
+        if (response) {
+          convertedResponses[statusCode] = convertResponse(response);
+        }
+      } else {
+        convertedResponses[statusCode] = convertResponse(response);
+      }
     }
+    converted.responses = convertedResponses;
   }
 
   return converted;
@@ -250,15 +294,21 @@ function convertOperation(operation: any): any {
 /**
  * Converts a parameter from 3.0 to 3.1 format
  */
-function convertParameter(parameter: any): any {
+function convertParameter(
+  parameter: V3ParameterObject | V3ReferenceObject
+): V31ParameterObject | V31ReferenceObject {
   if (!parameter || typeof parameter !== "object") {
-    return parameter;
+    return parameter as V31ParameterObject | V31ReferenceObject;
   }
 
-  const converted = { ...parameter };
+  if (isV3ReferenceObject(parameter)) {
+    return parameter as V31ReferenceObject;
+  }
 
-  if (converted.schema) {
-    converted.schema = convertSchema(converted.schema);
+  const converted = { ...parameter } as V31ParameterObject;
+
+  if (parameter.schema) {
+    converted.schema = convertSchema(parameter.schema);
   }
 
   return converted;
@@ -267,19 +317,27 @@ function convertParameter(parameter: any): any {
 /**
  * Converts a request body from 3.0 to 3.1 format
  */
-function convertRequestBody(requestBody: any): any {
+function convertRequestBody(
+  requestBody: V3RequestBodyObject | V3ReferenceObject
+): V31RequestBodyObject | V31ReferenceObject {
   if (!requestBody || typeof requestBody !== "object") {
-    return requestBody;
+    return requestBody as V31RequestBodyObject | V31ReferenceObject;
   }
 
-  const converted = { ...requestBody };
+  if (isV3ReferenceObject(requestBody)) {
+    return requestBody as V31ReferenceObject;
+  }
 
-  if (converted.content) {
+  const converted = { ...requestBody } as V31RequestBodyObject;
+
+  if (requestBody.content) {
+    const convertedContent: Record<string, V31MediaTypeObject> = {};
     for (const [mediaType, mediaTypeObject] of Object.entries(
-      converted.content
+      requestBody.content
     )) {
-      converted.content[mediaType] = convertMediaType(mediaTypeObject as any);
+      convertedContent[mediaType] = convertMediaType(mediaTypeObject);
     }
+    converted.content = convertedContent;
   }
 
   return converted;
@@ -288,19 +346,27 @@ function convertRequestBody(requestBody: any): any {
 /**
  * Converts a response from 3.0 to 3.1 format
  */
-function convertResponse(response: any): any {
+function convertResponse(
+  response: V3ResponseObject | V3ReferenceObject
+): V31ResponseObject | V31ReferenceObject {
   if (!response || typeof response !== "object") {
-    return response;
+    return response as V31ResponseObject | V31ReferenceObject;
   }
 
-  const converted = { ...response };
+  if (isV3ReferenceObject(response)) {
+    return response as V31ReferenceObject;
+  }
 
-  if (converted.content) {
+  const converted = { ...response } as V31ResponseObject;
+
+  if (response.content) {
+    const convertedContent: Record<string, V31MediaTypeObject> = {};
     for (const [mediaType, mediaTypeObject] of Object.entries(
-      converted.content
+      response.content
     )) {
-      converted.content[mediaType] = convertMediaType(mediaTypeObject as any);
+      convertedContent[mediaType] = convertMediaType(mediaTypeObject);
     }
+    converted.content = convertedContent;
   }
 
   return converted;
@@ -309,15 +375,17 @@ function convertResponse(response: any): any {
 /**
  * Converts a media type object from 3.0 to 3.1 format
  */
-function convertMediaType(mediaTypeObject: any): any {
+function convertMediaType(
+  mediaTypeObject: V3MediaTypeObject
+): V31MediaTypeObject {
   if (!mediaTypeObject || typeof mediaTypeObject !== "object") {
-    return mediaTypeObject;
+    return mediaTypeObject as V31MediaTypeObject;
   }
 
-  const converted = { ...mediaTypeObject };
+  const converted = { ...mediaTypeObject } as V31MediaTypeObject;
 
-  if (converted.schema) {
-    converted.schema = convertSchema(converted.schema);
+  if (mediaTypeObject.schema) {
+    converted.schema = convertSchema(mediaTypeObject.schema);
   }
 
   return converted;

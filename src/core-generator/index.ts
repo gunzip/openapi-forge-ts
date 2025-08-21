@@ -5,7 +5,10 @@ import type {
   OperationObject,
   RequestBodyObject,
   ResponseObject,
+  OpenAPIObject,
+  PathItemObject,
 } from "openapi3-ts/oas31";
+import { isReferenceObject } from "openapi3-ts/oas31";
 import { parseOpenAPI } from "./parser.js";
 import {
   generateSchemaFile,
@@ -32,6 +35,44 @@ export interface GenerationOptions {
   input: string;
   output: string;
   generateClient: boolean;
+}
+
+/**
+ * Common utility to iterate through all operations in an OpenAPI document
+ */
+function forEachOperation(
+  openApiDoc: OpenAPIObject,
+  callback: (
+    operation: OperationObject,
+    method: string,
+    pathKey: string
+  ) => void
+): void {
+  if (!openApiDoc.paths) {
+    return;
+  }
+
+  for (const [pathKey, pathItem] of Object.entries(openApiDoc.paths)) {
+    const pathItemObj = pathItem as PathItemObject;
+
+    // Define the HTTP methods we support with their corresponding operations
+    const httpMethods: Array<{
+      method: string;
+      operation: OperationObject | undefined;
+    }> = [
+      { method: "get", operation: pathItemObj.get },
+      { method: "post", operation: pathItemObj.post },
+      { method: "put", operation: pathItemObj.put },
+      { method: "delete", operation: pathItemObj.delete },
+      { method: "patch", operation: pathItemObj.patch },
+    ];
+
+    for (const { method, operation } of httpMethods) {
+      if (operation && operation.operationId) {
+        callback(operation, method, pathKey);
+      }
+    }
+  }
 }
 
 /**
@@ -63,41 +104,39 @@ export interface GenerationOptions {
  * // Result: Map with entry 'CreateUserRequest' -> schema object
  * ```
  */
-function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
+function extractRequestSchemas(
+  openApiDoc: OpenAPIObject
+): Map<string, SchemaObject> {
   const requestSchemas = new Map<string, SchemaObject>();
 
-  if (!openApiDoc.paths) {
-    return requestSchemas;
-  }
+  forEachOperation(openApiDoc, (operation) => {
+    if (!operation.requestBody) return;
 
-  for (const [, pathItem] of Object.entries(openApiDoc.paths)) {
-    for (const [method, operation] of Object.entries(pathItem as any)) {
-      if (
-        ["get", "post", "put", "delete", "patch"].includes(method) &&
-        (operation as OperationObject).operationId &&
-        (operation as OperationObject).requestBody
-      ) {
-        const operationObj = operation as OperationObject;
-        const requestBody = operationObj.requestBody as RequestBodyObject;
+    // Handle both direct RequestBodyObject and ReferenceObject
+    let requestBody: RequestBodyObject;
+    if (isReferenceObject(operation.requestBody)) {
+      // Skip reference objects for now - we only want inline schemas
+      return;
+    } else {
+      requestBody = operation.requestBody;
+    }
 
-        const supportedContentTypes = [
-          "application/json",
-          "multipart/form-data",
-          "application/x-www-form-urlencoded",
-        ];
+    const supportedContentTypes = [
+      "application/json",
+      "multipart/form-data",
+      "application/x-www-form-urlencoded",
+    ];
 
-        for (const contentType of supportedContentTypes) {
-          const content = requestBody.content?.[contentType];
-          if (content?.schema && !content.schema["$ref"]) {
-            // Only extract inline schemas, not $ref schemas
-            const requestTypeName = `${sanitizeIdentifier(operationObj.operationId!)}Request`;
-            requestSchemas.set(requestTypeName, content.schema as SchemaObject);
-            break; // Only process the first matching content type
-          }
-        }
+    for (const contentType of supportedContentTypes) {
+      const content = requestBody.content?.[contentType];
+      if (content?.schema && !isReferenceObject(content.schema)) {
+        // Only extract inline schemas, not $ref schemas
+        const requestTypeName = `${sanitizeIdentifier(operation.operationId!)}Request`;
+        requestSchemas.set(requestTypeName, content.schema);
+        break; // Only process the first matching content type
       }
     }
-  }
+  });
 
   return requestSchemas;
 }
@@ -133,61 +172,55 @@ function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
  * // Result: Map with entry 'GetUser200Response' -> schema object
  * ```
  */
-function extractResponseSchemas(openApiDoc: any): Map<string, SchemaObject> {
+function extractResponseSchemas(
+  openApiDoc: OpenAPIObject
+): Map<string, SchemaObject> {
   const responseSchemas = new Map<string, SchemaObject>();
 
-  if (!openApiDoc.paths) {
-    return responseSchemas;
-  }
+  forEachOperation(openApiDoc, (operation) => {
+    if (!operation.responses) return;
 
-  for (const [, pathItem] of Object.entries(openApiDoc.paths)) {
-    for (const [method, operation] of Object.entries(pathItem as any)) {
-      if (
-        ["get", "post", "put", "delete", "patch"].includes(method) &&
-        (operation as OperationObject).operationId &&
-        (operation as OperationObject).responses
-      ) {
-        const operationObj = operation as OperationObject;
-        const operationId = operationObj.operationId!; // We already checked it exists above
+    const operationId = operation.operationId!; // We know it exists from forEachOperation
 
-        for (const [statusCode, response] of Object.entries(
-          operationObj.responses!
-        )) {
-          if (statusCode === "default") continue;
+    for (const [statusCode, response] of Object.entries(operation.responses)) {
+      if (statusCode === "default") continue;
 
-          const responseObj = response as ResponseObject;
-          if (!responseObj.content) continue;
+      // Handle both direct ResponseObject and ReferenceObject
+      let responseObj: ResponseObject;
+      if (isReferenceObject(response)) {
+        // Skip reference objects for now - we only want inline schemas
+        continue;
+      } else {
+        responseObj = response;
+      }
 
-          // Check for various content types
-          const supportedContentTypes = [
-            "application/json",
-            "application/problem+json",
-            "application/octet-stream",
-            "multipart/form-data",
-          ];
+      if (!responseObj.content) continue;
 
-          for (const contentType of Object.keys(responseObj.content)) {
-            if (
-              supportedContentTypes.includes(contentType) ||
-              contentType.includes("+json")
-            ) {
-              const content = responseObj.content[contentType];
-              if (content?.schema && !content.schema["$ref"]) {
-                // Only extract inline schemas, not $ref schemas
-                const sanitizedOperationId = sanitizeIdentifier(operationId);
-                const responseTypeName = `${sanitizedOperationId.charAt(0).toUpperCase() + sanitizedOperationId.slice(1)}${statusCode}Response`;
-                responseSchemas.set(
-                  responseTypeName,
-                  content.schema as SchemaObject
-                );
-              }
-              break; // Only process the first matching content type
-            }
+      // Check for various content types
+      const supportedContentTypes = [
+        "application/json",
+        "application/problem+json",
+        "application/octet-stream",
+        "multipart/form-data",
+      ];
+
+      for (const contentType of Object.keys(responseObj.content)) {
+        if (
+          supportedContentTypes.includes(contentType) ||
+          contentType.includes("+json")
+        ) {
+          const content = responseObj.content[contentType];
+          if (content?.schema && !isReferenceObject(content.schema)) {
+            // Only extract inline schemas, not $ref schemas
+            const sanitizedOperationId = sanitizeIdentifier(operationId);
+            const responseTypeName = `${sanitizedOperationId.charAt(0).toUpperCase() + sanitizedOperationId.slice(1)}${statusCode}Response`;
+            responseSchemas.set(responseTypeName, content.schema);
           }
+          break; // Only process the first matching content type
         }
       }
     }
-  }
+  });
 
   return responseSchemas;
 }

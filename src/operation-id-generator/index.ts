@@ -19,15 +19,19 @@ export function generateOperationId(method: string, path: string): string {
       }
       return segment;
     })
-    .map((segment) => segment.replace(/[^a-zA-Z0-9]/g, ""))
+    .map((segment) => {
+      // Split by dashes and capitalize each word, then join
+      return segment
+        .split("-")
+        .map((word) => word.replace(/[^a-zA-Z0-9]/g, ""))
+        .filter((word) => word)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join("");
+    })
     .filter((segment) => segment);
 
   // Simple concatenation: method + all path parts
-  const baseName =
-    normalizedMethod +
-    pathSegments
-      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-      .join("");
+  const baseName = normalizedMethod + pathSegments.join("");
 
   // Use sanitizeIdentifier to ensure valid identifier
   return sanitizeIdentifier(baseName || normalizedMethod);

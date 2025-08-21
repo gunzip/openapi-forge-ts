@@ -148,9 +148,15 @@ export function buildDestructuredParameters(
   ) {
     const headerProperties: string[] = [];
 
-    // Regular header parameters
+    // Regular header parameters - handle special characters in header names
     processed.headerParams.forEach((param) => {
-      headerProperties.push(toCamelCase(param.name));
+      const varName = toValidVariableName(param.name);
+      // If the header name contains special characters, use object property syntax
+      if (param.name !== varName) {
+        headerProperties.push(`"${param.name}": ${varName}`);
+      } else {
+        headerProperties.push(toCamelCase(param.name));
+      }
     });
 
     // Operation-specific security headers - need to handle special characters
@@ -218,12 +224,20 @@ export function buildParameterInterface(
   ) {
     const headerProperties: string[] = [];
 
-    // Regular header parameters
+    // Regular header parameters - handle special characters in header names
     processed.headerParams.forEach((param) => {
       const isRequired = param.required === true;
-      headerProperties.push(
-        `${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`
-      );
+      const varName = toValidVariableName(param.name);
+      // If the header name contains special characters, use quoted property syntax
+      if (param.name !== varName) {
+        headerProperties.push(
+          `"${param.name}"${isRequired ? "" : "?"}: string`
+        );
+      } else {
+        headerProperties.push(
+          `${toCamelCase(param.name)}${isRequired ? "" : "?"}: string`
+        );
+      }
     });
 
     // Operation-specific security headers
@@ -276,7 +290,7 @@ export function generateHeaderParamHandling(
 
   return headerParams
     .map((p) => {
-      const varName = toCamelCase(p.name);
+      const varName = toValidVariableName(p.name);
       return `if (${varName} !== undefined) finalHeaders['${p.name}'] = String(${varName});`;
     })
     .join("\n    ");

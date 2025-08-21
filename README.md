@@ -4,23 +4,6 @@ Effortlessly turn your OpenAPI specifications into fully-typed Zod schemas—rea
 
 Need a client? Instantly generate a type-safe, operation-based API client alongside your schemas, all in one streamlined workflow.
 
-## Features
-
-- **Multi-version support**: Accepts OpenAPI 2.0 (Swagger), 3.0.x, and 3.1.x specifications, automatically converting to 3.1.0 for generation
-- **Operation-based client generation**: Generates one function per operation, with strong typing and per-operation configuration: no need for blacklisting operations you don't need!
-- **Zod v4 runtime validation**: Validates all response payloads at runtime
-- **Small footprint**: Generates each operation and schema/type in its own file for maximum tree-shaking and modularity
-- **Type-safe configuration**: Immutable global defaults, with the ability to override config per operation
-- **Flexible authentication**: Supports OpenAPI security schemes (Bearer, API Key, etc.), with dynamic header/query configuration
-- **Discriminated union response types**: Each operation returns a discriminated union of possible responses, enabling exhaustive handling
-- **Comprehensive error handling**: Only unexpected responses throw a typed exception (UnexpectedResponseError) forwarding status, body, and headers
-- **File upload/download and binary payload support**: Handles multipart/form-data and application/octet-stream uploads and downloads
-- **ESM output**: Generated code is ESM-first
-- **Minimal dependencies**: No runtime dependencies except Zod; works in Node.js and browsers
-- **Self-contained Zod schemas**: Generated schemas can be used independently for validation (e.g., in forms) and server-side logic
-- **Automatic OpenAPI normalization**: All input specs are normalized to OpenAPI 3.1.0 before code generation
-- **Comprehensive test suite**: Project includes Vitest-based tests for all major features
-
 ## Supported Input Formats
 
 The generator automatically detects and converts:
@@ -29,7 +12,7 @@ The generator automatically detects and converts:
 - **OpenAPI 3.0.x** → 3.1
 - **OpenAPI 3.1.x** (no conversion needed)
 
-All input formats are automatically normalized to OpenAPI 3.1.0 before generation.
+All input formats (local or remote yaml or JSON) are automatically normalized to OpenAPI 3.1.0 before generation.
 
 ## Installation
 
@@ -199,6 +182,23 @@ if (!result.success) {
   console.error(result.error);
 }
 ```
+
+## Features
+
+- **Multi-version support**: Accepts OpenAPI 2.0 (Swagger), 3.0.x, and 3.1.x specifications, automatically converting to 3.1.0 for generation
+- **Operation-based client generation**: Generates one function per operation, with strong typing and per-operation configuration: no need for blacklisting operations you don't need!
+- **Zod v4 runtime validation**: Validates all response payloads at runtime
+- **Small footprint**: Generates each operation and schema/type in its own file for maximum tree-shaking and modularity
+- **Type-safe configuration**: Immutable global defaults, with the ability to override config per operation
+- **Flexible authentication**: Supports OpenAPI security schemes (Bearer, API Key, etc.), with dynamic header/query configuration
+- **Discriminated union response types**: Each operation returns a discriminated union of possible responses, enabling exhaustive handling
+- **Comprehensive error handling**: Only unexpected responses throw a typed exception (UnexpectedResponseError) forwarding status, body, and headers
+- **File upload/download and binary payload support**: Handles multipart/form-data and application/octet-stream uploads and downloads
+- **ESM output**: Generated code is ESM-first
+- **Minimal dependencies**: No runtime dependencies except Zod; works in Node.js and browsers
+- **Self-contained Zod schemas**: Generated schemas can be used independently for validation (e.g., in forms) and server-side logic
+- **Automatic OpenAPI normalization**: All input specs are normalized to OpenAPI 3.1.0 before code generation
+- **Comprehensive test suite**: Project includes Vitest-based tests for all major features
 
 ## Benefits of Operation-Based Architecture
 

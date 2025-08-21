@@ -302,7 +302,7 @@ function convertParameter(
   }
 
   if (isV3ReferenceObject(parameter)) {
-    return parameter as V31ReferenceObject;
+    return parameter;
   }
 
   const converted = { ...parameter } as V31ParameterObject;
@@ -325,7 +325,7 @@ function convertRequestBody(
   }
 
   if (isV3ReferenceObject(requestBody)) {
-    return requestBody as V31ReferenceObject;
+    return requestBody;
   }
 
   const converted = { ...requestBody } as V31RequestBodyObject;
@@ -354,7 +354,7 @@ function convertResponse(
   }
 
   if (isV3ReferenceObject(response)) {
-    return response as V31ReferenceObject;
+    return response;
   }
 
   const converted = { ...response } as V31ResponseObject;

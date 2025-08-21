@@ -1,6 +1,5 @@
 import { format } from "prettier";
 import { promises as fs } from "fs";
-import path from "path";
 
 /**
  * Formats TypeScript code using Prettier

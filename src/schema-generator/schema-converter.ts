@@ -107,7 +107,7 @@ export function zodSchemaToCode(
   // Handle nullable (OpenAPI 3.0 style)
   if (isNullable(schema)) {
     const clone = cloneWithoutNullable(schema);
-    const subResult = zodSchemaToCode(clone as SchemaObject, {
+    const subResult = zodSchemaToCode(clone, {
       imports: result.imports,
     });
     result.code = `(${subResult.code}).nullable()`;

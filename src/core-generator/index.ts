@@ -56,7 +56,7 @@ function forEachOperation(
   }
 
   for (const [pathKey, pathItem] of Object.entries(openApiDoc.paths)) {
-    const pathItemObj = pathItem as PathItemObject;
+    const pathItemObj = pathItem;
 
     // Define the HTTP methods we support with their corresponding operations
     const httpMethods: Array<{

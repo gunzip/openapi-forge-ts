@@ -52,8 +52,9 @@ export function extractAllOperations(doc: OpenAPIObject): OperationMetadata[] {
       ];
 
       for (const { method, operation } of httpMethods) {
-        if (operation && operation.operationId) {
-          const operationId = operation.operationId;
+        if (operation) {
+          // operationId should now always exist after applyGeneratedOperationIds
+          const operationId = operation.operationId!;
 
           // Skip operations that result in empty sanitized IDs
           operations.push({

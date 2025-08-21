@@ -404,6 +404,11 @@ paths:
       responses:
         "200":
           description: "Ok"
+  /test-with-no-operation-id:
+    put:
+      responses:
+        "200":
+          description: "Ok"
 
 # -------------
 # Components

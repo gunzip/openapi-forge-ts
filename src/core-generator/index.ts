@@ -17,6 +17,7 @@ import {
 } from "../schema-generator/index.js";
 import { generateOperations } from "../client-generator/index.js";
 import { sanitizeIdentifier } from "../schema-generator/utils.js";
+import { applyGeneratedOperationIds } from "../operation-id-generator/index.js";
 import $RefParser from "@apidevtools/json-schema-ref-parser";
 
 /**
@@ -38,7 +39,8 @@ export interface GenerationOptions {
 }
 
 /**
- * Common utility to iterate through all operations in an OpenAPI document
+ * Common utility to iterate through all operations in an OpenAPI document.
+ * Works with all operations, regardless of whether they have operationId
  */
 function forEachOperation(
   openApiDoc: OpenAPIObject,
@@ -68,7 +70,8 @@ function forEachOperation(
     ];
 
     for (const { method, operation } of httpMethods) {
-      if (operation && operation.operationId) {
+      if (operation) {
+        // OperationId is generated if missing
         callback(operation, method, pathKey);
       }
     }
@@ -247,6 +250,10 @@ export async function generate(options: GenerationOptions): Promise<void> {
     console.warn("⚠️ Failed to resolve external $ref pointers:", error);
     // Continue with original document if dereferencing fails
   }
+
+  // Apply generated operation IDs for operations that don't have them
+  applyGeneratedOperationIds(openApiDoc);
+  console.log("✅ Applied generated operation IDs where missing");
 
   if (openApiDoc.components?.schemas) {
     const schemasDir = path.join(output, "schemas");

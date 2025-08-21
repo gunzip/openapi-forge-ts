@@ -10,6 +10,7 @@ import type {
 } from "openapi3-ts/oas31";
 import { isReferenceObject } from "openapi3-ts/oas31";
 import { parseOpenAPI } from "./parser.js";
+import { convertToOpenAPI31 } from "./converter.js";
 import {
   generateSchemaFile,
   generateRequestSchemaFile,
@@ -236,19 +237,23 @@ export async function generate(options: GenerationOptions): Promise<void> {
 
   await fs.mkdir(output, { recursive: true });
 
-  // Parse the OpenAPI document first
-  let openApiDoc = await parseOpenAPI(input);
-
-  // Pre-process: Resolve external $ref pointers using json-schema-ref-parser
-  // Only resolve external references, keep internal references intact
+  // Pre-process: Resolve external $ref pointers before parsing to avoid parsing failures
+  let openApiDoc: OpenAPIObject;
   try {
-    openApiDoc = await $RefParser.bundle(openApiDoc, {
+    // Bundle external references first, then convert to OpenAPI 3.1
+    const bundled = await $RefParser.bundle(input, {
       mutateInputSchema: false, // Don't modify the original
     });
     console.log("✅ Successfully resolved external $ref pointers");
+
+    // Convert the bundled document to OpenAPI 3.1
+    openApiDoc = await convertToOpenAPI31(bundled);
   } catch (error) {
-    console.warn("⚠️ Failed to resolve external $ref pointers:", error);
-    // Continue with original document if dereferencing fails
+    console.warn(
+      "⚠️ Failed to resolve external $ref pointers, falling back to regular parsing:",
+      error
+    );
+    openApiDoc = await parseOpenAPI(input);
   }
 
   // Apply generated operation IDs for operations that don't have them

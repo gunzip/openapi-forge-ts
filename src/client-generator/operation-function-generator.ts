@@ -3,6 +3,7 @@ import type {
   OperationObject,
   ParameterObject,
   RequestBodyObject,
+  ReferenceObject,
 } from "openapi3-ts/oas31";
 import { extractParameterGroups } from "./parameters.js";
 import {
@@ -28,7 +29,7 @@ export function generateOperationFunction(
   pathKey: string,
   method: string,
   operation: OperationObject,
-  pathLevelParameters: (ParameterObject | { $ref: string })[] = [],
+  pathLevelParameters: (ParameterObject | ReferenceObject)[] = [],
   doc: OpenAPIObject
 ): GeneratedFunction {
   const functionName: string = sanitizeIdentifier(operation.operationId!);

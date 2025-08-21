@@ -1,7 +1,7 @@
 import type {
-  OpenAPIObject,
   OperationObject,
   ParameterObject,
+  ReferenceObject,
 } from "openapi3-ts/oas31";
 
 /**
@@ -11,7 +11,7 @@ export interface OperationMetadata {
   pathKey: string;
   method: string;
   operation: OperationObject;
-  pathLevelParameters: ParameterObject[];
+  pathLevelParameters: (ParameterObject | ReferenceObject)[];
   operationId: string;
 }
 

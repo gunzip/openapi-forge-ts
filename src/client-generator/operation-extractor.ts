@@ -2,8 +2,8 @@ import type {
   OpenAPIObject,
   PathItemObject,
   ParameterObject,
+  OperationObject,
 } from "openapi3-ts/oas31";
-import { sanitizeIdentifier } from "../schema-generator/utils.js";
 import type { OperationMetadata } from "./types.js";
 
 /**
@@ -28,21 +28,29 @@ export function extractAllOperations(doc: OpenAPIObject): OperationMetadata[] {
       const pathLevelParameters = (pathItemObj.parameters ||
         []) as ParameterObject[];
 
-      for (const [method, operation] of Object.entries(pathItemObj)) {
-        if (
-          ["get", "post", "put", "delete", "patch"].includes(method) &&
-          (operation as any).operationId
-        ) {
-          const operationId = (operation as any).operationId!;
-          const sanitizedOperationId = sanitizeIdentifier(operationId);
+      // Define the HTTP methods we support with their corresponding operations
+      const httpMethods: Array<{
+        method: string;
+        operation: OperationObject | undefined;
+      }> = [
+        { method: "get", operation: pathItemObj.get },
+        { method: "post", operation: pathItemObj.post },
+        { method: "put", operation: pathItemObj.put },
+        { method: "delete", operation: pathItemObj.delete },
+        { method: "patch", operation: pathItemObj.patch },
+      ];
+
+      for (const { method, operation } of httpMethods) {
+        if (operation && operation.operationId) {
+          const operationId = operation.operationId;
 
           // Skip operations that result in empty sanitized IDs
           operations.push({
             pathKey,
             method,
-            operation: operation as any,
+            operation,
             pathLevelParameters,
-            operationId: operationId,
+            operationId,
           });
         }
       }

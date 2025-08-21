@@ -2,7 +2,9 @@ import type {
   OpenAPIObject,
   OperationObject,
   ParameterObject,
+  ReferenceObject,
 } from "openapi3-ts/oas31";
+import { isReferenceObject } from "openapi3-ts/oas31";
 import { toCamelCase, toValidVariableName } from "./utils.js";
 import type {
   ParameterGroups,
@@ -15,10 +17,10 @@ import type {
  * Resolves parameter references to actual parameter objects
  */
 export function resolveParameterReference(
-  param: ParameterObject | { $ref: string },
+  param: ParameterObject | ReferenceObject,
   doc: OpenAPIObject
 ): ParameterObject {
-  if ("$ref" in param && param.$ref) {
+  if (isReferenceObject(param)) {
     const refPath = param.$ref.replace("#/", "").split("/");
     let resolved = doc as any;
     for (const segment of refPath) {
@@ -26,7 +28,7 @@ export function resolveParameterReference(
     }
     return resolved as ParameterObject;
   }
-  return param as ParameterObject;
+  return param;
 }
 
 /**
@@ -34,7 +36,7 @@ export function resolveParameterReference(
  */
 export function extractParameterGroups(
   operation: OperationObject,
-  pathLevelParameters: (ParameterObject | { $ref: string })[],
+  pathLevelParameters: (ParameterObject | ReferenceObject)[],
   doc: OpenAPIObject
 ): ParameterGroups {
   // Resolve parameter references and combine path-level and operation-level parameters
@@ -42,7 +44,7 @@ export function extractParameterGroups(
     resolveParameterReference(p, doc)
   );
   const resolvedOperationParams = (operation.parameters || []).map((p) =>
-    resolveParameterReference(p as ParameterObject | { $ref: string }, doc)
+    resolveParameterReference(p, doc)
   );
   const allParameters = [
     ...resolvedPathLevelParams,
@@ -50,15 +52,9 @@ export function extractParameterGroups(
   ];
 
   return {
-    pathParams: allParameters.filter(
-      (p) => p.in === "path"
-    ) as ParameterObject[],
-    queryParams: allParameters.filter(
-      (p) => p.in === "query"
-    ) as ParameterObject[],
-    headerParams: allParameters.filter(
-      (p) => p.in === "header"
-    ) as ParameterObject[],
+    pathParams: allParameters.filter((p) => p.in === "path"),
+    queryParams: allParameters.filter((p) => p.in === "query"),
+    headerParams: allParameters.filter((p) => p.in === "header"),
   };
 }
 

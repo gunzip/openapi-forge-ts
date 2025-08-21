@@ -226,7 +226,14 @@ export function zodSchemaToCode(
     if (schema.format === "date-time") code = "z.iso.datetime()";
     if (schema.format === "time") code = "z.iso.time()";
     if (schema.format === "duration") code = "z.iso.duration()";
-    if (schema.format === "binary") code = "z.instanceof(File)";
+
+    // Although Blob and File (which extends Blob) can be used interchangeably,
+    // it is recommended to use a File instance when uploading files.
+    // Using File ensures the uploaded file retains its original name;
+    // otherwise, the server will assign a default name.
+    // When downloading files, browsers typically return a File instance,
+    // while in Node.js, fetch returns a Blob instance.
+    if (schema.format === "binary") code = "z.instanceof(Blob)";
 
     // Handle multi-value enums for strings
     if (schema.enum && schema.enum.length > 1)

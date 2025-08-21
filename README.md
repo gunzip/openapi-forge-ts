@@ -1,6 +1,34 @@
 # OpenAPI TypeScript Client Generator
 
-Effortlessly turn your OpenAPI specifications into fully-typed Zod schemas—ready for runtime validation and TypeScript development.
+## Table of Contents
+
+- [OpenAPI TypeScript Client Generator](#openapi-typescript-client-generator)
+  - [Table of Contents](#table-of-contents)
+- [OpenAPI TypeScript Client Generator](#openapi-typescript-client-generator-1)
+  - [Supported Input Formats](#supported-input-formats)
+  - [Installation](#installation)
+  - [CLI Usage](#cli-usage)
+    - [CLI Options](#cli-options)
+  - [Programmatic Usage](#programmatic-usage)
+  - [Generated Architecture](#generated-architecture)
+  - [Using the Generated Operations](#using-the-generated-operations)
+    - [Define Configuration](#define-configuration)
+    - [Call Operations](#call-operations)
+  - [Binding Configuration to All Operations](#binding-configuration-to-all-operations)
+  - [Response Handling](#response-handling)
+  - [Exception Handling](#exception-handling)
+  - [Using Generated Zod Schemas](#using-generated-zod-schemas)
+  - [Features](#features)
+  - [Benefits of Operation-Based Architecture](#benefits-of-operation-based-architecture)
+  - [Known Limitations](#known-limitations)
+    - [Multiple Request Content Types](#multiple-request-content-types)
+    - [Missing Response Headers Validation](#missing-response-headers-validation)
+    - [String Constraints on Query and Path Parameters](#string-constraints-on-query-and-path-parameters)
+  - [Comparison: openapi-client-ts vs openapi-zod-client vs legacy generator](#comparison-openapi-client-ts-vs-openapi-zod-client-vs-legacy-generator)
+
+# OpenAPI TypeScript Client Generator
+
+Effortlessly turn your OpenAPI specifications into fully-typed Zod v4 schemas-ready for runtime validation and TypeScript development.
 
 Need a client? Instantly generate a type-safe, operation-based API client alongside your schemas, all in one streamlined workflow.
 

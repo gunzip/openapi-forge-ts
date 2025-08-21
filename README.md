@@ -219,3 +219,30 @@ The generated operation will only handle the `application/json` content type in 
 2. Manually modify the generated code after generation
 
 This limitation may be addressed in future versions.
+
+## Comparison: openapi-client-ts vs openapi-zod-client
+
+| Feature / Limitation           |  openapi-client-ts (this project)   |  openapi-zod-client  |
+| ------------------------------ | :---------------------------------: | :------------------: |
+| **Generates all schema types** |                 Yes                 | No (only used types) |
+| **Subtype constraints**        |       Preserved at all levels       |  Only at top-level   |
+| **Multiple success responses** |      Yes (discriminated union)      |          No          |
+| **Security header support**    |                 Yes                 |          No          |
+| **File download response**     |                 Yes                 |          No          |
+| **Output structure**           |    Modular (per operation/type)     | Single file + zodios |
+| **Dependency footprint**       |         Minimal (Zod only)          |   zodios + others    |
+| **Runtime validation**         |               Zod v4                |        Zod v3        |
+| **OpenAPI version support**    | 2.0, 3.0.x, 3.1.x (auto-normalized) |     3.0.x, 3.1.x     |
+| **Tree-shaking friendly**      |                 Yes                 |          No          |
+| **TypeScript type inference**  |      Full (all schemas/types)       |       Partial        |
+| **Per-operation config**       |                 Yes                 |          No          |
+| **Error handling**             |          Typed, exhaustive          |        Basic         |
+| **File upload support**        |                 Yes                 |         Yes          |
+| **Server-side usage**          |              Supported              |      Supported       |
+
+**Other considerations:**
+
+- openapi-client-ts is designed for maximum modularity, tree-shaking, and minimal runtime dependencies.
+- openapi-zod-client generates a single large file and relies on zodios, increasing bundle size.
+- openapi-client-ts provides granular error handling and response typing, making exhaustive handling easier.
+- openapi-client-ts is ESM-first and supports both Node.js and browser environments out of the box.

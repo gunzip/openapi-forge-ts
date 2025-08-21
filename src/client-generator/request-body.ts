@@ -1,6 +1,15 @@
 import type { OpenAPIObject, RequestBodyObject } from "openapi3-ts/oas31";
 import { sanitizeIdentifier } from "../schema-generator/utils.js";
-import type { RequestBodyTypeInfo } from "./types.js";
+
+/**
+ * Information about request body types
+ */
+export interface RequestBodyTypeInfo {
+  typeName: string | null;
+  isRequired: boolean;
+  typeImports: Set<string>;
+  contentType: string;
+}
 
 /**
  * Extracts the request body content type from the OpenAPI spec

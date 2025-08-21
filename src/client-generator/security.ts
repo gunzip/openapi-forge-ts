@@ -4,7 +4,15 @@ import type {
   SecuritySchemeObject,
 } from "openapi3-ts/oas31";
 import { toValidVariableName } from "./utils.js";
-import type { SecurityHeader } from "./types.js";
+
+/**
+ * Security header information for operations
+ */
+export interface SecurityHeader {
+  schemeName: string;
+  headerName: string;
+  isRequired: boolean;
+}
 
 /**
  * Extracts global auth header names from security schemes (only those used globally)

@@ -1,7 +1,23 @@
 import type { OperationObject, ResponseObject } from "openapi3-ts/oas31";
 import { getResponseContentType } from "./utils.js";
 import { sanitizeIdentifier } from "../schema-generator/utils.js";
-import type { ResponseHandlerResult } from "./types.js";
+
+/**
+ * Information about response types and handlers
+ */
+export interface ResponseTypeInfo {
+  typeName: string | null;
+  typeImports: Set<string>;
+  responseHandlers: string[];
+}
+
+/**
+ * Result of response handler generation
+ */
+export interface ResponseHandlerResult {
+  returnType: string;
+  responseHandlers: string[];
+}
 
 /**
  * Generates response handling code and determines return type using discriminated unions

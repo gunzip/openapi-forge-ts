@@ -3,8 +3,19 @@ import type {
   PathItemObject,
   ParameterObject,
   OperationObject,
+  ReferenceObject,
 } from "openapi3-ts/oas31";
-import type { OperationMetadata } from "./types.js";
+
+/**
+ * Metadata for an OpenAPI operation
+ */
+export interface OperationMetadata {
+  pathKey: string;
+  method: string;
+  operation: OperationObject;
+  pathLevelParameters: (ParameterObject | ReferenceObject)[];
+  operationId: string;
+}
 
 /**
  * Extracts base URL from the first server in OpenAPI spec
@@ -24,7 +35,7 @@ export function extractAllOperations(doc: OpenAPIObject): OperationMetadata[] {
 
   if (doc.paths) {
     for (const [pathKey, pathItem] of Object.entries(doc.paths)) {
-      const pathItemObj = pathItem as PathItemObject;
+      const pathItemObj = pathItem;
       const pathLevelParameters = (pathItemObj.parameters ||
         []) as ParameterObject[];
 

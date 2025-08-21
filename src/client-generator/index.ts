@@ -1,6 +1,10 @@
 import type { OpenAPIObject } from "openapi3-ts/oas31";
-import { extractAllOperations, extractBaseURL } from "./operation-extractor.js";
-import { extractAuthHeaders } from "./security.js";
+import {
+  extractAllOperations,
+  extractBaseURL,
+  type OperationMetadata,
+} from "./operation-extractor.js";
+import { extractAuthHeaders, type SecurityHeader } from "./security.js";
 import { generateOperationFunction } from "./operation-function-generator.js";
 import {
   createOperationsDirectory,
@@ -15,7 +19,7 @@ import {
 async function processOperations(
   doc: OpenAPIObject,
   operationsDir: string
-): Promise<import("./types.js").OperationMetadata[]> {
+): Promise<OperationMetadata[]> {
   const operations = extractAllOperations(doc);
 
   for (const {
@@ -75,12 +79,10 @@ export async function generateClient(doc: OpenAPIObject): Promise<string> {
 }
 
 // Re-export key types and functions for external use
-export type {
-  OperationMetadata,
-  ParameterGroups,
-  RequestBodyTypeInfo,
-  SecurityHeader,
-} from "./types.js";
+export type { OperationMetadata } from "./operation-extractor.js";
+export type { ParameterGroups } from "./parameters.js";
+export type { RequestBodyTypeInfo } from "./request-body.js";
+export type { SecurityHeader } from "./security.js";
 
 export { extractAllOperations, extractBaseURL } from "./operation-extractor.js";
 

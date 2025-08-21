@@ -3,10 +3,13 @@ import { generatePathInterpolation } from "./utils.js";
 import {
   generateQueryParamHandling,
   generateHeaderParamHandling,
+  type ParameterGroups,
 } from "./parameters.js";
-import { generateSecurityHeaderHandling } from "./security.js";
+import {
+  generateSecurityHeaderHandling,
+  type SecurityHeader,
+} from "./security.js";
 import { generateRequestBodyHandling } from "./request-body.js";
-import type { ParameterGroups, SecurityHeader } from "./types.js";
 
 /**
  * Generates the function body for an operation with explicit exhaustive handling

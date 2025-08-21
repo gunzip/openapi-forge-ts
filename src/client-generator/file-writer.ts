@@ -6,7 +6,7 @@ import {
 } from "../core-generator/file-writer.js";
 import { generateConfigTypes } from "./config-generator.js";
 import { sanitizeIdentifier } from "../schema-generator/utils.js";
-import type { OperationMetadata } from "./types.js";
+import type { OperationMetadata } from "./operation-extractor.js";
 
 /**
  * Writes a single operation file to disk

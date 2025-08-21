@@ -19,7 +19,14 @@ import {
 } from "./security.js";
 import { generateFunctionBody } from "./code-generation.js";
 import { sanitizeIdentifier } from "../schema-generator/utils.js";
-import type { GeneratedFunction } from "./types.js";
+
+/**
+ * Result of generating a function with imports
+ */
+export interface GeneratedFunction {
+  functionCode: string;
+  typeImports: Set<string>;
+}
 
 /**
  * Generates a single operation function

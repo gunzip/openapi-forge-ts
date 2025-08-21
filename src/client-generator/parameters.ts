@@ -6,12 +6,33 @@ import type {
 } from "openapi3-ts/oas31";
 import { isReferenceObject } from "openapi3-ts/oas31";
 import { toCamelCase, toValidVariableName } from "./utils.js";
-import type {
-  ParameterGroups,
-  ProcessedParameterGroup,
-  SecurityHeader,
-  RequestBodyTypeInfo,
-} from "./types.js";
+import type { SecurityHeader } from "./security.js";
+import type { RequestBodyTypeInfo } from "./request-body.js";
+
+/**
+ * Grouped parameters by their location
+ */
+export interface ParameterGroups {
+  pathParams: ParameterObject[];
+  queryParams: ParameterObject[];
+  headerParams: ParameterObject[];
+}
+
+/**
+ * Processed parameter groups with security information
+ */
+export interface ProcessedParameterGroup {
+  pathParams: ParameterObject[];
+  queryParams: ParameterObject[];
+  headerParams: ParameterObject[];
+  securityHeaders: {
+    schemeName: string;
+    headerName: string;
+    isRequired: boolean;
+  }[];
+  isQueryOptional: boolean;
+  isHeadersOptional: boolean;
+}
 
 /**
  * Resolves parameter references to actual parameter objects

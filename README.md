@@ -72,7 +72,7 @@ The generator creates:
 - **`operations/`** - Individual operation functions
 - **`schemas/`** - Zod schemas and TypeScript types
 
-## Example: Using the Generated Operations
+## Using the Generated Operations
 
 ### Define Configuration
 
@@ -112,7 +112,32 @@ const newPet = await createPet(
 const result = await getPetById({ petId: "123" });
 ```
 
-## Example: Response Handling
+## Binding Configuration to All Operations
+
+You can use the `configureOperations` helper to bind a configuration object to all generated operations, so you don't have to pass the config each time:
+
+```ts
+import * as operations from "./generated/operations/index.js";
+import { configureOperations } from "./generated/operations/index.js";
+
+const apiConfig = {
+  baseURL: "https://api.example.com/v1",
+  fetch: fetch,
+  headers: {
+    Authorization: "Bearer your-token",
+  },
+};
+
+const client = configureOperations(operations, apiConfig);
+
+// Now you can call operations without passing config:
+const pet = await client.getPetById({ petId: "123" });
+const newPet = await client.createPet({
+  body: { name: "Fluffy", status: "available" },
+});
+```
+
+## Response Handling
 
 Each operation returns a discriminated union of possible responses, e.g.:
 
@@ -145,7 +170,7 @@ handleResponse(result, {
 });
 ```
 
-## Example: Exception Handling
+## Exception Handling
 
 All responses not handled by the union type throw a typed error:
 
@@ -164,7 +189,7 @@ try {
 }
 ```
 
-## Example: Using Generated Zod Schemas
+## Using Generated Zod Schemas
 
 ```ts
 import { Pet } from "./generated/schemas/Pet.js";

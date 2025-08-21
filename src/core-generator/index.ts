@@ -76,22 +76,18 @@ function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
         const operationObj = operation as OperationObject;
         const requestBody = operationObj.requestBody as RequestBodyObject;
 
-        // Look for different content types, but skip multipart/form-data
-        // since FormData is a native web API type, not a schema
         const supportedContentTypes = [
           "application/json",
-          "application/x-www-form-urlencoded"
+          "multipart/form-data",
+          "application/x-www-form-urlencoded",
         ];
-        
+
         for (const contentType of supportedContentTypes) {
           const content = requestBody.content?.[contentType];
           if (content?.schema && !content.schema["$ref"]) {
             // Only extract inline schemas, not $ref schemas
             const requestTypeName = `${operationObj.operationId}Request`;
-            requestSchemas.set(
-              requestTypeName,
-              content.schema as SchemaObject
-            );
+            requestSchemas.set(requestTypeName, content.schema as SchemaObject);
             break; // Only process the first matching content type
           }
         }
@@ -160,12 +156,12 @@ function extractResponseSchemas(openApiDoc: any): Map<string, SchemaObject> {
 
           // Check for various content types
           const supportedContentTypes = [
-            "application/json", 
+            "application/json",
             "application/problem+json",
             "application/octet-stream",
-            "multipart/form-data"
+            "multipart/form-data",
           ];
-          
+
           for (const contentType of Object.keys(responseObj.content)) {
             if (
               supportedContentTypes.includes(contentType) ||

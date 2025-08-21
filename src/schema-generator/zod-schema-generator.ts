@@ -226,6 +226,7 @@ export function zodSchemaToCode(
     if (schema.format === "date-time") code = "z.iso.datetime()";
     if (schema.format === "time") code = "z.iso.time()";
     if (schema.format === "duration") code = "z.iso.duration()";
+    if (schema.format === "binary") code = "z.instanceof(File)";
 
     // Handle multi-value enums for strings
     if (schema.enum && schema.enum.length > 1)

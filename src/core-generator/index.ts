@@ -7,9 +7,12 @@ import type {
   ResponseObject,
 } from "openapi3-ts/oas31";
 import { parseOpenAPI } from "./parser.js";
-import { zodSchemaToCode } from "../schema-generator/index.js";
+import {
+  generateSchemaFile,
+  generateRequestSchemaFile,
+  generateResponseSchemaFile,
+} from "../schema-generator/index.js";
 import { generateOperations } from "../client-generator/index.js";
-import { format } from "prettier";
 import $RefParser from "@apidevtools/json-schema-ref-parser";
 
 /**
@@ -242,103 +245,28 @@ export async function generate(options: GenerationOptions): Promise<void> {
         continue;
       }
 
-      const schemaVar = `${name}`;
-      const schemaResult = zodSchemaToCode(schema);
-
-      // Extract description from schema for comment
-      const description = schema.description ? schema.description.trim() : null;
-
-      // Generate comment if description exists
-      const commentSection = description
-        ? `/**\n * ${description
-            .replace(/\*\//g, "*\\/") // Escape */ to prevent breaking comment blocks
-            .split("\n")
-            .map((line) => line.trim())
-            .join("\n * ")}\n */\n`
-        : "";
-
-      // Generate imports for dependencies
-      const imports = Array.from(schemaResult.imports)
-        .filter((importName) => importName !== name) // Don't import self
-        .map(
-          (importName) => `import { ${importName} } from "./${importName}.js";`
-        )
-        .join("\n");
-
-      const importsSection = imports ? `${imports}\n` : "";
-      const schemaContent = `${commentSection}export const ${schemaVar} = ${schemaResult.code};`;
-      const typeContent = `export type ${schemaVar} = z.infer<typeof ${schemaVar}>;`;
-
-      const filePath = path.join(schemasDir, `${name}.ts`);
-      const formattedContent = await format(
-        `import { z } from 'zod';\n${importsSection}\n${schemaContent}\n${typeContent}`,
-        {
-          parser: "typescript",
-        }
-      );
-      await fs.writeFile(filePath, formattedContent);
+      const description = schema.description
+        ? schema.description.trim()
+        : undefined;
+      const schemaFile = await generateSchemaFile(name, schema, description);
+      const filePath = path.join(schemasDir, schemaFile.fileName);
+      await fs.writeFile(filePath, schemaFile.content);
     }
 
     // Generate request schemas from operations
     const requestSchemas = extractRequestSchemas(openApiDoc);
     for (const [name, schema] of requestSchemas) {
-      const schemaVar = `${name.charAt(0).toUpperCase() + name.slice(1)}`;
-      const schemaResult = zodSchemaToCode(schema);
-
-      // Generate comment for request schema
-      const commentSection = `/**\n * Request schema for ${name.replace("Request", "")} operation\n */\n`;
-
-      // Generate imports for dependencies
-      const imports = Array.from(schemaResult.imports)
-        .filter((importName) => importName !== name) // Don't import self
-        .map(
-          (importName) => `import { ${importName} } from "./${importName}.js";`
-        )
-        .join("\n");
-
-      const importsSection = imports ? `${imports}\n` : "";
-      const schemaContent = `${commentSection}export const ${schemaVar} = ${schemaResult.code};`;
-      const typeContent = `export type ${schemaVar} = z.infer<typeof ${schemaVar}>;`;
-
-      const filePath = path.join(schemasDir, `${schemaVar}.ts`);
-      const formattedContent = await format(
-        `import { z } from 'zod';\n${importsSection}\n${schemaContent}\n${typeContent}`,
-        {
-          parser: "typescript",
-        }
-      );
-      await fs.writeFile(filePath, formattedContent);
+      const schemaFile = await generateRequestSchemaFile(name, schema);
+      const filePath = path.join(schemasDir, schemaFile.fileName);
+      await fs.writeFile(filePath, schemaFile.content);
     }
 
     // Generate response schemas from operations
     const responseSchemas = extractResponseSchemas(openApiDoc);
     for (const [name, schema] of responseSchemas) {
-      const schemaVar = `${name}`;
-      const schemaResult = zodSchemaToCode(schema);
-
-      // Generate comment for response schema
-      const commentSection = `/**\n * Response schema for ${name.replace(/Response$/, "").replace(/\d+Response/, " operation")} \n */\n`;
-
-      // Generate imports for dependencies
-      const imports = Array.from(schemaResult.imports)
-        .filter((importName) => importName !== name) // Don't import self
-        .map(
-          (importName) => `import { ${importName} } from "./${importName}.js";`
-        )
-        .join("\n");
-
-      const importsSection = imports ? `${imports}\n` : "";
-      const schemaContent = `${commentSection}export const ${schemaVar} = ${schemaResult.code};`;
-      const typeContent = `export type ${schemaVar} = z.infer<typeof ${schemaVar}>;`;
-
-      const filePath = path.join(schemasDir, `${schemaVar}.ts`);
-      const formattedContent = await format(
-        `import { z } from 'zod';\n${importsSection}\n${schemaContent}\n${typeContent}`,
-        {
-          parser: "typescript",
-        }
-      );
-      await fs.writeFile(filePath, formattedContent);
+      const schemaFile = await generateResponseSchemaFile(name, schema);
+      const filePath = path.join(schemasDir, schemaFile.fileName);
+      await fs.writeFile(filePath, schemaFile.content);
     }
   }
 

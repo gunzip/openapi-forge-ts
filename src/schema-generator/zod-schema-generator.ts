@@ -1,4 +1,5 @@
 import type { SchemaObject, ReferenceObject } from "openapi3-ts/oas31";
+import { format } from "prettier";
 
 /**
  * Result of converting an OpenAPI schema to Zod code
@@ -14,6 +15,53 @@ import type { SchemaObject, ReferenceObject } from "openapi3-ts/oas31";
 export interface ZodSchemaResult {
   code: string;
   imports: Set<string>;
+  extensibleEnumValues?: any[];
+}
+
+/**
+ * Schema file generation result
+ */
+export interface SchemaFileResult {
+  content: string;
+  fileName: string;
+}
+
+/**
+ * Options for zodSchemaToCode function
+ */
+export interface ZodSchemaCodeOptions {
+  imports?: Set<string>;
+  isTopLevel?: boolean;
+}
+
+/**
+ * Handles x-extensible-enum for string schemas
+ * Always generates inline array format for consistency
+ */
+function handleExtensibleEnum(schema: SchemaObject): {
+  code: string;
+  enumValues: any[];
+} | null {
+  const extensibleEnum = (schema as any)["x-extensible-enum"];
+  if (!extensibleEnum || !Array.isArray(extensibleEnum)) {
+    return null;
+  }
+
+  // Always use inline array format
+  const enumValues = extensibleEnum
+    .map((e: any) => JSON.stringify(e))
+    .join(", ");
+  let code = `z.enum([${enumValues}]).or(z.string())`;
+
+  // Add default value if present
+  if (schema.default !== undefined) {
+    code += `.default(${JSON.stringify(schema.default)})`;
+  }
+
+  return {
+    code,
+    enumValues: extensibleEnum,
+  };
 }
 
 /**
@@ -21,8 +69,9 @@ export interface ZodSchemaResult {
  */
 export function zodSchemaToCode(
   schema: SchemaObject | ReferenceObject,
-  imports?: Set<string>
+  options: ZodSchemaCodeOptions = {}
 ): ZodSchemaResult {
+  const { imports } = options;
   const result: ZodSchemaResult = {
     code: "",
     imports: imports || new Set<string>(),
@@ -62,14 +111,18 @@ export function zodSchemaToCode(
     if (nonNullTypes.length === 1 && types.includes("null")) {
       // e.g., type: ["string", "null"]
       const clone = { ...schema, type: nonNullTypes[0] };
-      const subResult = zodSchemaToCode(clone as SchemaObject, result.imports);
+      const subResult = zodSchemaToCode(clone as SchemaObject, {
+        imports: result.imports,
+      });
       result.code = `(${subResult.code}).nullable()`;
       result.imports = new Set([...result.imports, ...subResult.imports]);
       return result;
     } else {
       // e.g., type: ["string", "number"]
       const subResults = types.map((t: string) =>
-        zodSchemaToCode({ ...schema, type: t } as SchemaObject, result.imports)
+        zodSchemaToCode({ ...schema, type: t } as SchemaObject, {
+          imports: result.imports,
+        })
       );
       const schemas = subResults.map((r: ZodSchemaResult) => r.code);
       subResults.forEach((r: ZodSchemaResult) => {
@@ -101,7 +154,9 @@ export function zodSchemaToCode(
   if ("nullable" in schema && (schema as any).nullable) {
     const clone = { ...schema };
     delete (clone as any).nullable;
-    const subResult = zodSchemaToCode(clone as SchemaObject, result.imports);
+    const subResult = zodSchemaToCode(clone as SchemaObject, {
+      imports: result.imports,
+    });
     result.code = `(${subResult.code}).nullable()`;
     result.imports = new Set([...result.imports, ...subResult.imports]);
     return result;
@@ -109,7 +164,7 @@ export function zodSchemaToCode(
 
   if (schema.allOf) {
     const subResults = schema.allOf.map((s) =>
-      zodSchemaToCode(s, result.imports)
+      zodSchemaToCode(s, { imports: result.imports })
     );
     const schemas = subResults.map((r) => r.code);
     subResults.forEach((r) => {
@@ -140,7 +195,9 @@ export function zodSchemaToCode(
     // Check if discriminator is present for discriminated unions
     if (discriminator && discriminator.propertyName) {
       const discriminatorProperty = discriminator.propertyName;
-      const subResults = schemas.map((s) => zodSchemaToCode(s, result.imports));
+      const subResults = schemas.map((s) =>
+        zodSchemaToCode(s, { imports: result.imports })
+      );
       const schemasCodes = subResults.map((r) => r.code);
       subResults.forEach((r) => {
         result.imports = new Set([...result.imports, ...r.imports]);
@@ -161,7 +218,9 @@ export function zodSchemaToCode(
     }
 
     // Regular union without discriminator
-    const subResults = schemas.map((s) => zodSchemaToCode(s, result.imports));
+    const subResults = schemas.map((s) =>
+      zodSchemaToCode(s, { imports: result.imports })
+    );
     const schemasCodes = subResults.map((r) => r.code);
     subResults.forEach((r) => {
       result.imports = new Set([...result.imports, ...r.imports]);
@@ -211,6 +270,14 @@ export function zodSchemaToCode(
   }
 
   if (effectiveType === "string") {
+    // Handle x-extensible-enum first, as it takes precedence over regular enum
+    const extensibleEnumResult = handleExtensibleEnum(schema);
+    if (extensibleEnumResult) {
+      result.code = extensibleEnumResult.code;
+      result.extensibleEnumValues = extensibleEnumResult.enumValues;
+      return result;
+    }
+
     let code = "z.string()";
 
     // include minLength
@@ -301,7 +368,9 @@ export function zodSchemaToCode(
       result.code = code;
       return result;
     }
-    const itemsResult = zodSchemaToCode(schema.items, result.imports);
+    const itemsResult = zodSchemaToCode(schema.items, {
+      imports: result.imports,
+    });
     let code = `z.array(${itemsResult.code})`;
     result.imports = new Set([...result.imports, ...itemsResult.imports]);
 
@@ -324,7 +393,9 @@ export function zodSchemaToCode(
 
     if (schema.properties) {
       for (const [key, propSchema] of Object.entries(schema.properties)) {
-        const propResult = zodSchemaToCode(propSchema, result.imports);
+        const propResult = zodSchemaToCode(propSchema, {
+          imports: result.imports,
+        });
         result.imports = new Set([...result.imports, ...propResult.imports]);
 
         const isRequired = requiredFields.includes(key);
@@ -340,10 +411,9 @@ export function zodSchemaToCode(
       if (typeof schema.additionalProperties === "boolean") {
         code += ".catchall(z.unknown())";
       } else {
-        const additionalResult = zodSchemaToCode(
-          schema.additionalProperties,
-          result.imports
-        );
+        const additionalResult = zodSchemaToCode(schema.additionalProperties, {
+          imports: result.imports,
+        });
         result.imports = new Set([
           ...result.imports,
           ...additionalResult.imports,
@@ -381,4 +451,84 @@ function isSchemaObject(
   obj: SchemaObject | ReferenceObject
 ): obj is SchemaObject {
   return !("$ref" in obj);
+}
+
+/**
+ * Generates file content for a schema with extensible enum support
+ */
+export async function generateSchemaFile(
+  name: string,
+  schema: SchemaObject,
+  description?: string
+): Promise<SchemaFileResult> {
+  const schemaResult = zodSchemaToCode(schema, { isTopLevel: true });
+
+  // Generate comment if description exists
+  const commentSection = description
+    ? `/**\n * ${description
+        .replace(/\*\//g, "*\\/") // Escape */ to prevent breaking comment blocks
+        .split("\n")
+        .map((line) => line.trim())
+        .join("\n * ")}\n */\n`
+    : "";
+
+  // Generate imports for dependencies
+  const imports = Array.from(schemaResult.imports)
+    .filter((importName) => importName !== name) // Don't import self
+    .map((importName) => `import { ${importName} } from "./${importName}.js";`)
+    .join("\n");
+
+  const importsSection = imports ? `${imports}\n` : "";
+
+  let content: string;
+
+  // Handle extensible enum case
+  if (schemaResult.extensibleEnumValues) {
+    const enumValues = schemaResult.extensibleEnumValues
+      .map((e: any) => JSON.stringify(e))
+      .join(" | ");
+    const typeContent = `export type ${name} = ${enumValues} | (string & {});`;
+    const schemaContent = `${commentSection}export const ${name} = ${schemaResult.code};`;
+
+    content = `import { z } from 'zod';\n${importsSection}\n${schemaContent}\n${typeContent}`;
+  } else {
+    const schemaContent = `${commentSection}export const ${name} = ${schemaResult.code};`;
+    const typeContent = `export type ${name} = z.infer<typeof ${name}>;`;
+
+    content = `import { z } from 'zod';\n${importsSection}\n${schemaContent}\n${typeContent}`;
+  }
+
+  const formattedContent = await format(content, {
+    parser: "typescript",
+  });
+
+  return {
+    content: formattedContent,
+    fileName: `${name}.ts`,
+  };
+}
+
+/**
+ * Generates file content for a request schema
+ */
+export async function generateRequestSchemaFile(
+  name: string,
+  schema: SchemaObject
+): Promise<SchemaFileResult> {
+  const schemaVar = `${name.charAt(0).toUpperCase() + name.slice(1)}`;
+  const description = `Request schema for ${name.replace("Request", "")} operation`;
+
+  return generateSchemaFile(schemaVar, schema, description);
+}
+
+/**
+ * Generates file content for a response schema
+ */
+export async function generateResponseSchemaFile(
+  name: string,
+  schema: SchemaObject
+): Promise<SchemaFileResult> {
+  const description = `Response schema for ${name.replace(/Response$/, "").replace(/\d+Response/, " operation")}`;
+
+  return generateSchemaFile(name, schema, description);
 }

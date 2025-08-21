@@ -381,4 +381,78 @@ describe("zodSchemaToCode", () => {
     expect(oneOfResult.code).toContain("z.any().superRefine(");
     expect(oneOfResult.code).toContain("Should pass exactly one schema");
   });
+
+  it("should handle x-extensible-enum for strings", () => {
+    const schema: SchemaObject = {
+      type: "string",
+      "x-extensible-enum": ["value1", "value2", "value3"],
+    } as any; // Cast to any to allow x-extensible-enum extension
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe(
+      'z.enum(["value1", "value2", "value3"]).or(z.string())'
+    );
+    const zodSchema = evalZod(result.code);
+
+    // Should accept known enum values
+    expect(zodSchema.safeParse("value1").success).toBe(true);
+    expect(zodSchema.safeParse("value2").success).toBe(true);
+    expect(zodSchema.safeParse("value3").success).toBe(true);
+
+    // Should also accept any other string (extensible)
+    expect(zodSchema.safeParse("customValue").success).toBe(true);
+    expect(zodSchema.safeParse("anotherValue").success).toBe(true);
+
+    // Should reject non-string values
+    expect(zodSchema.safeParse(123).success).toBe(false);
+    expect(zodSchema.safeParse(null).success).toBe(false);
+    expect(zodSchema.safeParse(undefined).success).toBe(false);
+  });
+
+  it("should handle x-extensible-enum with single value", () => {
+    const schema: SchemaObject = {
+      type: "string",
+      "x-extensible-enum": ["ACTIVATED"],
+    } as any;
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe('z.enum(["ACTIVATED"]).or(z.string())');
+    const zodSchema = evalZod(result.code);
+
+    // Should accept the known value
+    expect(zodSchema.safeParse("ACTIVATED").success).toBe(true);
+
+    // Should also accept other strings
+    expect(zodSchema.safeParse("DEACTIVATED").success).toBe(true);
+    expect(zodSchema.safeParse("PENDING").success).toBe(true);
+  });
+
+  it("should handle x-extensible-enum with default value", () => {
+    const schema: SchemaObject = {
+      type: "string",
+      "x-extensible-enum": ["en_US", "es_ES", "fr_FR"],
+      default: "en_US",
+    } as any;
+    const result = zodSchemaToCode(schema);
+    expect(result.code).toBe(
+      'z.enum(["en_US", "es_ES", "fr_FR"]).or(z.string()).default("en_US")'
+    );
+    const zodSchema = evalZod(result.code);
+
+    expect(zodSchema.parse("es_ES")).toBe("es_ES");
+    expect(zodSchema.parse("custom_LOCALE")).toBe("custom_LOCALE");
+    expect(zodSchema.parse(undefined)).toBe("en_US"); // default value
+  });
+
+  it("should prioritize x-extensible-enum over regular enum", () => {
+    const schema: SchemaObject = {
+      type: "string",
+      enum: ["regularEnum1", "regularEnum2"],
+      "x-extensible-enum": ["extensibleValue1", "extensibleValue2"],
+    } as any;
+    const result = zodSchemaToCode(schema);
+    // Should use x-extensible-enum and generate extensible schema
+    expect(result.code).toBe(
+      'z.enum(["extensibleValue1", "extensibleValue2"]).or(z.string())'
+    );
+    expect(result.code).not.toContain("regularEnum1");
+  });
 });

@@ -1,17 +1,25 @@
 # OpenAPI TypeScript Client Generator
 
-Generate a TypeScript API client from OpenAPI specifications, with automatic conversion to 3.1.0, Zod validation, and operation-based architecture.
+Effortlessly turn your OpenAPI specifications into fully-typed Zod schemas—ready for runtime validation and TypeScript development.
+
+Need a client? Instantly generate a type-safe, operation-based API client alongside your schemas, all in one streamlined workflow.
 
 ## Features
 
-- **Multi-version support**: Automatically converts OpenAPI 2.0 (Swagger), 3.0.x, and 3.1.x specifications to 3.1.0
-- **Operation-based client generation** from OpenAPI 3.1.0 (one function per operation)
-- **Zod v4 runtime validation** for response (and optionally request) payloads
-- **Modular output**: generate schemas/types and operations in separate files
-- **Type-safe configuration** with immutable global defaults and per-operation configuration
-- **Tree-shakeable**: only import the operations you use
-- **Flexible authentication and error handling**
-- **ESM output, minimal dependencies**
+- **Multi-version support**: Accepts OpenAPI 2.0 (Swagger), 3.0.x, and 3.1.x specifications, automatically converting to 3.1.0 for generation
+- **Operation-based client generation**: Generates one function per operation, with strong typing and per-operation configuration: no need for blacklisting operations you don't need!
+- **Zod v4 runtime validation**: Validates all response payloads at runtime
+- **Small footprint**: Generates each operation and schema/type in its own file for maximum tree-shaking and modularity
+- **Type-safe configuration**: Immutable global defaults, with the ability to override config per operation
+- **Flexible authentication**: Supports OpenAPI security schemes (Bearer, API Key, etc.), with dynamic header/query configuration
+- **Discriminated union response types**: Each operation returns a discriminated union of possible responses, enabling exhaustive handling
+- **Comprehensive error handling**: Only unexpected responses throw a typed exception (UnexpectedResponseError) forwarding status, body, and headers
+- **File upload/download and binary payload support**: Handles multipart/form-data and application/octet-stream uploads and downloads
+- **ESM output**: Generated code is ESM-first
+- **Minimal dependencies**: No runtime dependencies except Zod; works in Node.js and browsers
+- **Self-contained Zod schemas**: Generated schemas can be used independently for validation (e.g., in forms) and server-side logic
+- **Automatic OpenAPI normalization**: All input specs are normalized to OpenAPI 3.1.0 before code generation
+- **Comprehensive test suite**: Project includes Vitest-based tests for all major features
 
 ## Supported Input Formats
 
@@ -37,12 +45,6 @@ pnpm start -- generate \
   --output ./generated \
   --generate-client
 ```
-
-The tool automatically detects the OpenAPI version and converts as needed:
-
-- Swagger 2.0 files are converted to OpenAPI 3.0, then to 3.1
-- OpenAPI 3.0.x files are converted directly to 3.1
-- OpenAPI 3.1.x files are used as-is
 
 ### CLI Options
 
@@ -75,26 +77,19 @@ The generator creates:
 ### Define Configuration
 
 ```ts
-import {
-  testAuthBearer,
-  testMultipleSuccess,
-} from "./generated/operations/index.js";
-```
+import { getPetById, createPet } from "./generated/operations/index.js";
 
-```ts
 // You can define your API configuration (all fields required)
 // or just use the default configuration to avoid passing it
 // as parameter to every operation
 const apiConfig = {
   baseURL: "https://api.example.com/v1",
-  fetch: fetch,
+  fetch: fetch, // or globalThis.fetch in browsers
   headers: {
     Authorization: "Bearer your-token",
   },
 };
 ```
-
-````
 
 ### Call Operations
 
@@ -103,16 +98,71 @@ const apiConfig = {
 const pet = await getPetById({ petId: "123" }, apiConfig);
 
 // Operation with request body
-const newPet = await createPet({
-  body: {
-    name: "Fluffy",
-    status: "available"
-  }
-}, apiConfig);
+const newPet = await createPet(
+  {
+    body: {
+      name: "Fluffy",
+      status: "available",
+    },
+  },
+  apiConfig
+);
 
 // Use default empty config (operations work without configuration)
-const result = await someOperation({ param: "value" });
-````
+const result = await getPetById({ petId: "123" });
+```
+
+## Example: Response Handling
+
+Each operation returns a discriminated union of possible responses, e.g.:
+
+```ts
+const result = await getPetById({ petId: "123" }, apiConfig);
+
+if (result.status === 200) {
+  // result.data is the parsed/validated response body
+  console.log("Pet:", result.data);
+} else if (result.status === 404) {
+  // Not found
+  console.warn("Pet not found");
+} else {
+  // Exhaustive check
+  console.error("Unexpected status", result.status);
+}
+
+// Or use the helper:
+import { isSuccessResponse } from "./generated/operations/index.js";
+if (isSuccessResponse(result)) {
+  // result.data is typed
+}
+
+// Or handle all cases with the provided utility method:
+import { handleResponse } from "./generated/operations/index.js";
+handleResponse(result, {
+  200: (data) => console.log("Pet:", data),
+  404: () => console.warn("Not found"),
+  default: (res) => console.error("Other status", res.status),
+});
+```
+
+## Example: Exception Handling
+
+All responses not handled by the union type throw a typed error:
+
+```ts
+try {
+  const result = await getPetById({ petId: "notfound" }, apiConfig);
+  // handle result as above
+} catch (err) {
+  if (err instanceof ApiError) {
+    console.error("API error", err.status, err.body);
+  } else if (err instanceof UnexpectedResponseError) {
+    console.error("Unexpected response", err.status, err.data);
+  } else {
+    throw err; // rethrow unknown errors
+  }
+}
+```
 
 ## Example: Using Generated Zod Schemas
 
@@ -128,7 +178,7 @@ if (!result.success) {
 ## Benefits of Operation-Based Architecture
 
 - **Tree Shaking**: Only bundle the operations you actually use
-- **Type Safety**: Better parameter organization with single config object
+- **Type Safety**: Better parameter organization with an immutable config object
 - **Flexibility**: Easy per-operation configuration with all required fields
 - **Maintainability**: Each operation in its own file
 - **Testing**: Simple to mock individual operations
@@ -163,22 +213,9 @@ requestBody:
 
 The generated operation will only handle the `application/json` content type in this case.
 
-**Workaround**: If you need to support multiple content types for the same endpoint, you can:
+**Workaround**: If you need to support multiple content types for requests for the same endpoint, you can:
 
 1. Define separate operations for each content type in your OpenAPI spec
 2. Manually modify the generated code after generation
 
 This limitation may be addressed in future versions.
-
-## Migration from Class-Based Clients
-
-See [NEW_API_DOCUMENTATION.md](./NEW_API_DOCUMENTATION.md) for detailed migration guide and advanced usage examples.
-
-## Requirements
-
-- Node.js 18+
-- pnpm
-
-## License
-
-MIT

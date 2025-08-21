@@ -232,18 +232,18 @@ This limitation may be addressed in future versions.
 
 | Feature / Limitation           |  openapi-client-ts (this project)   |                      openapi-codegen-ts                       |   openapi-zod-client   |
 | ------------------------------ | :---------------------------------: | :-----------------------------------------------------------: | :--------------------: |
-| **Generates all schema types** |                 ✅                  |                              ✅                               |           ❌           |
-| **Subtype constraints**        |                 ✅                  |                              ✅                               | ⚠️ (Only at top-level) |
-| **Multiple success responses** |                 ✅                  |                              ✅                               |           ❌           |
-| **Security header support**    |                 ✅                  |                              ✅                               |           ❌           |
-| **File download response**     |                 ✅                  |                              ✅                               |           ❌           |
 | **Output structure**           |    Modular (per operation/type)     | Monolithic (single file for all operations and request types) |  Single file + zodios  |
 | **Dependency footprint**       |         Minimal (Zod only)          |               io-ts, @pagopa/ts-commons, fp-ts                |    zodios + others     |
 | **Runtime validation**         |               Zod v4                |                             io-ts                             |         Zod v3         |
 | **OpenAPI version support**    | 2.0, 3.0.x, 3.1.x (auto-normalized) |                          2.0, 3.0.x                           |      3.0.x, 3.1.x      |
+| **Error handling**             |          Typed, exhaustive          |                       Typed, exhaustive                       |         Basic          |
+| **Type complexity**            |               Simple                |                 Complex and hard to maintain                  |         Simple         |
+| **Generation Speed**           |                Good                 |                       Bad on big specs                        |          Good          |
+| **Subtype constraints**        |                 ✅                  |                              ✅                               | ⚠️ (Only at top-level) |
+| **Multiple success responses** |                 ✅                  |                              ✅                               |           ❌           |
+| **Security header support**    |                 ✅                  |                              ✅                               |           ❌           |
+| **File download response**     |                 ✅                  |                              ✅                               |           ❌           |
 | **Tree-shaking friendly**      |                 ✅                  |                              ❌                               |           ❌           |
 | **Per-operation overrides**    |                 ✅                  |                              ✅                               |           ❌           |
-| **Error handling**             |          Typed, exhaustive          |                       Typed, exhaustive                       |         Basic          |
 | **File upload support**        |                 ✅                  |                              ✅                               |           ✅           |
 | **Server-side usage**          |                 ✅                  |                              ✅                               |           ✅           |
-| **Type complexity**            |               Simple                |                 Complex and hard to maintain                  |         Simple         |

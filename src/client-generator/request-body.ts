@@ -1,4 +1,5 @@
 import type { OpenAPIObject, RequestBodyObject } from "openapi3-ts/oas31";
+import { sanitizeIdentifier } from "../schema-generator/utils.js";
 import type { RequestBodyTypeInfo } from "./types.js";
 
 /**
@@ -65,7 +66,10 @@ export function resolveRequestBodyType(
 
   // If it's a reference to a schema, use that as the type name
   if (schema["$ref"]) {
-    const typeName = schema["$ref"].split("/").pop();
+    const originalTypeName = schema["$ref"].split("/").pop();
+    const typeName = originalTypeName
+      ? sanitizeIdentifier(originalTypeName)
+      : null;
     return {
       typeName: typeName || null,
       isRequired,
@@ -76,7 +80,8 @@ export function resolveRequestBodyType(
 
   // For inline schemas, use the pre-generated request schema
   // The request schema will be generated as {operationId}Request in the main generator
-  const requestTypeName = `${operationId.charAt(0).toUpperCase() + operationId.slice(1)}Request`;
+  const sanitizedOperationId: string = sanitizeIdentifier(operationId);
+  const requestTypeName = `${sanitizedOperationId.charAt(0).toUpperCase() + sanitizedOperationId.slice(1)}Request`;
   return {
     typeName: requestTypeName,
     isRequired,

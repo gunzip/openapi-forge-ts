@@ -5,6 +5,7 @@ import {
   buildOperationFileContent,
 } from "../core-generator/file-writer.js";
 import { generateConfigTypes } from "./config-generator.js";
+import { sanitizeIdentifier } from "../schema-generator/utils.js";
 import type { OperationMetadata } from "./types.js";
 
 /**
@@ -16,8 +17,9 @@ export async function writeOperationFile(
   typeImports: Set<string>,
   operationsDir: string
 ): Promise<void> {
+  const sanitizedOperationId = sanitizeIdentifier(operationId);
   const operationContent = buildOperationFileContent(typeImports, functionCode);
-  const operationPath = path.join(operationsDir, `${operationId}.ts`);
+  const operationPath = path.join(operationsDir, `${sanitizedOperationId}.ts`);
   await writeFormattedFile(operationPath, operationContent);
 }
 
@@ -43,12 +45,30 @@ export async function writeIndexFile(
 ): Promise<void> {
   const operationImports: string[] = [];
   const operationExports: string[] = [];
+  const seenOperations = new Set<string>(); // Track unique sanitized operation IDs
 
   for (const { operationId } of operations) {
+    const sanitizedOperationId = sanitizeIdentifier(operationId);
+
+    // Fail in case of duplicate sanitized operation IDs
+    if (seenOperations.has(sanitizedOperationId)) {
+      // Should never happen, this indicates a bug in the specs or in the code
+      throw new Error(`Duplicate operation ID: ${operationId}`);
+    }
+
+    seenOperations.add(sanitizedOperationId);
     operationImports.push(
-      `import { ${operationId} } from './${operationId}.js';`
+      `import { ${sanitizedOperationId} } from './${sanitizedOperationId}.js';`
     );
-    operationExports.push(operationId);
+    operationExports.push(sanitizedOperationId);
+  }
+
+  // Handle case where no valid operations exist
+  if (operationExports.length === 0) {
+    const indexContent = `// No valid operations found to export`;
+    const indexPath = path.join(operationsDir, "index.ts");
+    await writeFormattedFile(indexPath, indexContent);
+    return;
   }
 
   const indexContent = `${operationImports.join("\n")}

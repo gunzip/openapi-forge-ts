@@ -1,4 +1,5 @@
 import type { ReferenceObject } from "openapi3-ts/oas31";
+import { sanitizeIdentifier } from "./utils.js";
 
 // Import from schema-converter to avoid circular dependencies
 interface ZodSchemaResult {
@@ -18,7 +19,8 @@ export function handleReference(
     const ref = schema.$ref;
     // Check if it's a local reference to components/schemas
     if (ref.startsWith("#/components/schemas/")) {
-      const schemaName = ref.replace("#/components/schemas/", "");
+      const originalSchemaName = ref.replace("#/components/schemas/", "");
+      const schemaName: string = sanitizeIdentifier(originalSchemaName);
       result.imports.add(schemaName);
       result.code = schemaName;
       return result;

@@ -1,5 +1,6 @@
 import type { OperationObject, ResponseObject } from "openapi3-ts/oas31";
 import { getResponseContentType } from "./utils.js";
+import { sanitizeIdentifier } from "../schema-generator/utils.js";
 import type { ResponseHandlerResult } from "./types.js";
 
 /**
@@ -31,7 +32,8 @@ export function generateResponseHandlers(
 
         if (schema["$ref"]) {
           // Use referenced schema
-          typeName = schema["$ref"].split("/").pop()!;
+          const originalSchemaName = schema["$ref"].split("/").pop()!;
+          typeName = sanitizeIdentifier(originalSchemaName);
           typeImports.add(typeName);
 
           if (contentType.includes("json")) {
@@ -42,7 +44,8 @@ export function generateResponseHandlers(
         } else {
           // Use generated response schema for inline schemas
           const operationId = operation.operationId!;
-          const responseTypeName = `${operationId.charAt(0).toUpperCase() + operationId.slice(1)}${code}Response`;
+          const sanitizedOperationId: string = sanitizeIdentifier(operationId);
+          const responseTypeName = `${sanitizedOperationId.charAt(0).toUpperCase() + sanitizedOperationId.slice(1)}${code}Response`;
           typeName = responseTypeName;
           typeImports.add(typeName);
 

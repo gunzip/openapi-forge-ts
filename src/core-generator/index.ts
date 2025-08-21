@@ -13,6 +13,7 @@ import {
   generateResponseSchemaFile,
 } from "../schema-generator/index.js";
 import { generateOperations } from "../client-generator/index.js";
+import { sanitizeIdentifier } from "../schema-generator/utils.js";
 import $RefParser from "@apidevtools/json-schema-ref-parser";
 
 /**
@@ -89,7 +90,7 @@ function extractRequestSchemas(openApiDoc: any): Map<string, SchemaObject> {
           const content = requestBody.content?.[contentType];
           if (content?.schema && !content.schema["$ref"]) {
             // Only extract inline schemas, not $ref schemas
-            const requestTypeName = `${operationObj.operationId}Request`;
+            const requestTypeName = `${sanitizeIdentifier(operationObj.operationId!)}Request`;
             requestSchemas.set(requestTypeName, content.schema as SchemaObject);
             break; // Only process the first matching content type
           }
@@ -173,7 +174,8 @@ function extractResponseSchemas(openApiDoc: any): Map<string, SchemaObject> {
               const content = responseObj.content[contentType];
               if (content?.schema && !content.schema["$ref"]) {
                 // Only extract inline schemas, not $ref schemas
-                const responseTypeName = `${operationId.charAt(0).toUpperCase() + operationId.slice(1)}${statusCode}Response`;
+                const sanitizedOperationId = sanitizeIdentifier(operationId);
+                const responseTypeName = `${sanitizedOperationId.charAt(0).toUpperCase() + sanitizedOperationId.slice(1)}${statusCode}Response`;
                 responseSchemas.set(
                   responseTypeName,
                   content.schema as SchemaObject
@@ -245,10 +247,16 @@ export async function generate(options: GenerationOptions): Promise<void> {
         continue;
       }
 
+      const sanitizedName = sanitizeIdentifier(name);
+
       const description = schema.description
         ? schema.description.trim()
         : undefined;
-      const schemaFile = await generateSchemaFile(name, schema, description);
+      const schemaFile = await generateSchemaFile(
+        sanitizedName,
+        schema,
+        description
+      );
       const filePath = path.join(schemasDir, schemaFile.fileName);
       await fs.writeFile(filePath, schemaFile.content);
     }

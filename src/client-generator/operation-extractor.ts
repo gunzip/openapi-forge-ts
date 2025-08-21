@@ -3,6 +3,7 @@ import type {
   PathItemObject,
   ParameterObject,
 } from "openapi3-ts/oas31";
+import { sanitizeIdentifier } from "../schema-generator/utils.js";
 import type { OperationMetadata } from "./types.js";
 
 /**
@@ -32,12 +33,16 @@ export function extractAllOperations(doc: OpenAPIObject): OperationMetadata[] {
           ["get", "post", "put", "delete", "patch"].includes(method) &&
           (operation as any).operationId
         ) {
+          const operationId = (operation as any).operationId!;
+          const sanitizedOperationId = sanitizeIdentifier(operationId);
+
+          // Skip operations that result in empty sanitized IDs
           operations.push({
             pathKey,
             method,
             operation: operation as any,
             pathLevelParameters,
-            operationId: (operation as any).operationId!,
+            operationId: operationId,
           });
         }
       }

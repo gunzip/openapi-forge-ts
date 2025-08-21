@@ -17,6 +17,7 @@ import {
   extractAuthHeaders,
 } from "./security.js";
 import { generateFunctionBody } from "./code-generation.js";
+import { sanitizeIdentifier } from "../schema-generator/utils.js";
 import type { GeneratedFunction } from "./types.js";
 
 /**
@@ -30,7 +31,8 @@ export function generateOperationFunction(
   pathLevelParameters: (ParameterObject | { $ref: string })[] = [],
   doc: OpenAPIObject
 ): GeneratedFunction {
-  const functionName = operation.operationId!;
+  const functionName: string = sanitizeIdentifier(operation.operationId!);
+
   const summary = operation.summary ? `/** ${operation.summary} */\n` : "";
   const typeImports = new Set<string>();
 

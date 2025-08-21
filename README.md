@@ -183,9 +183,9 @@ if (!result.success) {
 - **Maintainability**: Each operation in its own file
 - **Testing**: Simple to mock individual operations
 
-## Current Limitations
+## Known Limitations
 
-### Request Content Types
+### Multiple Request Content Types
 
 Currently, the generator supports only a **single content type per request body**. If an OpenAPI specification defines multiple content types for the same request body, the generator will select one based on the following priority order:
 
@@ -219,6 +219,14 @@ The generated operation will only handle the `application/json` content type in 
 2. Manually modify the generated code after generation
 
 This limitation may be addressed in future versions.
+
+### Missing Response Headers Validation
+
+- Header defined within responses schemas are currently not verified; a parsed headers object could be added to `ApiResponse` in the future. You can get headers accessing the raw `response` object anyway.
+
+### String Constraints on Query and Path Parameters
+
+- String constraints (e.g., minLength, maxLength, pattern) on query and path parameters are not validated. Should we generate their schemas with Zod as well?
 
 ## Comparison: openapi-client-ts vs openapi-zod-client
 

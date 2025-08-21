@@ -213,6 +213,7 @@ if (!result.success) {
 - 🛠️ **Operation-based client generation**: Generates one function per operation, with strong typing and per-operation configuration—no need for blacklisting operations you don't need!
 - 🛡️ **Zod v4 runtime validation**: Validates all response payloads at runtime
 - 📦 **Small footprint**: Generates each operation and schema/type in its own file for maximum tree-shaking and modularity
+- 🚀 **Fast code generation**: Optimized for quick generation times, even with large specs, sync types and changes in real-time
 - 🔒 **Type-safe configuration**: Immutable global defaults, with the ability to override config per operation
 - 🔑 **Flexible authentication**: Supports OpenAPI security schemes (Bearer, API Key, etc.), with dynamic header/query configuration
 - 🧩 **Discriminated union response types**: Each operation returns a discriminated union of possible responses, enabling exhaustive handling
@@ -287,7 +288,7 @@ This limitation may be addressed in future versions.
 | **OpenAPI version support**    | 2.0, 3.0.x, 3.1.x (auto-normalized) |                          2.0, 3.0.x                           |      3.0.x, 3.1.x      |
 | **Error handling**             |          Typed, exhaustive          |                       Typed, exhaustive                       |         Basic          |
 | **Type complexity**            |               Simple                |                 Complex and hard to maintain                  |         Simple         |
-| **Generation Speed**           |                Good                 |                       Bad on big specs                        |          Good          |
+| **Generation Speed**           |               Faster                |                      Slower on big specs                      |          Fast          |
 | **Subtype constraints**        |                 ✅                  |                              ✅                               | ⚠️ (Only at top-level) |
 | **Multiple success responses** |                 ✅                  |                              ✅                               |           ❌           |
 | **Security header support**    |                 ✅                  |                              ✅                               |           ❌           |

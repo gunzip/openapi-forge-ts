@@ -20,6 +20,9 @@ importers:
       openapi3-ts:
         specifier: ^4.3.0
         version: 4.5.0
+      p-limit:
+        specifier: ^7.1.0
+        version: 7.1.0
       swagger2openapi:
         specifier: ^7.0.8
         version: 7.0.8
@@ -558,6 +561,10 @@ packages:
   p-limit@5.0.0:
     resolution: {integrity: sha512-/Eaoq+QyLSiXQ4lyYV23f14mZRQcXnxfHrN0vCai+ak9G0pp9iEQukIIZq5NccEvwRB8PUnZT0KsOoDCINS1qQ==}
     engines: {node: '>=18'}
+
+  p-limit@7.1.0:
+    resolution: {integrity: sha512-7LbrpOjbzBWFHFgRtVrIAwBwW1bB7c7n914Q2+CXr1TvOfbTrVHAEH1Ya9PwDwAoKLeiRrczymYWPwaHNOQ0vA==}
+    engines: {node: '>=20'}
 
   path-key@3.1.1:
     resolution: {integrity: sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==}
@@ -1229,6 +1236,10 @@ snapshots:
       yaml: 2.8.1
 
   p-limit@5.0.0:
+    dependencies:
+      yocto-queue: 1.2.1
+
+  p-limit@7.1.0:
     dependencies:
       yocto-queue: 1.2.1
 

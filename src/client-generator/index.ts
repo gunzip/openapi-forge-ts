@@ -1,4 +1,5 @@
 import type { OpenAPIObject } from "openapi3-ts/oas31";
+import pLimit from "p-limit";
 import {
   extractAllOperations,
   extractBaseURL,
@@ -18,9 +19,12 @@ import {
  */
 async function processOperations(
   doc: OpenAPIObject,
-  operationsDir: string
+  operationsDir: string,
+  concurrency: number
 ): Promise<OperationMetadata[]> {
   const operations = extractAllOperations(doc);
+  const limit = pLimit(concurrency);
+  const operationPromises: Promise<void>[] = [];
 
   for (const {
     pathKey,
@@ -29,22 +33,26 @@ async function processOperations(
     pathLevelParameters,
     operationId,
   } of operations) {
-    const { functionCode, typeImports } = generateOperationFunction(
-      pathKey,
-      method,
-      operation,
-      pathLevelParameters,
-      doc
-    );
+    const promise = limit(async () => {
+      const { functionCode, typeImports } = generateOperationFunction(
+        pathKey,
+        method,
+        operation,
+        pathLevelParameters,
+        doc
+      );
 
-    await writeOperationFile(
-      operationId,
-      functionCode,
-      typeImports,
-      operationsDir
-    );
+      await writeOperationFile(
+        operationId,
+        functionCode,
+        typeImports,
+        operationsDir
+      );
+    });
+    operationPromises.push(promise);
   }
 
+  await Promise.all(operationPromises);
   return operations;
 }
 
@@ -53,7 +61,8 @@ async function processOperations(
  */
 export async function generateOperations(
   doc: OpenAPIObject,
-  outputDir: string
+  outputDir: string,
+  concurrency: number
 ): Promise<void> {
   const operationsDir = await createOperationsDirectory(outputDir);
 
@@ -62,7 +71,7 @@ export async function generateOperations(
   const baseURL = extractBaseURL(doc);
 
   // Process all operations and write files
-  const operations = await processOperations(doc, operationsDir);
+  const operations = await processOperations(doc, operationsDir, concurrency);
 
   // Write configuration file
   await writeConfigFile(authHeaders, baseURL, operationsDir);

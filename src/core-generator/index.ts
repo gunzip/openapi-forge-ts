@@ -20,6 +20,9 @@ import { generateOperations } from "../client-generator/index.js";
 import { sanitizeIdentifier } from "../schema-generator/utils.js";
 import { applyGeneratedOperationIds } from "../operation-id-generator/index.js";
 import $RefParser from "@apidevtools/json-schema-ref-parser";
+import pLimit from "p-limit";
+
+const DEFAULT_CONCURRENCY = 10;
 
 /**
  * Configuration options for code generation
@@ -29,7 +32,8 @@ import $RefParser from "@apidevtools/json-schema-ref-parser";
  * const options: GenerationOptions = {
  *   input: './openapi.yaml',
  *   output: './generated',
- *   generateClient: true
+ *   generateClient: true,
+ *   concurrency: 10,
  * };
  * ```
  */
@@ -37,6 +41,11 @@ export interface GenerationOptions {
   input: string;
   output: string;
   generateClient: boolean;
+  /**
+   * The maximum number of parallel tasks to run during generation.
+   * @default 10
+   */
+  concurrency?: number;
 }
 
 /**
@@ -233,7 +242,12 @@ function extractResponseSchemas(
  * Generates TypeScript schemas and optional API client from OpenAPI specification
  */
 export async function generate(options: GenerationOptions): Promise<void> {
-  const { input, output, generateClient: genClient } = options;
+  const {
+    input,
+    output,
+    generateClient: genClient,
+    concurrency = DEFAULT_CONCURRENCY,
+  } = options;
 
   await fs.mkdir(output, { recursive: true });
 
@@ -259,6 +273,9 @@ export async function generate(options: GenerationOptions): Promise<void> {
   // Apply generated operation IDs for operations that don't have them
   applyGeneratedOperationIds(openApiDoc);
   console.log("✅ Applied generated operation IDs where missing");
+
+  const limit = pLimit(concurrency);
+  const schemaGenerationPromises: Promise<void>[] = [];
 
   if (openApiDoc.components?.schemas) {
     const schemasDir = path.join(output, "schemas");
@@ -297,34 +314,47 @@ export async function generate(options: GenerationOptions): Promise<void> {
       const description = schema.description
         ? schema.description.trim()
         : undefined;
-      const schemaFile = await generateSchemaFile(
-        sanitizedName,
-        schema,
-        description
+      const promise = limit(() =>
+        generateSchemaFile(sanitizedName, schema, description).then(
+          (schemaFile) => {
+            const filePath = path.join(schemasDir, schemaFile.fileName);
+            return fs.writeFile(filePath, schemaFile.content);
+          }
+        )
       );
-      const filePath = path.join(schemasDir, schemaFile.fileName);
-      await fs.writeFile(filePath, schemaFile.content);
+      schemaGenerationPromises.push(promise);
     }
 
     // Generate request schemas from operations
     const requestSchemas = extractRequestSchemas(openApiDoc);
     for (const [name, schema] of requestSchemas) {
-      const schemaFile = await generateRequestSchemaFile(name, schema);
-      const filePath = path.join(schemasDir, schemaFile.fileName);
-      await fs.writeFile(filePath, schemaFile.content);
+      const promise = limit(() =>
+        generateRequestSchemaFile(name, schema).then((schemaFile) => {
+          const filePath = path.join(schemasDir, schemaFile.fileName);
+          return fs.writeFile(filePath, schemaFile.content);
+        })
+      );
+      schemaGenerationPromises.push(promise);
     }
 
     // Generate response schemas from operations
     const responseSchemas = extractResponseSchemas(openApiDoc);
     for (const [name, schema] of responseSchemas) {
-      const schemaFile = await generateResponseSchemaFile(name, schema);
-      const filePath = path.join(schemasDir, schemaFile.fileName);
-      await fs.writeFile(filePath, schemaFile.content);
+      const promise = limit(() =>
+        generateResponseSchemaFile(name, schema).then((schemaFile) => {
+          const filePath = path.join(schemasDir, schemaFile.fileName);
+          return fs.writeFile(filePath, schemaFile.content);
+        })
+      );
+      schemaGenerationPromises.push(promise);
     }
   }
 
+  await Promise.all(schemaGenerationPromises);
+  console.log("✅ Schemas generated successfully");
+
   if (genClient) {
-    await generateOperations(openApiDoc, output);
+    await generateOperations(openApiDoc, output, concurrency);
   }
 
   const packageJsonContent = {

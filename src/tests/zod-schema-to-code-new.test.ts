@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { zodSchemaToCode } from "../schema-generator/zod-schema-generator";
+import { zodSchemaToCode } from "../schema-generator";
 import { SchemaObject } from "openapi3-ts/oas31";
 
 // Helper to eval generated code

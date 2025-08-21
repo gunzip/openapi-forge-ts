@@ -6,6 +6,8 @@
 
 See [supported features](#features) for more information.
 
+![Demo of OpenAPI TypeScript Client Generator](./demo.gif)
+
 - [OpenAPI TypeScript Client Generator](#openapi-typescript-client-generator)
   - [Installation](#installation)
   - [CLI Usage](#cli-usage)
@@ -23,7 +25,7 @@ See [supported features](#features) for more information.
   - [Features](#features)
   - [Benefits of Operation-Based Architecture](#benefits-of-operation-based-architecture)
   - [Known Limitations](#known-limitations)
-    - [Multiple Request Content Types](#multiple-request-content-types)
+    - [Multiple Content Types](#multiple-content-types)
     - [Missing Response Headers Validation](#missing-response-headers-validation)
     - [String Constraints on Query and Path Parameters](#string-constraints-on-query-and-path-parameters)
   - [Comparison: openapi-client-ts vs openapi-zod-client vs legacy generator](#comparison-openapi-client-ts-vs-openapi-zod-client-vs-legacy-generator)
@@ -235,9 +237,11 @@ if (!result.success) {
 
 ## Known Limitations
 
-### Multiple Request Content Types
+### Multiple Content Types
 
-Currently, the generator supports only a **single content type per request body**. If an OpenAPI specification defines multiple content types for the same request body, the generator will select one based on the following priority order:
+This is probably the biggest limitation and will be addressed in future versions.
+
+Currently, the generator supports only a **single content type per request or response**. If an OpenAPI specification defines multiple content types for the same request body, the generator will select one based on the following priority order:
 
 1. `application/json`
 2. `application/x-www-form-urlencoded`
@@ -267,8 +271,6 @@ The generated operation will only handle the `application/json` content type in 
 
 1. Define separate operations for each content type in your OpenAPI spec
 2. Manually modify the generated code after generation
-
-This limitation may be addressed in future versions.
 
 ### Missing Response Headers Validation
 

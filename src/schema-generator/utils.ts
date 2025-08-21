@@ -32,9 +32,7 @@ export function isSchemaObject(
 }
 
 /**
- * Infer effective type from schema when type is missing
- * @param schema - The schema object to analyze
- * @returns The inferred type or undefined if cannot be inferred
+ * Determine the type of a schema when it's not explicitly defined
  */
 export function inferEffectiveType(schema: SchemaObject): EffectiveType {
   let effectiveType = schema.type as EffectiveType;
@@ -50,8 +48,6 @@ export function inferEffectiveType(schema: SchemaObject): EffectiveType {
 
 /**
  * Check if a schema has nullable property (OpenAPI 3.0 style)
- * @param schema - The schema to check
- * @returns True if schema is nullable
  */
 export function isNullable(schema: SchemaObject): boolean {
   return "nullable" in schema && (schema as any).nullable === true;
@@ -59,8 +55,6 @@ export function isNullable(schema: SchemaObject): boolean {
 
 /**
  * Create a clone of schema without the nullable property
- * @param schema - The schema to clone
- * @returns Cloned schema without nullable property
  */
 export function cloneWithoutNullable(schema: SchemaObject): SchemaObject {
   const clone = { ...schema };
@@ -70,8 +64,6 @@ export function cloneWithoutNullable(schema: SchemaObject): SchemaObject {
 
 /**
  * Check if a type array represents a nullable type (e.g., ["string", "null"])
- * @param types - Array of types
- * @returns Object with nullable info
  */
 export function analyzeTypeArray(types: string[]): {
   isNullable: boolean;
@@ -88,9 +80,6 @@ export function analyzeTypeArray(types: string[]): {
 
 /**
  * Add default value to zod code if present in schema
- * @param code - The base zod code
- * @param defaultValue - The default value from schema
- * @returns Code with default value added if present
  */
 export function addDefaultValue(code: string, defaultValue: any): string {
   if (defaultValue === undefined) {
@@ -107,8 +96,6 @@ export function addDefaultValue(code: string, defaultValue: any): string {
 
 /**
  * Merge import sets
- * @param target - Target set to merge into
- * @param sources - Source sets to merge from
  */
 export function mergeImports(
   target: Set<string>,

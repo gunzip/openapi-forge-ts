@@ -7,9 +7,6 @@ import type { RequestBodyTypeInfo } from "./types.js";
  * NOTE: Currently, we only support a single content type per request body.
  * If multiple content types are specified in the OpenAPI spec, we select
  * one based on priority order. This is a known limitation.
- *
- * @param requestBody - The OpenAPI request body object
- * @returns The selected content type string
  */
 export function getRequestBodyContentType(
   requestBody: RequestBodyObject

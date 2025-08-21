@@ -38,9 +38,6 @@ export function handleExtensibleEnum(
 
 /**
  * Handle regular enum values
- * @param enumValues - Array of enum values
- * @param defaultValue - Optional default value
- * @returns Zod enum code
  */
 export function handleRegularEnum(
   enumValues: any[],

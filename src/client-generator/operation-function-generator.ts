@@ -32,7 +32,7 @@ import {
   buildParameterDeclaration,
   buildTypeAliases,
   renderOperationFunction,
-} from "./templates/operation-templates.js";
+} from "./templates/index.js";
 
 /* Result of generating a function with imports */
 export type GeneratedFunction = {

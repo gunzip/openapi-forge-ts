@@ -9,7 +9,7 @@ import {
   type ParameterDeclarationConfig,
   type TypeAliasesConfig,
   type OperationFunctionRenderConfig,
-} from "../../src/client-generator/templates/operation-templates.js";
+} from "../../src/client-generator/templates/index.js";
 
 describe("operation-templates", () => {
   describe("buildGenericParams", () => {

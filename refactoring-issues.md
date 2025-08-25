@@ -8,12 +8,14 @@
 Currently, `operation-function-generator.ts` contains both the high-level orchestration logic for assembling operation metadata and the string templates for generating TypeScript code. The main `generateOperationFunction` function is responsible for both business logic (extracting parameters, resolving types, determining content maps) and code assembly (building function signatures, type aliases, and function bodies).
 
 **Problems:**
+
 - The 157-line function mixes metadata extraction with template string assembly
 - Functions like `buildGenericParams`, `buildTypeAliases`, and `buildParameterDeclaration` contain hardcoded TypeScript syntax
 - Business logic is tightly coupled with rendering, making unit testing difficult
 - Code generation logic is not reusable for different output formats
 
 **Proposed changes:**
+
 - Create a new `templates/operation-templates.ts` module for all TypeScript rendering
 - Extract orchestration logic into pure functions that return data structures
 - Separate `generateOperationFunction` into:
@@ -23,11 +25,13 @@ Currently, `operation-function-generator.ts` contains both the high-level orches
 - Add comprehensive unit tests for the separated logic and rendering functions
 
 **Files to be modified:**
+
 - `src/client-generator/operation-function-generator.ts`
 - Create `src/client-generator/templates/operation-templates.ts`
 - Add tests for the separated functions
 
 **Expected outcome:**
+
 - Clear separation between business logic and rendering
 - Improved testability of operation metadata extraction
 - Reusable template functions for different contexts
@@ -43,6 +47,7 @@ Currently, `operation-function-generator.ts` contains both the high-level orches
 The `code-generation.ts` file contains the `generateFunctionBody` function and several helper functions that mix business logic for determining what code to generate with the actual TypeScript template strings. Functions like `generateHeadersContent`, `generateDynamicBodyContentCode` contain complex conditional logic alongside hardcoded code templates.
 
 **Problems:**
+
 - `generateFunctionBody` is a 128-line function that builds complex template strings inline
 - `generateDynamicBodyContentCode` contains a hardcoded mapping of content types to code handlers
 - Header generation logic is mixed with template assembly in `generateHeadersContent`
@@ -50,6 +55,7 @@ The `code-generation.ts` file contains the `generateFunctionBody` function and s
 - Templates are scattered throughout the function rather than centralized
 
 **Proposed changes:**
+
 - Create `templates/function-body-templates.ts` for all function body rendering
 - Create `templates/content-type-templates.ts` for content type handling templates
 - Extract logic functions:
@@ -64,12 +70,14 @@ The `code-generation.ts` file contains the `generateFunctionBody` function and s
 - Add unit tests for logic and template functions separately
 
 **Files to be modified:**
+
 - `src/client-generator/code-generation.ts`
 - Create `src/client-generator/templates/function-body-templates.ts`
 - Create `src/client-generator/templates/content-type-templates.ts`
 - Add tests for separated functions
 
 **Expected outcome:**
+
 - Cleaner separation of business logic from template generation
 - Configurable content type handlers instead of hardcoded mappings
 - More testable code with isolated responsibilities
@@ -85,6 +93,7 @@ The `code-generation.ts` file contains the `generateFunctionBody` function and s
 The `parameters.ts` file contains functions like `buildParameterInterface` and `buildDestructuredParameters` that combine parameter processing logic with TypeScript interface string generation. These functions contain complex conditional logic for determining parameter structure alongside template strings for TypeScript code.
 
 **Problems:**
+
 - `buildParameterInterface` (180+ lines) mixes parameter analysis with interface string building
 - `buildDestructuredParameters` contains both parameter grouping logic and destructuring syntax
 - Parameter processing logic cannot be tested independently of string generation
@@ -92,6 +101,7 @@ The `parameters.ts` file contains functions like `buildParameterInterface` and `
 - Functions like `generateHeaderParamHandling` and `generateQueryParamHandling` mix logic with code generation
 
 **Proposed changes:**
+
 - Create `models/parameter-models.ts` for parameter data structures
 - Create `templates/parameter-templates.ts` for all parameter-related rendering
 - Extract pure logic functions:
@@ -106,12 +116,14 @@ The `parameters.ts` file contains functions like `buildParameterInterface` and `
 - Add comprehensive unit tests for parameter analysis and rendering separately
 
 **Files to be modified:**
+
 - `src/client-generator/parameters.ts`
 - Create `src/client-generator/models/parameter-models.ts`
 - Create `src/client-generator/templates/parameter-templates.ts`
 - Add tests for separated logic and rendering functions
 
 **Expected outcome:**
+
 - Clear separation between parameter analysis and code generation
 - Reusable parameter processing logic for different contexts
 - Better testability of parameter handling rules
@@ -127,6 +139,7 @@ The `parameters.ts` file contains functions like `buildParameterInterface` and `
 The `responses.ts` file contains `generateResponseHandlers` and `buildParseInfo` functions that mix response analysis logic with TypeScript code generation. The response handling logic for determining types, parsing strategies, and union types is tightly coupled with template string generation.
 
 **Problems:**
+
 - `generateResponseHandlers` (155 lines) combines response analysis with switch-case code generation
 - `buildParseInfo` mixes schema resolution logic with parse expression generation
 - Response type determination logic is embedded within code generation
@@ -134,6 +147,7 @@ The `responses.ts` file contains `generateResponseHandlers` and `buildParseInfo`
 - Content type detection logic is mixed with code template assembly
 
 **Proposed changes:**
+
 - Create `models/response-models.ts` for response analysis data structures
 - Create `templates/response-templates.ts` for response-related rendering
 - Extract pure analysis functions:
@@ -148,12 +162,14 @@ The `responses.ts` file contains `generateResponseHandlers` and `buildParseInfo`
 - Add comprehensive unit tests for response analysis and rendering
 
 **Files to be modified:**
+
 - `src/client-generator/responses.ts`
 - Create `src/client-generator/models/response-models.ts`
 - Create `src/client-generator/templates/response-templates.ts`
 - Add tests for separated analysis and rendering functions
 
 **Expected outcome:**
+
 - Independent testing of response analysis logic
 - Reusable response type determination for different output formats
 - Cleaner separation of concerns in response handling
@@ -169,6 +185,7 @@ The `responses.ts` file contains `generateResponseHandlers` and `buildParseInfo`
 The `config-generator.ts` file contains `generateConfigTypes` function that combines configuration analysis (determining auth headers, server URLs, type structure) with TypeScript interface and implementation generation. The configuration logic is embedded within template string assembly.
 
 **Problems:**
+
 - `generateConfigTypes` mixes configuration analysis with TypeScript interface generation
 - Auth header processing logic is coupled with type generation
 - Server URL analysis is embedded within template string building
@@ -176,6 +193,7 @@ The `config-generator.ts` file contains `generateConfigTypes` function that comb
 - Configuration structure determination cannot be tested independently
 
 **Proposed changes:**
+
 - Create `models/config-models.ts` for configuration data structures
 - Create `templates/config-templates.ts` for configuration file rendering
 - Extract pure logic functions:
@@ -190,12 +208,14 @@ The `config-generator.ts` file contains `generateConfigTypes` function that comb
 - Add unit tests for configuration analysis and template rendering
 
 **Files to be modified:**
+
 - `src/client-generator/config-generator.ts`
 - Create `src/client-generator/models/config-models.ts`
 - Create `src/client-generator/templates/config-templates.ts`
 - Add tests for separated configuration logic and rendering
 
 **Expected outcome:**
+
 - Independent testing of configuration analysis logic
 - Modular template generation for different configuration aspects
 - Better maintainability of complex support code templates
@@ -211,12 +231,14 @@ The `config-generator.ts` file contains `generateConfigTypes` function that comb
 The `security.ts` file contains functions like `generateSecurityHeaderHandling` and `extractAuthHeaders` that mix security scheme analysis with code generation. The security processing logic is coupled with TypeScript code templates for header handling.
 
 **Problems:**
+
 - `generateSecurityHeaderHandling` combines security header analysis with code generation
 - `extractAuthHeaders` contains business logic mixed with global vs operation-specific determination
 - Security scheme processing cannot be tested independently of code generation
 - Header handling logic is embedded within template generation
 
 **Proposed changes:**
+
 - Create `models/security-models.ts` for security-related data structures
 - Create `templates/security-templates.ts` for security code rendering
 - Extract pure logic functions:
@@ -230,12 +252,14 @@ The `security.ts` file contains functions like `generateSecurityHeaderHandling` 
 - Add unit tests for security analysis and rendering functions
 
 **Files to be modified:**
+
 - `src/client-generator/security.ts`
 - Create `src/client-generator/models/security-models.ts`
 - Create `src/client-generator/templates/security-templates.ts`
 - Add tests for separated security logic and rendering
 
 **Expected outcome:**
+
 - Independent testing of security scheme processing
 - Reusable security analysis for different contexts
 - Cleaner separation of security logic from code generation
@@ -251,12 +275,14 @@ The `security.ts` file contains functions like `generateSecurityHeaderHandling` 
 The `request-body.ts` file contains functions like `generateRequestBodyHandling` that mix request body type analysis with TypeScript code generation. The content type determination logic is coupled with body handling code templates.
 
 **Problems:**
+
 - `generateRequestBodyHandling` contains hardcoded content type handlers mixed with generation logic
 - Content type prioritization logic is embedded within code generation
 - Request body type analysis cannot be tested independently
 - Body handling strategies are coupled with specific code templates
 
 **Proposed changes:**
+
 - Create `models/request-body-models.ts` for request body data structures
 - Create `templates/request-body-templates.ts` for body handling rendering
 - Extract pure logic functions:
@@ -270,12 +296,14 @@ The `request-body.ts` file contains functions like `generateRequestBodyHandling`
 - Add unit tests for body analysis and rendering functions
 
 **Files to be modified:**
+
 - `src/client-generator/request-body.ts`
 - Create `src/client-generator/models/request-body-models.ts`
 - Create `src/client-generator/templates/request-body-templates.ts`
 - Add tests for separated body analysis and rendering
 
 **Expected outcome:**
+
 - Independent testing of request body analysis logic
 - Configurable content type handling strategies
 - Cleaner separation of body processing logic from code generation
@@ -291,12 +319,14 @@ The `request-body.ts` file contains functions like `generateRequestBodyHandling`
 After separating business logic from rendering in individual modules, we need a centralized template management system to coordinate all the separated template functions and provide consistent rendering infrastructure.
 
 **Problems:**
+
 - No centralized coordination of template rendering across modules
 - Lack of consistent template utility functions (indentation, code formatting, etc.)
 - No shared template validation or testing infrastructure
 - Template functions may have duplicated utility code
 
 **Proposed changes:**
+
 - Create `templates/index.ts` as the main template coordination module
 - Create `templates/template-utils.ts` for shared template utilities:
   - Code indentation and formatting functions
@@ -311,6 +341,7 @@ After separating business logic from rendering in individual modules, we need a 
 - Document template architecture and usage patterns
 
 **Files to be created:**
+
 - `src/client-generator/templates/index.ts`
 - `src/client-generator/templates/template-utils.ts`
 - `src/client-generator/templates/template-types.ts`
@@ -318,6 +349,7 @@ After separating business logic from rendering in individual modules, we need a 
 - Add comprehensive template integration tests
 
 **Expected outcome:**
+
 - Consistent template rendering across all modules
 - Shared utilities reduce code duplication
 - Better maintainability of template code
@@ -334,12 +366,14 @@ After separating business logic from rendering in individual modules, we need a 
 After separating business logic from rendering code, we need comprehensive unit tests for all the extracted business logic functions to ensure they work correctly in isolation and provide better test coverage.
 
 **Problems:**
+
 - Current tests may be testing business logic and rendering together
 - Extracted business logic functions need individual test coverage
 - Need to ensure business logic functions are pure and deterministic
 - Integration tests needed to verify logic and rendering work together
 
 **Proposed changes:**
+
 - Create test files for each separated logic module:
   - `tests/client-generator/models/parameter-models.test.ts`
   - `tests/client-generator/models/response-models.test.ts`
@@ -361,11 +395,13 @@ After separating business logic from rendering code, we need comprehensive unit 
 - Ensure all business logic functions are tested independently of rendering
 
 **Files to be created:**
+
 - Multiple test files for logic and template modules
 - Integration test files for end-to-end verification
 - Test utilities for common testing patterns
 
 **Expected outcome:**
+
 - Comprehensive test coverage for all separated components
 - Independent verification of business logic correctness
 - Better confidence in refactored code functionality

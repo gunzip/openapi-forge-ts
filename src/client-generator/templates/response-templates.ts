@@ -2,6 +2,8 @@
 
 import type { ResponseInfo } from "../models/response-models.js";
 
+import { renderUnionType as renderUnionTypeUtil } from "./template-utils.js";
+
 /*
  * Renders an ApiResponse union type component for a response
  */
@@ -114,10 +116,16 @@ export function renderResponseHandlers(responses: ResponseInfo[]): string[] {
 
 /*
  * Renders a TypeScript union type string from union type components
+ * Note: This function now delegates to the centralized template utility
  */
 export function renderUnionType(
   unionTypes: string[],
   defaultType = "ApiResponse<number, unknown>",
 ): string {
-  return unionTypes.length > 0 ? unionTypes.join(" | ") : defaultType;
+  if (unionTypes.length === 0) {
+    return defaultType;
+  }
+
+  /* Use the centralized union type renderer */
+  return renderUnionTypeUtil(unionTypes);
 }

@@ -11,31 +11,31 @@ import {
 
 describe("OpenAPI Converter", () => {
   describe("Version detection", () => {
-    it("should detect OpenAPI 2.0 (Swagger) specifications", () => {
+    it("should detect OpenAPI specification versions correctly", () => {
       const swagger20 = {
         info: { title: "Test", version: "1.0.0" },
         swagger: "2.0",
       };
-      expect(isOpenAPI20(swagger20)).toBe(true);
-      expect(isOpenAPI30(swagger20)).toBe(false);
-      expect(isOpenAPI31(swagger20)).toBe(false);
-    });
-
-    it("should detect OpenAPI 3.0 specifications", () => {
       const openapi30 = {
         info: { title: "Test", version: "1.0.0" },
         openapi: "3.0.1",
       };
-      expect(isOpenAPI20(openapi30)).toBe(false);
-      expect(isOpenAPI30(openapi30)).toBe(true);
-      expect(isOpenAPI31(openapi30)).toBe(false);
-    });
-
-    it("should detect OpenAPI 3.1 specifications", () => {
       const openapi31 = {
         info: { title: "Test", version: "1.0.0" },
         openapi: "3.1.0",
       };
+
+      // Test OpenAPI 2.0 detection
+      expect(isOpenAPI20(swagger20)).toBe(true);
+      expect(isOpenAPI30(swagger20)).toBe(false);
+      expect(isOpenAPI31(swagger20)).toBe(false);
+
+      // Test OpenAPI 3.0 detection
+      expect(isOpenAPI20(openapi30)).toBe(false);
+      expect(isOpenAPI30(openapi30)).toBe(true);
+      expect(isOpenAPI31(openapi30)).toBe(false);
+
+      // Test OpenAPI 3.1 detection
       expect(isOpenAPI20(openapi31)).toBe(false);
       expect(isOpenAPI30(openapi31)).toBe(false);
       expect(isOpenAPI31(openapi31)).toBe(true);

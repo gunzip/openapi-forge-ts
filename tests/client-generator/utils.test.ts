@@ -17,40 +17,16 @@ describe("client-generator utils", () => {
       expect(toCamelCase("api-key")).toBe("apiKey");
     });
 
-    it("should handle single word", () => {
-      expect(toCamelCase("hello")).toBe("hello");
-    });
-
-    it("should handle empty string", () => {
-      expect(toCamelCase("")).toBe("");
-    });
-
-    it("should handle string without hyphens", () => {
-      expect(toCamelCase("alreadyCamelCase")).toBe("alreadyCamelCase");
-    });
-
-    it("should handle multiple consecutive hyphens", () => {
-      expect(toCamelCase("test--case")).toBe("testCase");
-    });
-
-    it("should handle hyphens at start and end", () => {
-      expect(toCamelCase("-test-case-")).toBe("testCase");
-    });
-
-    it("should handle uppercase letters after hyphens", () => {
-      expect(toCamelCase("test-Case")).toBe("testCase");
-    });
-
-    it("should handle all uppercase input", () => {
-      expect(toCamelCase("TEST-CASE")).toBe("testCase");
-    });
-
-    it("should handle numbers in input", () => {
-      expect(toCamelCase("test-123-case")).toBe("test123Case");
-    });
-
-    it("should handle only separators", () => {
-      expect(toCamelCase("---")).toBe("");
+    it("should handle edge cases", () => {
+      expect(toCamelCase("hello")).toBe("hello"); // single word
+      expect(toCamelCase("")).toBe(""); // empty string
+      expect(toCamelCase("alreadyCamelCase")).toBe("alreadyCamelCase"); // no hyphens
+      expect(toCamelCase("test--case")).toBe("testCase"); // multiple consecutive hyphens
+      expect(toCamelCase("-test-case-")).toBe("testCase"); // hyphens at start/end
+      expect(toCamelCase("test-Case")).toBe("testCase"); // uppercase after hyphens
+      expect(toCamelCase("TEST-CASE")).toBe("testCase"); // all uppercase
+      expect(toCamelCase("test-123-case")).toBe("test123Case"); // numbers
+      expect(toCamelCase("---")).toBe(""); // only separators
     });
   });
 
@@ -60,111 +36,82 @@ describe("client-generator utils", () => {
       expect(toValidVariableName("test#name!")).toBe("testName");
     });
 
-    it("should handle spaces", () => {
-      expect(toValidVariableName("hello world")).toBe("helloWorld");
+    it("should handle various character types", () => {
+      expect(toValidVariableName("hello world")).toBe("helloWorld"); // spaces
       expect(toValidVariableName("test  multiple   spaces")).toBe(
         "testMultipleSpaces",
-      );
-    });
-
-    it("should handle numbers", () => {
-      expect(toValidVariableName("test123")).toBe("test123");
-      expect(toValidVariableName("123test")).toBe("123test");
-    });
-
-    it("should handle mixed characters", () => {
+      ); // multiple spaces
+      expect(toValidVariableName("test123")).toBe("test123"); // numbers
+      expect(toValidVariableName("123test")).toBe("123test"); // numbers at start
       expect(toValidVariableName("test-name_123@domain.com")).toBe(
         "testName_123DomainCom",
-      );
+      ); // mixed characters
     });
 
-    it("should handle only special characters", () => {
-      expect(toValidVariableName("@#$%")).toBe("");
-    });
-
-    it("should handle empty string", () => {
-      expect(toValidVariableName("")).toBe("");
-    });
-
-    it("should handle multiple consecutive underscores", () => {
-      expect(toValidVariableName("test___name")).toBe("testName");
-    });
-
-    it("should remove leading and trailing underscores", () => {
-      expect(toValidVariableName("_test_name_")).toBe("testName");
-    });
-
-    it("should handle camelCase conversion after underscores", () => {
-      expect(toValidVariableName("test_user_profile")).toBe("testUserProfile");
+    it("should handle edge cases", () => {
+      expect(toValidVariableName("@#$%")).toBe(""); // only special characters
+      expect(toValidVariableName("")).toBe(""); // empty string
+      expect(toValidVariableName("test___name")).toBe("testName"); // multiple consecutive underscores
+      expect(toValidVariableName("_test_name_")).toBe("testName"); // leading/trailing underscores
+      expect(toValidVariableName("test_user_profile")).toBe("testUserProfile"); // camelCase after underscores
     });
   });
 
   describe("generatePathInterpolation", () => {
-    it("should interpolate single path parameter", () => {
-      const pathParams: ParameterObject[] = [
+    it("should interpolate path parameters", () => {
+      const singleParam: ParameterObject[] = [
         { in: "path", name: "userId", required: true },
       ];
+      expect(generatePathInterpolation("/users/{userId}", singleParam)).toBe(
+        "/users/${userId}",
+      );
 
-      const result = generatePathInterpolation("/users/{userId}", pathParams);
-      expect(result).toBe("/users/${userId}");
-    });
-
-    it("should interpolate multiple path parameters", () => {
-      const pathParams: ParameterObject[] = [
+      const multipleParams: ParameterObject[] = [
         { in: "path", name: "userId", required: true },
         { in: "path", name: "postId", required: true },
       ];
-
-      const result = generatePathInterpolation(
-        "/users/{userId}/posts/{postId}",
-        pathParams,
-      );
-      expect(result).toBe("/users/${userId}/posts/${postId}");
+      expect(
+        generatePathInterpolation(
+          "/users/{userId}/posts/{postId}",
+          multipleParams,
+        ),
+      ).toBe("/users/${userId}/posts/${postId}");
     });
 
-    it("should convert kebab-case parameter names to camelCase", () => {
-      const pathParams: ParameterObject[] = [
+    it("should convert parameter names to camelCase", () => {
+      const kebabParams: ParameterObject[] = [
         { in: "path", name: "user-id", required: true },
         { in: "path", name: "post-id", required: true },
       ];
+      expect(
+        generatePathInterpolation(
+          "/users/{user-id}/posts/{post-id}",
+          kebabParams,
+        ),
+      ).toBe("/users/${userId}/posts/${postId}");
 
-      const result = generatePathInterpolation(
-        "/users/{user-id}/posts/{post-id}",
-        pathParams,
-      );
-      expect(result).toBe("/users/${userId}/posts/${postId}");
-    });
-
-    it("should handle paths with no parameters", () => {
-      const result = generatePathInterpolation("/users", []);
-      expect(result).toBe("/users");
-    });
-
-    it("should handle empty path", () => {
-      const result = generatePathInterpolation("", []);
-      expect(result).toBe("");
-    });
-
-    it("should handle parameters not in path", () => {
-      const pathParams: ParameterObject[] = [
-        { in: "path", name: "nonExistent", required: true },
-      ];
-
-      const result = generatePathInterpolation("/users/{userId}", pathParams);
-      expect(result).toBe("/users/{userId}"); // Parameter not replaced since it's not in path
-    });
-
-    it("should handle complex parameter names", () => {
-      const pathParams: ParameterObject[] = [
+      const complexParams: ParameterObject[] = [
         { in: "path", name: "user_id", required: true },
         { in: "path", name: "complex-param-name", required: true },
       ];
+      expect(
+        generatePathInterpolation(
+          "/users/{user_id}/data/{complex-param-name}",
+          complexParams,
+        ),
+      ).toBe("/users/${userId}/data/${complexParamName}");
+    });
 
-      const result = generatePathInterpolation(
-        "/users/{user_id}/data/{complex-param-name}",
-        pathParams,
-      );
-      expect(result).toBe("/users/${userId}/data/${complexParamName}"); // Only complex-param-name gets converted
+    it("should handle edge cases", () => {
+      expect(generatePathInterpolation("/users", [])).toBe("/users"); // no parameters
+      expect(generatePathInterpolation("", [])).toBe(""); // empty path
+
+      const nonExistentParam: ParameterObject[] = [
+        { in: "path", name: "nonExistent", required: true },
+      ];
+      expect(
+        generatePathInterpolation("/users/{userId}", nonExistentParam),
+      ).toBe("/users/{userId}"); // parameter not in path
     });
   });
 

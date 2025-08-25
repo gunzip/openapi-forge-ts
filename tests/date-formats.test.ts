@@ -5,97 +5,50 @@ import { describe, expect, it } from "vitest";
 import { zodSchemaToCode } from "../src/schema-generator";
 
 describe("Date format handling", () => {
-  it("should generate z.iso.date() for format: date", () => {
-    const schema: SchemaObject = {
-      format: "date",
-      type: "string",
-    };
-
-    const result = zodSchemaToCode(schema);
-    expect(result.code).toBe("z.iso.date()");
+  it("should generate correct Zod schemas for date/time formats", () => {
+    expect(zodSchemaToCode({ format: "date", type: "string" }).code).toBe(
+      "z.iso.date()",
+    );
+    expect(zodSchemaToCode({ format: "date-time", type: "string" }).code).toBe(
+      "z.iso.datetime()",
+    );
+    expect(zodSchemaToCode({ format: "time", type: "string" }).code).toBe(
+      "z.iso.time()",
+    );
+    expect(zodSchemaToCode({ format: "duration", type: "string" }).code).toBe(
+      "z.iso.duration()",
+    );
   });
 
-  it("should generate z.iso.datetime() for format: date-time", () => {
-    const schema: SchemaObject = {
-      format: "date-time",
-      type: "string",
-    };
-
-    const result = zodSchemaToCode(schema);
-    expect(result.code).toBe("z.iso.datetime()");
-  });
-
-  it("should generate z.iso.time() for format: time", () => {
-    const schema: SchemaObject = {
-      format: "time",
-      type: "string",
-    };
-
-    const result = zodSchemaToCode(schema);
-    expect(result.code).toBe("z.iso.time()");
-  });
-
-  it("should generate z.iso.duration() for format: duration", () => {
-    const schema: SchemaObject = {
-      format: "duration",
-      type: "string",
-    };
-
-    const result = zodSchemaToCode(schema);
-    expect(result.code).toBe("z.iso.duration()");
-  });
-
-  it("should handle date format with default value", () => {
-    const schema: SchemaObject = {
+  it("should handle date/time formats with default values", () => {
+    const dateSchema: SchemaObject = {
       default: "2023-12-25",
       format: "date",
       type: "string",
     };
+    expect(zodSchemaToCode(dateSchema).code).toBe(
+      'z.iso.date().default("2023-12-25")',
+    );
 
-    const result = zodSchemaToCode(schema);
-    expect(result.code).toBe('z.iso.date().default("2023-12-25")');
-  });
-
-  it("should handle datetime format with default value", () => {
-    const schema: SchemaObject = {
+    const datetimeSchema: SchemaObject = {
       default: "2023-12-25T10:30:00Z",
       format: "date-time",
       type: "string",
     };
-
-    const result = zodSchemaToCode(schema);
-    expect(result.code).toBe(
+    expect(zodSchemaToCode(datetimeSchema).code).toBe(
       'z.iso.datetime().default("2023-12-25T10:30:00Z")',
     );
   });
 
-  it("should handle existing email format correctly", () => {
-    const schema: SchemaObject = {
-      format: "email",
-      type: "string",
-    };
-
-    const result = zodSchemaToCode(schema);
-    expect(result.code).toBe("z.email()");
-  });
-
-  it("should handle existing uuid format correctly", () => {
-    const schema: SchemaObject = {
-      format: "uuid",
-      type: "string",
-    };
-
-    const result = zodSchemaToCode(schema);
-    expect(result.code).toBe("z.uuid()");
-  });
-
-  it("should handle existing uri format correctly", () => {
-    const schema: SchemaObject = {
-      format: "uri",
-      type: "string",
-    };
-
-    const result = zodSchemaToCode(schema);
-    expect(result.code).toBe("z.url()");
+  it("should handle other string formats correctly", () => {
+    expect(zodSchemaToCode({ format: "email", type: "string" }).code).toBe(
+      "z.email()",
+    );
+    expect(zodSchemaToCode({ format: "uuid", type: "string" }).code).toBe(
+      "z.uuid()",
+    );
+    expect(zodSchemaToCode({ format: "uri", type: "string" }).code).toBe(
+      "z.url()",
+    );
   });
 });

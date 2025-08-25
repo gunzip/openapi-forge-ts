@@ -10,54 +10,32 @@ import {
 } from "../../src/operation-id-generator/index.js";
 
 describe("generateOperationId", () => {
-  it("should generate ID from method and simple path", () => {
-    const result = generateOperationId("GET", "/users");
-    expect(result).toBe("getUsers");
+  it("should generate ID from method and path patterns", () => {
+    expect(generateOperationId("GET", "/users")).toBe("getUsers"); // simple path
+    expect(generateOperationId("POST", "/users/profile")).toBe(
+      "postUsersProfile",
+    ); // nested path
+    expect(generateOperationId("GET", "/users/{userId}")).toBe(
+      "getUsersUserId",
+    ); // parameter paths
+    expect(generateOperationId("PUT", "/users/{userId}/posts/{postId}")).toBe(
+      "putUsersUserIdPostsPostId",
+    ); // complex parameters
+    expect(generateOperationId("GET", "/user-profiles")).toBe(
+      "getUserProfiles",
+    ); // hyphenated paths
+    expect(generateOperationId("GET", "/api/v1/user_accounts")).toBe(
+      "getApiV1UserAccounts",
+    ); // special characters
+    expect(generateOperationId("POST", "/users")).toBe("postUsers"); // uppercase methods
   });
 
-  it("should generate ID from method and nested path", () => {
-    const result = generateOperationId("POST", "/users/profile");
-    expect(result).toBe("postUsersProfile");
-  });
-
-  it("should handle parameter paths", () => {
-    const result = generateOperationId("GET", "/users/{userId}");
-    expect(result).toBe("getUsersUserId");
-  });
-
-  it("should handle complex paths with parameters", () => {
-    const result = generateOperationId("PUT", "/users/{userId}/posts/{postId}");
-    expect(result).toBe("putUsersUserIdPostsPostId");
-  });
-
-  it("should handle hyphenated paths", () => {
-    const result = generateOperationId("GET", "/user-profiles");
-    expect(result).toBe("getUserProfiles");
-  });
-
-  it("should handle special characters in paths", () => {
-    const result = generateOperationId("GET", "/api/v1/user_accounts");
-    expect(result).toBe("getApiV1UserAccounts"); // Underscores are removed as special chars
-  });
-
-  it("should handle uppercase methods", () => {
-    const result = generateOperationId("POST", "/users");
-    expect(result).toBe("postUsers");
-  });
-
-  it("should handle empty path", () => {
-    const result = generateOperationId("GET", "/");
-    expect(result).toBe("getSchema"); // sanitizeIdentifier falls back to "Schema" for empty result
-  });
-
-  it("should handle root path", () => {
-    const result = generateOperationId("GET", "");
-    expect(result).toBe("getSchema"); // sanitizeIdentifier falls back to "Schema" for empty result
-  });
-
-  it("should handle paths with numbers", () => {
-    const result = generateOperationId("GET", "/api/v2/users123");
-    expect(result).toBe("getApiV2Users123");
+  it("should handle edge cases", () => {
+    expect(generateOperationId("GET", "/")).toBe("getSchema"); // empty path - sanitizeIdentifier fallback
+    expect(generateOperationId("GET", "")).toBe("getSchema"); // root path - sanitizeIdentifier fallback
+    expect(generateOperationId("GET", "/api/v2/users123")).toBe(
+      "getApiV2Users123",
+    ); // paths with numbers
   });
 });
 

@@ -3,6 +3,8 @@ import type { resolveRequestBodyType } from "../request-body.js";
 import type { generateContentTypeMaps } from "../responses.js";
 import type { getOperationSecuritySchemes } from "../security.js";
 
+import { formatGeneratedCode, indentCode } from "./template-utils.js";
+
 /* TypeScript rendering functions for operation code generation */
 
 export type ContentTypeMapsConfig = {
@@ -139,10 +141,17 @@ export function buildTypeAliases(config: TypeAliasesConfig): string {
 export function renderOperationFunction(
   config: OperationFunctionRenderConfig,
 ): string {
-  return `${config.typeAliases}${config.summary}export async function ${config.functionName}${config.genericParams}(
+  /* Build the function signature and body */
+  const functionCode = `${config.typeAliases}${config.summary}export async function ${config.functionName}${config.genericParams}(
   ${config.parameterDeclaration},
   config: GlobalConfig = globalConfig
 ): Promise<${config.updatedReturnType}> {
   ${config.functionBodyCode}
 }`;
+
+  /* Apply consistent formatting */
+  return formatGeneratedCode(functionCode, {
+    includeTrailingNewline: false,
+    preserveEmptyLines: true,
+  });
 }

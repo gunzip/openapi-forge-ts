@@ -13,6 +13,7 @@ import {
   extractRequestContentTypes,
   extractResponseContentTypes,
 } from "./operation-extractor.js";
+import { indentCode } from "./templates/template-utils.js";
 import { getResponseContentType } from "./utils.js";
 
 /**
@@ -127,14 +128,11 @@ export function generateResponseHandlers(
       }
 
       if (typeName || contentType) {
-        // Ensure we actually declare data for unknown content type with no schema
+        /* Ensure we actually declare data for unknown content type with no schema */
         if (parseCode === "undefined") {
           parseCode = "const data = undefined; // data = undefined"; // test expectation
         }
-        const indentedParseCode = parseCode
-          .split("\n")
-          .map((l) => (l ? `      ${l}` : l))
-          .join("\n");
+        const indentedParseCode = indentCode(parseCode, 3);
         responseHandlers.push(
           `    case ${code}: {\n${indentedParseCode}\n      return { status: ${code} as const, data, response };\n    }`,
         );

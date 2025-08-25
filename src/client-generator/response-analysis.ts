@@ -46,7 +46,12 @@ export function analyzeContentTypes(
 export function analyzeResponseStructure(
   config: ResponseAnalysisConfig,
 ): ResponseAnalysis {
-  const { hasResponseContentTypeMap = false, operation, typeImports } = config;
+  const {
+    hasResponseContentTypeMap = false,
+    operation,
+    typeImports,
+    unknownResponseMode = false,
+  } = config;
   const responses: ResponseInfo[] = [];
   const unionTypes: string[] = [];
 
@@ -71,7 +76,16 @@ export function analyzeResponseStructure(
 
       /* Build union type component */
       if (responseInfo.hasSchema && responseInfo.typeName) {
-        unionTypes.push(`ApiResponse<${code}, ${responseInfo.typeName}>`);
+        if (
+          unknownResponseMode &&
+          parseInt(code, 10) >= 200 &&
+          parseInt(code, 10) < 300
+        ) {
+          /* Use unknown for success responses in unknown response mode */
+          unionTypes.push(`ApiResponse<${code}, unknown>`);
+        } else {
+          unionTypes.push(`ApiResponse<${code}, ${responseInfo.typeName}>`);
+        }
       } else {
         const dataType =
           responseInfo.typeName ||

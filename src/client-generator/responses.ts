@@ -50,6 +50,7 @@ export type ResponseTypeInfo = {
  */
 export function generateContentTypeMaps(
   operation: OperationObject,
+  options?: { unknownResponseMode?: boolean },
 ): ContentTypeMaps {
   assert(operation.operationId, "Operation ID is required");
   const typeImports = new Set<string>();
@@ -60,11 +61,11 @@ export function generateContentTypeMaps(
     operationId,
     typeImports,
   );
-  const response = buildResponseContentTypeMap(
-    operation,
-    operationId,
-    typeImports,
-  );
+
+  /* Use schema map for unknown response mode, otherwise use regular response map */
+  const response = options?.unknownResponseMode
+    ? buildResponseSchemaMap(operation, operationId, typeImports)
+    : buildResponseContentTypeMap(operation, operationId, typeImports);
 
   return {
     defaultRequestContentType: request.defaultRequestContentType,
@@ -85,16 +86,21 @@ export function generateResponseHandlers(
   operation: OperationObject,
   typeImports: Set<string>,
   hasResponseContentTypeMap = false,
+  options?: {
+    responseMapName?: string;
+    unknownResponseMode?: boolean;
+  },
 ): ResponseHandlerResult {
   /* Analyze the response structure */
   const analysis = analyzeResponseStructure({
     hasResponseContentTypeMap,
     operation,
     typeImports,
+    unknownResponseMode: options?.unknownResponseMode,
   });
 
   /* Generate response handlers using templates */
-  const responseHandlers = renderResponseHandlers(analysis.responses);
+  const responseHandlers = renderResponseHandlers(analysis.responses, options);
 
   /* Generate return type using templates */
   const returnType = renderUnionType(
@@ -236,6 +242,65 @@ function buildResponseContentTypeMap(
 ${mappings.join("\n")}
 }`;
     }
+  }
+
+  return {
+    defaultResponseContentType,
+    responseContentTypeCount,
+    responseMapType,
+  };
+}
+
+/*
+ * Build response schema map for unknown response mode.
+ * Maps content types to their schema types for manual parsing.
+ */
+function buildResponseSchemaMap(
+  operation: OperationObject,
+  operationId: string,
+  typeImports: Set<string>,
+) {
+  let defaultResponseContentType: null | string = null;
+  let responseContentTypeCount = 0;
+  let responseMapType = "{}";
+
+  const responseContentTypes = extractResponseContentTypes(operation);
+  if (responseContentTypes.length === 0) {
+    return {
+      defaultResponseContentType,
+      responseContentTypeCount,
+      responseMapType,
+    };
+  }
+
+  const contentTypeToSchemas: Record<string, string> = {};
+
+  for (const group of responseContentTypes) {
+    if (group.contentTypes.length === 0) continue;
+    for (const mapping of group.contentTypes) {
+      const ct = mapping.contentType;
+      if (!defaultResponseContentType) defaultResponseContentType = ct;
+      const typeName = resolveSchemaTypeName(
+        mapping.schema,
+        operationId,
+        `${group.statusCode}Response`,
+        typeImports,
+      );
+      /* Use the first schema for each content type */
+      if (!contentTypeToSchemas[ct]) {
+        contentTypeToSchemas[ct] = typeName;
+      }
+    }
+  }
+
+  if (Object.keys(contentTypeToSchemas).length > 0) {
+    const mappings: string[] = Object.entries(contentTypeToSchemas).map(
+      ([ct, typeName]) => `  "${ct}": ${typeName},`,
+    );
+    responseContentTypeCount = mappings.length;
+    responseMapType = `{
+${mappings.join("\n")}
+}`;
   }
 
   return {

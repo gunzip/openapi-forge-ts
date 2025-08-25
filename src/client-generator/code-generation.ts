@@ -35,6 +35,7 @@ export type GenerateFunctionBodyOptions = {
   responseHandlers: string[];
   shouldGenerateRequestMap: boolean;
   shouldGenerateResponseMap: boolean;
+  unknownResponseMode?: boolean;
 };
 
 /**
@@ -56,6 +57,7 @@ export function generateFunctionBody({
   responseHandlers,
   shouldGenerateRequestMap,
   shouldGenerateResponseMap,
+  unknownResponseMode,
 }: GenerateFunctionBodyOptions): string {
   const { headerParams, pathParams, queryParams } = parameterGroups;
 
@@ -74,6 +76,7 @@ export function generateFunctionBody({
     requestContentTypes,
     shouldGenerateRequestMap,
     shouldGenerateResponseMap,
+    { unknownResponseMode },
   );
 
   // Generate body content code if needed

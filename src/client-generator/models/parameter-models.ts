@@ -53,6 +53,7 @@ export type ParameterStructure = {
   processed: ProcessedParameterGroup;
   requestMapTypeName?: string;
   responseMapTypeName?: string;
+  unknownResponseMode?: boolean;
 };
 
 /**

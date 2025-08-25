@@ -28,6 +28,7 @@ export function determineFunctionBodyStructure(
   requestContentTypes: string[] | undefined,
   shouldGenerateRequestMap: boolean,
   shouldGenerateResponseMap: boolean,
+  options?: { unknownResponseMode?: boolean },
 ): Pick<
   FunctionBodyStructure,
   "acceptHeaderLogic" | "contentTypeHeaderCode" | "contentTypeLogic"
@@ -45,8 +46,21 @@ export function determineFunctionBodyStructure(
   if (shouldGenerateResponseMap) {
     const defaultRespValue =
       contentTypeMaps.defaultResponseContentType || "application/json";
-    acceptHeaderLogic = `    "Accept": contentType?.response || "${defaultRespValue}",`;
-    contentTypeLogic += `  const finalResponseContentType = contentType?.response || "${defaultRespValue}";\n`;
+
+    if (options?.unknownResponseMode) {
+      /* For unknown response mode, handle array of content types */
+      contentTypeLogic += `  const defaultResponseContentType = "${defaultRespValue}";\n`;
+      contentTypeLogic += `  const requestedResponseTypes = contentType?.response\n`;
+      contentTypeLogic += `    ? Array.isArray(contentType.response)\n`;
+      contentTypeLogic += `      ? contentType.response\n`;
+      contentTypeLogic += `      : [contentType.response]\n`;
+      contentTypeLogic += `    : [defaultResponseContentType];\n`;
+      contentTypeLogic += `  const acceptHeader = requestedResponseTypes.join(", ");\n`;
+      acceptHeaderLogic = `    Accept: acceptHeader,`;
+    } else {
+      acceptHeaderLogic = `    "Accept": contentType?.response || "${defaultRespValue}",`;
+      contentTypeLogic += `  const finalResponseContentType = contentType?.response || "${defaultRespValue}";\n`;
+    }
   } else {
     contentTypeLogic += `  const finalResponseContentType = "";\n`;
   }

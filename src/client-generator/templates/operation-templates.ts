@@ -15,6 +15,7 @@ export type ContentTypeMapsConfig = {
 
 export type GenericParamsConfig = ContentTypeMapsConfig & {
   initialReturnType: string;
+  unknownResponseMode?: boolean;
 };
 
 export type GenericParamsResult = {
@@ -65,7 +66,9 @@ export type ParameterDeclarationConfig = {
   paramsInterface: string;
 };
 
-export type TypeAliasesConfig = ContentTypeMapsConfig;
+export type TypeAliasesConfig = ContentTypeMapsConfig & {
+  unknownResponseMode?: boolean;
+};
 
 /*
  * Creates generic parameter list for request/response content-type selection.
@@ -90,13 +93,21 @@ export function buildGenericParams(
     if (config.shouldGenerateResponseMap) {
       const defaultResp =
         config.contentTypeMaps.defaultResponseContentType || "application/json";
-      genericParts.push(
-        `TResponseContentType extends keyof ${config.responseMapTypeName} = "${defaultResp}"`,
-      );
+
+      if (config.unknownResponseMode) {
+        /* For unknown response mode, support arrays of content types */
+        genericParts.push(
+          `TResponseContentType extends keyof ${config.responseMapTypeName} = "${defaultResp}"`,
+        );
+      } else {
+        genericParts.push(
+          `TResponseContentType extends keyof ${config.responseMapTypeName} = "${defaultResp}"`,
+        );
+      }
     }
     if (genericParts.length > 0) {
       genericParams = `<${genericParts.join(", ")}>`;
-      if (config.shouldGenerateResponseMap) {
+      if (config.shouldGenerateResponseMap && !config.unknownResponseMode) {
         updatedReturnType = `${config.responseMapTypeName}[TResponseContentType]`;
       }
     }
@@ -131,7 +142,13 @@ export function buildTypeAliases(config: TypeAliasesConfig): string {
     config.shouldGenerateResponseMap ||
     config.contentTypeMaps.responseMapType
   ) {
-    typeAliases += `export type ${config.responseMapTypeName} = ${config.contentTypeMaps.responseMapType || "{}"};\n\n`;
+    if (config.unknownResponseMode) {
+      /* For unknown response mode, use const assertion and generate content type alias */
+      typeAliases += `export const ${config.responseMapTypeName} = ${config.contentTypeMaps.responseMapType || "{}"} as const;\n\n`;
+      typeAliases += `export type ${config.responseMapTypeName.replace("Map", "ContentType")} = keyof typeof ${config.responseMapTypeName};\n\n`;
+    } else {
+      typeAliases += `export type ${config.responseMapTypeName} = ${config.contentTypeMaps.responseMapType || "{}"};\n\n`;
+    }
   }
   return typeAliases;
 }

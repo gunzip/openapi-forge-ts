@@ -21,13 +21,19 @@ export function renderParseExpression(
     hasResponseContentTypeMap: boolean;
     statusCode: string;
     typeName: string;
+    unknownResponseMode?: boolean;
   },
 ): string {
-  const { statusCode, typeName } = config;
+  const { statusCode, typeName, unknownResponseMode } = config;
   const { parsingStrategy } = responseInfo;
 
   if (!responseInfo.hasSchema) {
     return "const data = undefined;";
+  }
+
+  /* For unknown response mode, return unknown without validation */
+  if (unknownResponseMode) {
+    return "const data = await parseResponseBody(response);";
   }
 
   /* Handle mixed content types with runtime checking */
@@ -66,6 +72,10 @@ export function renderParseExpression(
 export function renderResponseHandler(
   responseInfo: ResponseInfo,
   parseExpression: string,
+  options?: {
+    responseMapName?: string;
+    unknownResponseMode?: boolean;
+  },
 ): string {
   const { contentType, statusCode, typeName } = responseInfo;
 
@@ -81,9 +91,19 @@ export function renderResponseHandler(
       .map((l) => (l ? `      ${l}` : l))
       .join("\n");
 
+    /* Add parse method for unknown response mode */
+    const parseMethod =
+      options?.unknownResponseMode &&
+      options?.responseMapName &&
+      responseInfo.hasSchema
+        ? `,
+        parse: () =>
+          parseApiResponseUnknownData(response, data, ${options.responseMapName}),`
+        : "";
+
     return `    case ${statusCode}: {
 ${indentedParseCode}
-      return { status: ${statusCode} as const, data, response };
+      return { status: ${statusCode} as const, data, response${parseMethod} };
     }`;
   }
 
@@ -94,7 +114,13 @@ ${indentedParseCode}
 /*
  * Renders the complete response handlers array as switch-case statements
  */
-export function renderResponseHandlers(responses: ResponseInfo[]): string[] {
+export function renderResponseHandlers(
+  responses: ResponseInfo[],
+  options?: {
+    responseMapName?: string;
+    unknownResponseMode?: boolean;
+  },
+): string[] {
   const handlers: string[] = [];
 
   for (const responseInfo of responses) {
@@ -103,9 +129,14 @@ export function renderResponseHandlers(responses: ResponseInfo[]): string[] {
         responseInfo.parsingStrategy.requiresRuntimeContentTypeCheck,
       statusCode: responseInfo.statusCode,
       typeName: responseInfo.typeName || "",
+      unknownResponseMode: options?.unknownResponseMode,
     });
 
-    const handler = renderResponseHandler(responseInfo, parseExpression);
+    const handler = renderResponseHandler(
+      responseInfo,
+      parseExpression,
+      options,
+    );
     handlers.push(handler);
   }
 

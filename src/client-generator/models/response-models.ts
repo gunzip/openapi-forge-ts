@@ -50,6 +50,8 @@ export type ResponseAnalysisConfig = {
   operation: OperationObject;
   /* Set to collect type imports */
   typeImports: Set<string>;
+  /* Whether to use unknown response mode */
+  unknownResponseMode?: boolean;
 };
 
 /*

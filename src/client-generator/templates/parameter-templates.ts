@@ -181,7 +181,17 @@ export function renderParameterInterface(analysis: ParameterAnalysis): string {
     }
 
     if (structure.responseMapTypeName) {
-      contentTypeParts.push("response?: TResponseContentType");
+      if (structure.unknownResponseMode) {
+        const contentTypeAlias = structure.responseMapTypeName.replace(
+          "Map",
+          "ContentType",
+        );
+        contentTypeParts.push(
+          `response?: ${contentTypeAlias} | ${contentTypeAlias}[]`,
+        );
+      } else {
+        contentTypeParts.push("response?: TResponseContentType");
+      }
     }
 
     sections.push(`contentType?: { ${contentTypeParts.join("; ")} }`);

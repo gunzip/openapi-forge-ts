@@ -43,6 +43,7 @@ export function analyzeParameters(
   hasResponseMap = false,
   requestMapTypeName?: string,
   responseMapTypeName?: string,
+  unknownResponseMode?: boolean,
 ): ParameterAnalysis {
   const structure = determineParameterStructure(
     parameterGroups,
@@ -53,6 +54,7 @@ export function analyzeParameters(
     hasResponseMap,
     requestMapTypeName,
     responseMapTypeName,
+    unknownResponseMode,
   );
 
   const optionalityRules = determineParameterOptionalityRules(structure);
@@ -131,6 +133,7 @@ export function buildParameterInterface(
   operationSecurityHeaders?: SecurityHeader[],
   requestMapTypeName?: string,
   responseMapTypeName?: string,
+  unknownResponseMode?: boolean,
 ): string {
   const analysis = analyzeParameters(
     parameterGroups,
@@ -141,6 +144,7 @@ export function buildParameterInterface(
     !!responseMapTypeName,
     requestMapTypeName,
     responseMapTypeName,
+    unknownResponseMode,
   );
 
   return renderParameterInterface(analysis);
@@ -171,6 +175,7 @@ export function determineParameterStructure(
   hasResponseMap = false,
   requestMapTypeName?: string,
   responseMapTypeName?: string,
+  unknownResponseMode?: boolean,
 ): ParameterStructure {
   const processed = processParameterGroups(
     parameterGroups,
@@ -185,6 +190,7 @@ export function determineParameterStructure(
     processed,
     requestMapTypeName,
     responseMapTypeName,
+    unknownResponseMode,
   };
 }
 

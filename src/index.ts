@@ -26,6 +26,11 @@ program
     "Use strict object validation (reject unknown properties)",
     false,
   )
+  .option(
+    "--unknown-response-mode",
+    "Generate operations with unknown response types for manual parsing",
+    false,
+  )
   .action(async (options: Record<string, unknown>) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

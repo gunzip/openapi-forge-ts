@@ -57,6 +57,12 @@ export type GenerationOptions = {
    * @default false
    */
   strictValidation?: boolean;
+  /**
+   * Generate operations with unknown response types for manual parsing.
+   * When true, response bodies are returned as unknown and users must manually parse using the response map.
+   * @default false
+   */
+  unknownResponseMode?: boolean;
 };
 
 /**
@@ -69,6 +75,7 @@ export async function generate(options: GenerationOptions): Promise<void> {
     input,
     output,
     strictValidation = false,
+    unknownResponseMode = false,
   } = options;
 
   await fs.mkdir(output, { recursive: true });
@@ -178,7 +185,9 @@ export async function generate(options: GenerationOptions): Promise<void> {
   console.log("✅ Schemas generated successfully");
 
   if (genClient) {
-    await generateOperations(openApiDoc, output, concurrency);
+    await generateOperations(openApiDoc, output, concurrency, {
+      unknownResponseMode,
+    });
   }
 
   const packageJsonContent = {

@@ -52,6 +52,7 @@ export function extractOperationMetadata(
   operation: OperationObject,
   pathLevelParameters: (ParameterObject | ReferenceObject)[] = [],
   doc: OpenAPIObject,
+  options?: { unknownResponseMode?: boolean },
 ): OperationMetadata {
   assert(operation.operationId, "Operation ID is required");
   const functionName: string = sanitizeIdentifier(operation.operationId);
@@ -78,6 +79,7 @@ export function extractOperationMetadata(
     functionName,
     typeImports,
     operationName,
+    options,
   );
 
   /* Build parameter shapes */
@@ -91,6 +93,7 @@ export function extractOperationMetadata(
     bodyInfo.shouldGenerateResponseMap,
     bodyInfo.requestMapTypeName,
     bodyInfo.responseMapTypeName,
+    options?.unknownResponseMode,
   );
 
   /* Responses & union return type */
@@ -99,6 +102,10 @@ export function extractOperationMetadata(
     operation,
     typeImports,
     bodyInfo.shouldGenerateResponseMap,
+    {
+      responseMapName: bodyInfo.responseMapTypeName,
+      unknownResponseMode: options?.unknownResponseMode,
+    },
   );
 
   /* Security overrides/auth headers */
@@ -120,6 +127,7 @@ export function extractOperationMetadata(
     responseHandlers: responseHandlers.responseHandlers,
     shouldGenerateRequestMap: bodyInfo.shouldGenerateRequestMap,
     shouldGenerateResponseMap: bodyInfo.shouldGenerateResponseMap,
+    unknownResponseMode: options?.unknownResponseMode,
   });
 
   return {
@@ -159,6 +167,7 @@ export function generateOperationFunction(
   operation: OperationObject,
   pathLevelParameters: (ParameterObject | ReferenceObject)[] = [],
   doc: OpenAPIObject,
+  options?: { unknownResponseMode?: boolean },
 ): GeneratedFunction {
   /* Extract all metadata using pure logic function */
   const metadata = extractOperationMetadata(
@@ -167,6 +176,7 @@ export function generateOperationFunction(
     operation,
     pathLevelParameters,
     doc,
+    options,
   );
 
   /* Render using template functions */
@@ -183,6 +193,7 @@ export function generateOperationFunction(
     responseMapTypeName: metadata.bodyInfo.responseMapTypeName,
     shouldGenerateRequestMap: metadata.bodyInfo.shouldGenerateRequestMap,
     shouldGenerateResponseMap: metadata.bodyInfo.shouldGenerateResponseMap,
+    unknownResponseMode: options?.unknownResponseMode,
   });
 
   /* Emit request/response map type aliases (only when non-empty / applicable) */
@@ -192,6 +203,7 @@ export function generateOperationFunction(
     responseMapTypeName: metadata.bodyInfo.responseMapTypeName,
     shouldGenerateRequestMap: metadata.bodyInfo.shouldGenerateRequestMap,
     shouldGenerateResponseMap: metadata.bodyInfo.shouldGenerateResponseMap,
+    unknownResponseMode: options?.unknownResponseMode,
   });
 
   /* Render the complete function */
@@ -224,6 +236,7 @@ function buildParameterStructures(
   shouldGenerateResponseMap: boolean,
   requestMapTypeName: string,
   responseMapTypeName: string,
+  unknownResponseMode?: boolean,
 ) {
   const destructuredParams = buildDestructuredParameters(
     parameterGroups,
@@ -241,6 +254,7 @@ function buildParameterStructures(
     operationSecurityHeaders,
     shouldGenerateRequestMap ? requestMapTypeName : undefined,
     shouldGenerateResponseMap ? responseMapTypeName : undefined,
+    unknownResponseMode,
   );
 
   return { destructuredParams, paramsInterface };
@@ -259,6 +273,7 @@ function collectBodyAndContentTypes(
   functionName: string,
   typeImports: Set<string>,
   operationName: string,
+  options?: { unknownResponseMode?: boolean },
 ) {
   let bodyTypeInfo: ReturnType<typeof resolveRequestBodyType> | undefined;
   let requestContentType: string | undefined;
@@ -273,7 +288,7 @@ function collectBodyAndContentTypes(
   const requestMapTypeName = `${operationName}RequestMap`;
   const responseMapTypeName = `${operationName}ResponseMap`;
 
-  const contentTypeMaps = generateContentTypeMaps(operation);
+  const contentTypeMaps = generateContentTypeMaps(operation, options);
   contentTypeMaps.typeImports.forEach((imp) => typeImports.add(imp));
 
   let requestContentTypes: string[] = [];

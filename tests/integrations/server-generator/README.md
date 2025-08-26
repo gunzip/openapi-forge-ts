@@ -2,6 +2,65 @@
 
 This directory contains comprehensive integration tests for the `server-generator` module. These tests demonstrate how to use the generated server wrappers with Express.js to create fully-typed, validated REST API endpoints.
 
+## ✅ Working Examples
+
+**IMPORTANT**: Use these files as reference for correct patterns:
+
+- `working-example.test.ts` - Complete integration example with testAuthBearer operation
+- `response-handling.test.ts` - Multiple response types and status codes  
+- `test-utils.ts` - Helper functions and Express adapter setup
+
+## 🔧 Correct Usage Pattern
+
+To use server-generator wrappers with Express.js, you **MUST** use the `createExpressAdapter` function:
+
+```typescript
+// ✅ CORRECT - Using Express adapter
+import { createExpressAdapter, createTestApp } from "./test-utils.js";
+import { testAuthBearerWrapper } from "../generated/server-operations/testAuthBearer.js";
+
+const app = createTestApp();
+
+app.get(
+  "/test-auth-bearer",
+  createExpressAdapter(testAuthBearerWrapper)(async (params) => {
+    if (params.type === "ok") {
+      return {
+        status: 200,
+        contentType: "application/json", 
+        data: someJsonData,
+      };
+    }
+    throw new Error(`Validation error: ${params.type}`);
+  }),
+);
+```
+
+```typescript
+// ❌ WRONG - Direct wrapper usage (will cause 500 errors)
+app.get("/route", testAuthBearerWrapper(async (params) => { ... }))
+```
+
+The `createExpressAdapter` function bridges the gap between Express's `(req, res) => void` pattern and the wrapper's typed request/response format.
+
+## 📋 Response Type Requirements
+
+Generated wrappers have strict TypeScript response types that must match the OpenAPI specification exactly:
+
+```typescript
+// Example: testAuthBearer has these exact response types
+export type testAuthBearerResponse =
+  | { status: 200; contentType: "application/json"; data: Person }
+  | { status: 403; contentType: "text/plain"; data: void }
+
+// Your handler MUST return exactly these types
+return {
+  status: 403,
+  contentType: "text/plain", // Must match exactly  
+  data: undefined,           // void responses use undefined
+};
+```
+
 ## Overview
 
 The server-generator creates wrapper functions that:
@@ -10,6 +69,7 @@ The server-generator creates wrapper functions that:
 - Provide type-safe interfaces for handlers
 - Handle validation errors gracefully
 - Support all OpenAPI parameter types (query, path, headers, body)
+- **Generate complete response union types including all status codes** ✅
 
 ## Test Structure
 

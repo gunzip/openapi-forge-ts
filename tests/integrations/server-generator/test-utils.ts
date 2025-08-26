@@ -50,12 +50,8 @@ export function createExpressAdapter<T>(
           contentType: req.get('content-type'),
         };
         
-        console.log('Adapter request:', JSON.stringify(wrapperReq, null, 2));
-        
         /* Call the wrapper with the converted request */
         const result = await wrappedHandler(wrapperReq);
-        
-        console.log('Adapter result:', JSON.stringify(result, null, 2));
         
         /* Send the response */
         if (result && typeof result === 'object' && 'status' in result) {
@@ -72,7 +68,6 @@ export function createExpressAdapter<T>(
             res.end();
           }
         } else {
-          console.error('Invalid response structure:', result);
           res.status(500).json({ error: "Invalid response from handler" });
         }
       } catch (error) {

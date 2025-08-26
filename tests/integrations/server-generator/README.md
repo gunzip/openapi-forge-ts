@@ -17,7 +17,7 @@ To use server-generator wrappers with Express.js, you **MUST** use the `createEx
 ```typescript
 // ✅ CORRECT - Using Express adapter
 import { createExpressAdapter, createTestApp } from "./test-utils.js";
-import { testAuthBearerWrapper } from "../generated/server-operations/testAuthBearer.js";
+import { testAuthBearerWrapper } from ".../generated/server-operations/testAuthBearer.js";
 
 const app = createTestApp();
 
@@ -117,7 +117,7 @@ export function testAuthBearerWrapper(handler: testAuthBearerHandler) {
 
 ```typescript
 import express from "express";
-import { testAuthBearerWrapper } from "../generated/server-operations/testAuthBearer.js";
+import { testAuthBearerWrapper } from ".../generated/server-operations/testAuthBearer.js";
 
 const app = express();
 

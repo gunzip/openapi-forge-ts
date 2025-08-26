@@ -3,13 +3,13 @@ import express from "express";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testWithTwoParamsWrapper } from "./generated/server-operations/testWithTwoParams.js";
-import { testParametersAtPathLevelWrapper } from "./generated/server-operations/testParametersAtPathLevel.js";
-import { testParameterWithDashWrapper } from "./generated/server-operations/testParameterWithDash.js";
-import { testParameterWithDashAnUnderscoreWrapper } from "./generated/server-operations/testParameterWithDashAnUnderscore.js";
-import { testParamWithSchemaRefWrapper } from "./generated/server-operations/testParamWithSchemaRef.js";
-import { testHeaderWithSchemaRefWrapper } from "./generated/server-operations/testHeaderWithSchemaRef.js";
-import { testHeaderOptionalWrapper } from "./generated/server-operations/testHeaderOptional.js";
+import { testWithTwoParamsWrapper } from "../generated/server-operations/testWithTwoParams.js";
+import { testParametersAtPathLevelWrapper } from "../generated/server-operations/testParametersAtPathLevel.js";
+import { testParameterWithDashWrapper } from "../generated/server-operations/testParameterWithDash.js";
+import { testParameterWithDashAnUnderscoreWrapper } from "../generated/server-operations/testParameterWithDashAnUnderscore.js";
+import { testParamWithSchemaRefWrapper } from "../generated/server-operations/testParamWithSchemaRef.js";
+import { testHeaderWithSchemaRefWrapper } from "../generated/server-operations/testHeaderWithSchemaRef.js";
+import { testHeaderOptionalWrapper } from "../generated/server-operations/testHeaderOptional.js";
 import { createTestApp, createExpressAdapter, testData } from "./test-utils.js";
 
 describe("Server Generator - Parameter Validation Operations", () => {

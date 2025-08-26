@@ -3,8 +3,8 @@ import express from "express";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testMultiContentTypesWrapper } from ./generated/server-operations/testMultiContentTypes.js";
-import { testDeserializationWrapper } from ./generated/server-operations/testDeserialization.js";
+import { testMultiContentTypesWrapper } from "./generated/server-operations/testMultiContentTypes.js";
+import { testDeserializationWrapper } from "./generated/server-operations/testDeserialization.js";
 import { createTestApp, testData } from "./test-utils.js";
 
 describe("Server Generator - Multi-Content-Type Operations", () => {

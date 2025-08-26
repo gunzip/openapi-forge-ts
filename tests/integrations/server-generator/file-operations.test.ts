@@ -5,9 +5,9 @@ import type { Express } from "express";
 import path from "path";
 import fs from "fs";
 
-import { testFileUploadWrapper } from ./generated/server-operations/testFileUpload.js";
-import { testBinaryFileUploadWrapper } from ./generated/server-operations/testBinaryFileUpload.js";
-import { testBinaryFileDownloadWrapper } from ./generated/server-operations/testBinaryFileDownload.js";
+import { testFileUploadWrapper } from "./generated/server-operations/testFileUpload.js";
+import { testBinaryFileUploadWrapper } from "./generated/server-operations/testBinaryFileUpload.js";
+import { testBinaryFileDownloadWrapper } from "./generated/server-operations/testBinaryFileDownload.js";
 import { createTestApp } from "./test-utils.js";
 
 describe("Server Generator - File Upload/Download Operations", () => {

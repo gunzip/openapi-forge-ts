@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 
-import { testAuthBearerWrapper } from ./generated/server-operations/testAuthBearer.js";
-import { testInlineBodySchemaWrapper } from ./generated/server-operations/testInlineBodySchema.js";
-import { testOverriddenSecurityNoAuthWrapper } from ./generated/server-operations/testOverriddenSecurityNoAuth.js";
+import { testAuthBearerWrapper } from "./generated/server-operations/testAuthBearer.js";
+import { testInlineBodySchemaWrapper } from "./generated/server-operations/testInlineBodySchema.js";
+import { testOverriddenSecurityNoAuthWrapper } from "./generated/server-operations/testOverriddenSecurityNoAuth.js";
 
 describe("Server Generator Integration Summary", () => {
   describe("Wrapper Function Generation", () => {

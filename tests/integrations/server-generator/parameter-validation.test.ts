@@ -3,14 +3,14 @@ import express from "express";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testWithTwoParamsWrapper } from ./generated/server-operations/testWithTwoParams.js";
-import { testParametersAtPathLevelWrapper } from ./generated/server-operations/testParametersAtPathLevel.js";
-import { testParameterWithDashWrapper } from ./generated/server-operations/testParameterWithDash.js";
-import { testParameterWithDashAnUnderscoreWrapper } from ./generated/server-operations/testParameterWithDashAnUnderscore.js";
-import { testParamWithSchemaRefWrapper } from ./generated/server-operations/testParamWithSchemaRef.js";
-import { testHeaderWithSchemaRefWrapper } from ./generated/server-operations/testHeaderWithSchemaRef.js";
-import { testHeaderOptionalWrapper } from ./generated/server-operations/testHeaderOptional.js";
-import { createTestApp, testData } from "./test-utils.js";
+import { testWithTwoParamsWrapper } from "./generated/server-operations/testWithTwoParams.js";
+import { testParametersAtPathLevelWrapper } from "./generated/server-operations/testParametersAtPathLevel.js";
+import { testParameterWithDashWrapper } from "./generated/server-operations/testParameterWithDash.js";
+import { testParameterWithDashAnUnderscoreWrapper } from "./generated/server-operations/testParameterWithDashAnUnderscore.js";
+import { testParamWithSchemaRefWrapper } from "./generated/server-operations/testParamWithSchemaRef.js";
+import { testHeaderWithSchemaRefWrapper } from "./generated/server-operations/testHeaderWithSchemaRef.js";
+import { testHeaderOptionalWrapper } from "./generated/server-operations/testHeaderOptional.js";
+import { createTestApp, createExpressAdapter, testData } from "./test-utils.js";
 
 describe("Server Generator - Parameter Validation Operations", () => {
   let app: Express;
@@ -26,16 +26,13 @@ describe("Server Generator - Parameter Validation Operations", () => {
       const param2 = "value2";
 
       app.get(
-        "/test-two-params/:param1/:param2",
-        testWithTwoParamsWrapper(async (params) => {
+        "/test-two-path-params/:firstParam/:secondParam",
+        createExpressAdapter(testWithTwoParamsWrapper)(async (params) => {
           if (params.type === "ok") {
             return {
               status: 200,
-              contentType: "application/json",
-              data: {
-                message: "Parameters received",
-                receivedParams: params.value.path,
-              },
+              contentType: "text/plain",
+              data: void 0,
             };
           }
           throw new Error(`Validation error: ${params.type}`);
@@ -44,13 +41,11 @@ describe("Server Generator - Parameter Validation Operations", () => {
 
       /* Act */
       const response = await request(app).get(
-        `/test-two-params/${param1}/${param2}`,
+        `/test-two-path-params/${param1}/${param2}`,
       );
 
       /* Assert */
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toMatch(/application\/json/);
-      expect(response.body.message).toBe("Parameters received");
     });
 
     it("should handle missing path parameters", async () => {

@@ -7,7 +7,7 @@ This directory contains comprehensive integration tests for the `server-generato
 **IMPORTANT**: Use these files as reference for correct patterns:
 
 - `working-example.test.ts` - Complete integration example with testAuthBearer operation
-- `response-handling.test.ts` - Multiple response types and status codes  
+- `response-handling.test.ts` - Multiple response types and status codes
 - `test-utils.ts` - Helper functions and Express adapter setup
 
 ## 🔧 Correct Usage Pattern
@@ -27,7 +27,7 @@ app.get(
     if (params.type === "ok") {
       return {
         status: 200,
-        contentType: "application/json", 
+        contentType: "application/json",
         data: someJsonData,
       };
     }
@@ -51,13 +51,13 @@ Generated wrappers have strict TypeScript response types that must match the Ope
 // Example: testAuthBearer has these exact response types
 export type testAuthBearerResponse =
   | { status: 200; contentType: "application/json"; data: Person }
-  | { status: 403; contentType: "text/plain"; data: void }
+  | { status: 403; contentType: "text/plain"; data: void };
 
 // Your handler MUST return exactly these types
 return {
   status: 403,
-  contentType: "text/plain", // Must match exactly  
-  data: undefined,           // void responses use undefined
+  contentType: "text/plain", // Must match exactly
+  data: undefined, // void responses use undefined
 };
 ```
 

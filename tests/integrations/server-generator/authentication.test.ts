@@ -3,9 +3,9 @@ import express from "express";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testAuthBearerWrapper } from "./generated/server-operations/testAuthBearer.js";
-import { testAuthBearerHttpWrapper } from "./generated/server-operations/testAuthBearerHttp.js";
-import { testSimpleTokenWrapper } from "./generated/server-operations/testSimpleToken.js";
+import { testAuthBearerWrapper } from "../generated/server-operations/testAuthBearer.js";
+import { testAuthBearerHttpWrapper } from "../generated/server-operations/testAuthBearerHttp.js";
+import { testSimpleTokenWrapper } from "../generated/server-operations/testSimpleToken.js";
 import { createTestApp, createExpressAdapter, testData } from "./test-utils.js";
 
 describe("Server Generator - Authentication Operations", () => {

@@ -3,10 +3,10 @@ import express from "express";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testOverriddenSecurityWrapper } from "./generated/server-operations/testOverriddenSecurity.js";
-import { testOverriddenSecurityNoAuthWrapper } from "./generated/server-operations/testOverriddenSecurityNoAuth.js";
-import { testCustomTokenHeaderWrapper } from "./generated/server-operations/testCustomTokenHeader.js";
-import { testSimplePatchWrapper } from "./generated/server-operations/testSimplePatch.js";
+import { testOverriddenSecurityWrapper } from "../generated/server-operations/testOverriddenSecurity.js";
+import { testOverriddenSecurityNoAuthWrapper } from "../generated/server-operations/testOverriddenSecurityNoAuth.js";
+import { testCustomTokenHeaderWrapper } from "../generated/server-operations/testCustomTokenHeader.js";
+import { testSimplePatchWrapper } from "../generated/server-operations/testSimplePatch.js";
 import { createTestApp, testData } from "./test-utils.js";
 
 describe("Server Generator - Security and Edge Cases", () => {
@@ -537,12 +537,10 @@ describe("Server Generator - Security and Edge Cases", () => {
 
       /* Act & Assert - Test that each error type can be handled */
       /* This is more of a structure test - actual validation errors would be triggered by real invalid data */
-      const response = await request(app)
-        .get("/test-query_error")
-        .query({
-          qr: "test",
-          cursor: "test",
-        }); /* Valid params to avoid actual errors */
+      const response = await request(app).get("/test-query_error").query({
+        qr: "test",
+        cursor: "test",
+      }); /* Valid params to avoid actual errors */
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Success");

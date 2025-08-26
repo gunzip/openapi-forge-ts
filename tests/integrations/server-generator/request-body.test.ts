@@ -3,9 +3,9 @@ import express from "express";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testInlineBodySchemaWrapper } from "./generated/server-operations/testInlineBodySchema.js";
-import { testParameterWithBodyReferenceWrapper } from "./generated/server-operations/testParameterWithBodyReference.js";
-import { putTestParameterWithBodyReferenceWrapper } from "./generated/server-operations/putTestParameterWithBodyReference.js";
+import { testInlineBodySchemaWrapper } from "../generated/server-operations/testInlineBodySchema.js";
+import { testParameterWithBodyReferenceWrapper } from "../generated/server-operations/testParameterWithBodyReference.js";
+import { putTestParameterWithBodyReferenceWrapper } from "../generated/server-operations/putTestParameterWithBodyReference.js";
 import { createTestApp, testData } from "./test-utils.js";
 
 describe("Server Generator - Request Body Operations", () => {

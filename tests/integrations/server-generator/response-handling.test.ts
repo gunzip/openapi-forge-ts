@@ -3,9 +3,9 @@ import express from "express";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testMultipleSuccessWrapper } from "./generated/server-operations/testMultipleSuccess.js";
-import { testResponseHeaderWrapper } from "./generated/server-operations/testResponseHeader.js";
-import { testWithEmptyResponseWrapper } from "./generated/server-operations/testWithEmptyResponse.js";
+import { testMultipleSuccessWrapper } from "../generated/server-operations/testMultipleSuccess.js";
+import { testResponseHeaderWrapper } from "../generated/server-operations/testResponseHeader.js";
+import { testWithEmptyResponseWrapper } from "../generated/server-operations/testWithEmptyResponse.js";
 import { createTestApp, testData } from "./test-utils.js";
 
 describe("Server Generator - Response Handling Operations", () => {

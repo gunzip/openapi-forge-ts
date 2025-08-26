@@ -57,7 +57,7 @@ export function testAuthBearerWrapper(handler: testAuthBearerHandler) {
 
 ```typescript
 import express from "express";
-import { testAuthBearerWrapper } from "./generated/server-operations/testAuthBearer.js";
+import { testAuthBearerWrapper } from "../generated/server-operations/testAuthBearer.js";
 
 const app = express();
 

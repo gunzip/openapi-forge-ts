@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testMultiContentTypesWrapper } from../generated/server-operations/testMultiContentTypes.js";
+import { testMultiContentTypesWrapper } from "../generated/server-operations/testMultiContentTypes.js";
 import {
   createTestApp,
   createExpressAdapter,

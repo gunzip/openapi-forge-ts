@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testMultipleSuccessWrapper } from./generated/server-operations/testMultipleSuccess.js";
-import { testResponseHeaderWrapper } from./generated/server-operations/testResponseHeader.js";
+import { testMultipleSuccessWrapper } from "./generated/server-operations/testMultipleSuccess.js";
+import { testResponseHeaderWrapper } from "./generated/server-operations/testResponseHeader.js";
 import {
   createTestApp,
   createExpressAdapter,

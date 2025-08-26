@@ -18,20 +18,22 @@ describe("Server Generator - Response Handling Operations", () => {
   describe("testMultipleSuccess operation", () => {
     it("should return 200 with Message data", async () => {
       /* Arrange */
-      app.get("/test-multiple-success", testMultipleSuccessWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: testData.message,
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-multiple-success",
+        testMultipleSuccessWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: testData.message,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-multiple-success");
+      const response = await request(app).get("/test-multiple-success");
 
       /* Assert */
       expect(response.status).toBe(200);
@@ -44,20 +46,22 @@ describe("Server Generator - Response Handling Operations", () => {
 
     it("should return 202 accepted response", async () => {
       /* Arrange */
-      app.get("/test-multiple-success", testMultipleSuccessWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 202,
-            contentType: "application/json",
-            data: undefined, /* 202 typically has no body */
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-multiple-success",
+        testMultipleSuccessWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 202,
+              contentType: "application/json",
+              data: undefined /* 202 typically has no body */,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-multiple-success");
+      const response = await request(app).get("/test-multiple-success");
 
       /* Assert */
       expect(response.status).toBe(202);
@@ -73,20 +77,22 @@ describe("Server Generator - Response Handling Operations", () => {
         code: 403,
       };
 
-      app.get("/test-multiple-success", testMultipleSuccessWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 403,
-            contentType: "application/json",
-            data: oneOfTestData,
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-multiple-success",
+        testMultipleSuccessWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 403,
+              contentType: "application/json",
+              data: oneOfTestData,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-multiple-success");
+      const response = await request(app).get("/test-multiple-success");
 
       /* Assert */
       expect(response.status).toBe(403);
@@ -98,20 +104,22 @@ describe("Server Generator - Response Handling Operations", () => {
 
     it("should return 404 not found", async () => {
       /* Arrange */
-      app.get("/test-multiple-success", testMultipleSuccessWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 404,
-            contentType: "application/json",
-            data: undefined, /* 404 might not have body content */
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-multiple-success",
+        testMultipleSuccessWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 404,
+              contentType: "application/json",
+              data: undefined /* 404 might not have body content */,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-multiple-success");
+      const response = await request(app).get("/test-multiple-success");
 
       /* Assert */
       expect(response.status).toBe(404);
@@ -126,16 +134,19 @@ describe("Server Generator - Response Handling Operations", () => {
       const locationHeader = "https://api.example.com/messages/123";
       const idHeader = "msg-123";
 
-      app.get("/test-response-header", testResponseHeaderWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 201,
-            contentType: "application/json",
-            data: testData.message,
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-response-header",
+        testResponseHeaderWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 201,
+              contentType: "application/json",
+              data: testData.message,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Manually set response headers in Express after wrapper */
       app.use("/test-response-header", (req, res, next) => {
@@ -147,14 +158,13 @@ describe("Server Generator - Response Handling Operations", () => {
       });
 
       /* Act */
-      const response = await request(app)
-        .get("/test-response-header");
+      const response = await request(app).get("/test-response-header");
 
       /* Assert */
       expect(response.status).toBe(201);
       expect(response.headers["content-type"]).toMatch(/application\/json/);
       expect(response.body).toEqual(testData.message);
-      
+
       /* Note: Response headers would be set by the actual implementation
          The wrapper itself doesn't handle response headers - that's done 
          by the framework or user code after the wrapper returns */
@@ -162,20 +172,25 @@ describe("Server Generator - Response Handling Operations", () => {
 
     it("should return 500 fatal error", async () => {
       /* Arrange */
-      app.get("/test-response-header", testResponseHeaderWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 500,
-            contentType: "application/json",
-            data: { error: "Internal server error", message: "Something went wrong" },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-response-header",
+        testResponseHeaderWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 500,
+              contentType: "application/json",
+              data: {
+                error: "Internal server error",
+                message: "Something went wrong",
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-response-header");
+      const response = await request(app).get("/test-response-header");
 
       /* Assert */
       expect(response.status).toBe(500);
@@ -188,20 +203,22 @@ describe("Server Generator - Response Handling Operations", () => {
   describe("testWithEmptyResponse operation", () => {
     it("should handle operations with empty response", async () => {
       /* Arrange */
-      app.get("/test-empty-response", testWithEmptyResponseWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: undefined, /* Empty response */
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-empty-response",
+        testWithEmptyResponseWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: undefined /* Empty response */,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-empty-response");
+      const response = await request(app).get("/test-empty-response");
 
       /* Assert */
       expect(response.status).toBe(200);
@@ -211,20 +228,22 @@ describe("Server Generator - Response Handling Operations", () => {
 
     it("should handle different empty response status codes", async () => {
       /* Arrange */
-      app.get("/test-empty-response", testWithEmptyResponseWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 204, /* No Content */
-            contentType: "application/json",
-            data: undefined,
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-empty-response",
+        testWithEmptyResponseWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 204 /* No Content */,
+              contentType: "application/json",
+              data: undefined,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-empty-response");
+      const response = await request(app).get("/test-empty-response");
 
       /* Assert */
       expect(response.status).toBe(204);
@@ -236,20 +255,25 @@ describe("Server Generator - Response Handling Operations", () => {
   describe("Content-Type handling", () => {
     it("should properly set content-type headers", async () => {
       /* Arrange */
-      app.get("/test-multiple-success", testMultipleSuccessWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { contentTypeTest: true, timestamp: new Date().toISOString() },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-multiple-success",
+        testMultipleSuccessWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                contentTypeTest: true,
+                timestamp: new Date().toISOString(),
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-multiple-success");
+      const response = await request(app).get("/test-multiple-success");
 
       /* Assert */
       expect(response.status).toBe(200);
@@ -260,20 +284,22 @@ describe("Server Generator - Response Handling Operations", () => {
 
     it("should handle responses without content appropriately", async () => {
       /* Arrange */
-      app.get("/test-multiple-success", testMultipleSuccessWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 202,
-            contentType: "application/json",
-            data: null, /* Explicit null */
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-multiple-success",
+        testMultipleSuccessWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 202,
+              contentType: "application/json",
+              data: null /* Explicit null */,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-multiple-success");
+      const response = await request(app).get("/test-multiple-success");
 
       /* Assert */
       expect(response.status).toBe(202);
@@ -285,40 +311,42 @@ describe("Server Generator - Response Handling Operations", () => {
   describe("Error response scenarios", () => {
     it("should handle wrapper validation errors in response context", async () => {
       /* Arrange */
-      app.get("/test-multiple-success", testMultipleSuccessWrapper(async (params) => {
-        /* Simulate different validation errors */
-        if (params.type === "query_error") {
-          return {
-            status: 400,
-            contentType: "application/json",
-            data: { 
-              error: "Query validation failed",
-              details: params.error.issues,
-            },
-          };
-        }
-        
-        if (params.type === "headers_error") {
-          return {
-            status: 400,
-            contentType: "application/json",
-            data: { 
-              error: "Header validation failed",
-              details: params.error.issues,
-            },
-          };
-        }
+      app.get(
+        "/test-multiple-success",
+        testMultipleSuccessWrapper(async (params) => {
+          /* Simulate different validation errors */
+          if (params.type === "query_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Query validation failed",
+                details: params.error.issues,
+              },
+            };
+          }
 
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: testData.message,
-        };
-      }));
+          if (params.type === "headers_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Header validation failed",
+                details: params.error.issues,
+              },
+            };
+          }
+
+          return {
+            status: 200,
+            contentType: "application/json",
+            data: testData.message,
+          };
+        }),
+      );
 
       /* Act - Valid request */
-      const validResponse = await request(app)
-        .get("/test-multiple-success");
+      const validResponse = await request(app).get("/test-multiple-success");
 
       /* Assert - Valid case */
       expect(validResponse.status).toBe(200);
@@ -328,27 +356,32 @@ describe("Server Generator - Response Handling Operations", () => {
     it("should maintain response structure consistency", async () => {
       /* Arrange */
       const responses = [200, 202, 403, 404];
-      
+
       for (const statusCode of responses) {
-        app.get(`/test-status-${statusCode}`, testMultipleSuccessWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: statusCode,
-              contentType: "application/json",
-              data: statusCode === 200 || statusCode === 403 ? testData.message : undefined,
-            };
-          }
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.get(
+          `/test-status-${statusCode}`,
+          testMultipleSuccessWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: statusCode,
+                contentType: "application/json",
+                data:
+                  statusCode === 200 || statusCode === 403
+                    ? testData.message
+                    : undefined,
+              };
+            }
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act */
-        const response = await request(app)
-          .get(`/test-status-${statusCode}`);
+        const response = await request(app).get(`/test-status-${statusCode}`);
 
         /* Assert */
         expect(response.status).toBe(statusCode);
         expect(response.headers).toBeDefined();
-        
+
         if (statusCode === 200 || statusCode === 403) {
           expect(response.headers["content-type"]).toMatch(/application\/json/);
         }

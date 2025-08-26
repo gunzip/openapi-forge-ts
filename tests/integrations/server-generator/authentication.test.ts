@@ -19,17 +19,20 @@ describe("Server Generator - Authentication Operations", () => {
     it("should return 200 with valid Person when all required parameters are provided", async () => {
       /* Arrange */
       const adapter = createExpressAdapter(testAuthBearerWrapper);
-      app.get("/test-auth-bearer", adapter(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: testData.person,
-          };
-        }
-        /* Handle validation errors by returning appropriate error response */
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-auth-bearer",
+        adapter(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: testData.person,
+            };
+          }
+          /* Handle validation errors by returning appropriate error response */
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -50,20 +53,26 @@ describe("Server Generator - Authentication Operations", () => {
     it("should handle missing required query parameter", async () => {
       /* Arrange */
       const adapter = createExpressAdapter(testAuthBearerWrapper);
-      app.get("/test-auth-bearer", adapter(async (params) => {
-        if (params.type === "query_error") {
+      app.get(
+        "/test-auth-bearer",
+        adapter(async (params) => {
+          if (params.type === "query_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Invalid query parameters",
+                details: params.error.issues,
+              },
+            };
+          }
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { error: "Invalid query parameters", details: params.error.issues },
+            data: testData.person,
           };
-        }
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: testData.person,
-        };
-      }));
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -85,27 +94,33 @@ describe("Server Generator - Authentication Operations", () => {
             path: expect.arrayContaining(["qr"]),
             code: "invalid_type",
           }),
-        ])
+        ]),
       );
     });
 
     it("should handle invalid cursor parameter (too short)", async () => {
       /* Arrange */
       const adapter = createExpressAdapter(testAuthBearerWrapper);
-      app.get("/test-auth-bearer", adapter(async (params) => {
-        if (params.type === "query_error") {
+      app.get(
+        "/test-auth-bearer",
+        adapter(async (params) => {
+          if (params.type === "query_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Invalid query parameters",
+                details: params.error.issues,
+              },
+            };
+          }
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { error: "Invalid query parameters", details: params.error.issues },
+            data: testData.person,
           };
-        }
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: testData.person,
-        };
-      }));
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -113,7 +128,7 @@ describe("Server Generator - Authentication Operations", () => {
         .query({
           qr: testData.queryParams.qr,
           qo: testData.queryParams.qo,
-          cursor: "", /* Empty cursor violates minLength: 1 */
+          cursor: "" /* Empty cursor violates minLength: 1 */,
         })
         .set("Authorization", testData.headers.Authorization);
 
@@ -127,7 +142,7 @@ describe("Server Generator - Authentication Operations", () => {
             path: expect.arrayContaining(["cursor"]),
             code: "too_small",
           }),
-        ])
+        ]),
       );
     });
   });
@@ -135,16 +150,19 @@ describe("Server Generator - Authentication Operations", () => {
   describe("testAuthBearerHttp operation", () => {
     it("should return 200 with valid response when authenticated", async () => {
       /* Arrange */
-      app.get("/test-auth-bearer-http", testAuthBearerHttpWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: testData.person,
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-auth-bearer-http",
+        testAuthBearerHttpWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: testData.person,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -166,16 +184,19 @@ describe("Server Generator - Authentication Operations", () => {
   describe("testSimpleToken operation", () => {
     it("should return 200 with valid response when using custom token header", async () => {
       /* Arrange */
-      app.get("/test-simple-token", testSimpleTokenWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: testData.person,
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-simple-token",
+        testSimpleTokenWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: testData.person,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -195,20 +216,26 @@ describe("Server Generator - Authentication Operations", () => {
 
     it("should handle missing query parameters gracefully", async () => {
       /* Arrange */
-      app.get("/test-simple-token", testSimpleTokenWrapper(async (params) => {
-        if (params.type === "query_error") {
+      app.get(
+        "/test-simple-token",
+        testSimpleTokenWrapper(async (params) => {
+          if (params.type === "query_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Missing required parameters",
+                details: params.error.issues,
+              },
+            };
+          }
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { error: "Missing required parameters", details: params.error.issues },
+            data: testData.person,
           };
-        }
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: testData.person,
-        };
-      }));
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -228,7 +255,7 @@ describe("Server Generator - Authentication Operations", () => {
             path: expect.arrayContaining(["qr"]),
             code: "invalid_type",
           }),
-        ])
+        ]),
       );
     });
   });

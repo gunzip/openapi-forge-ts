@@ -5,6 +5,7 @@ This directory contains comprehensive integration tests for the `server-generato
 ## Overview
 
 The server-generator creates wrapper functions that:
+
 - Validate request parameters using Zod schemas
 - Provide type-safe interfaces for handlers
 - Handle validation errors gracefully
@@ -70,7 +71,7 @@ app.get("/test-auth-bearer", async (req, res) => {
         data: { message: "Success", query: params.value.query },
       };
     }
-    
+
     // Handle validation errors
     if (params.type === "query_error") {
       return {
@@ -80,7 +81,7 @@ app.get("/test-auth-bearer", async (req, res) => {
       };
     }
   };
-  
+
   const wrapper = testAuthBearerWrapper(handler);
   const wrapperReq = {
     query: req.query,
@@ -88,7 +89,7 @@ app.get("/test-auth-bearer", async (req, res) => {
     headers: req.headers,
     body: req.body,
   };
-  
+
   const result = await wrapper(wrapperReq);
   res.status(result.status).json(result.data);
 });
@@ -97,35 +98,41 @@ app.get("/test-auth-bearer", async (req, res) => {
 ## Key Features Tested
 
 ### 1. Parameter Validation
+
 - ✅ Required vs optional parameters
 - ✅ Type validation (string, number, etc.)
 - ✅ Format validation (minLength, patterns, etc.)
 - ✅ Path, query, header, and body parameters
 
 ### 2. Request Body Handling
+
 - ✅ JSON request bodies
 - ✅ Form data (application/x-www-form-urlencoded)
 - ✅ File uploads (multipart/form-data)
 - ✅ Multiple content types
 
 ### 3. Authentication & Security
+
 - ✅ Bearer token authentication
 - ✅ Custom header authentication
 - ✅ Security scheme overrides
 - ✅ No authentication (public endpoints)
 
 ### 4. File Operations
+
 - ✅ File uploads with validation
 - ✅ Binary file downloads
 - ✅ Multiple file handling
 
 ### 5. Response Handling
+
 - ✅ Multiple response status codes
 - ✅ Different content types
 - ✅ Response headers
 - ✅ Empty responses
 
 ### 6. Error Scenarios
+
 - ✅ Validation errors for each parameter type
 - ✅ Missing required parameters
 - ✅ Invalid parameter formats
@@ -164,18 +171,23 @@ pnpm test:coverage tests/integrations/server-generator
 ## Best Practices Demonstrated
 
 ### 1. Type Safety
+
 All request/response handling is fully typed based on the OpenAPI specification.
 
 ### 2. Validation
+
 Runtime validation using Zod ensures data integrity at the API boundary.
 
 ### 3. Error Handling
+
 Structured error responses with detailed validation information.
 
 ### 4. Test Isolation
+
 Each test is independent and can be run separately.
 
 ### 5. Comprehensive Coverage
+
 Tests cover happy paths, error cases, and edge conditions.
 
 ## Integration with Real Applications

@@ -23,20 +23,23 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
         timestamp: new Date().toISOString(),
       };
 
-      app.post("/test-multi-content", testMultiContentTypesWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "JSON content processed",
-              receivedContentType: "application/json",
-              receivedData: params.value.body,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-multi-content",
+        testMultiContentTypesWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "JSON content processed",
+                receivedContentType: "application/json",
+                receivedData: params.value.body,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -60,54 +63,68 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
         value: "form-value",
       };
 
-      app.post("/test-multi-content", testMultiContentTypesWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Form content processed",
-              receivedContentType: "application/x-www-form-urlencoded",
-              receivedData: params.value.body,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-multi-content",
+        testMultiContentTypesWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Form content processed",
+                receivedContentType: "application/x-www-form-urlencoded",
+                receivedData: params.value.body,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
         .post("/test-multi-content")
-        .send("name=Form Test&type=application/x-www-form-urlencoded&value=form-value")
+        .send(
+          "name=Form Test&type=application/x-www-form-urlencoded&value=form-value",
+        )
         .set("Content-Type", "application/x-www-form-urlencoded");
 
       /* Assert */
       expect(response.status).toBe(200);
       expect(response.headers["content-type"]).toMatch(/application\/json/);
       expect(response.body.message).toBe("Form content processed");
-      expect(response.body.receivedContentType).toBe("application/x-www-form-urlencoded");
+      expect(response.body.receivedContentType).toBe(
+        "application/x-www-form-urlencoded",
+      );
       expect(response.body.receivedData).toEqual(formData);
     });
 
     it("should handle text/plain content type", async () => {
       /* Arrange */
-      const textPayload = "This is plain text content for multi-content-type testing.";
+      const textPayload =
+        "This is plain text content for multi-content-type testing.";
 
-      app.post("/test-multi-content", testMultiContentTypesWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Text content processed",
-              receivedContentType: "text/plain",
-              receivedData: params.value.body,
-              contentLength: typeof params.value.body === "string" ? params.value.body.length : 0,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-multi-content",
+        testMultiContentTypesWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Text content processed",
+                receivedContentType: "text/plain",
+                receivedData: params.value.body,
+                contentLength:
+                  typeof params.value.body === "string"
+                    ? params.value.body.length
+                    : 0,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -126,20 +143,23 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
 
     it("should handle multipart/form-data content type", async () => {
       /* Arrange */
-      app.post("/test-multi-content", testMultiContentTypesWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Multipart content processed",
-              receivedContentType: "multipart/form-data",
-              hasBody: !!params.value.body,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-multi-content",
+        testMultiContentTypesWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Multipart content processed",
+                receivedContentType: "multipart/form-data",
+                hasBody: !!params.value.body,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -158,28 +178,31 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
 
     it("should handle unsupported content type gracefully", async () => {
       /* Arrange */
-      app.post("/test-multi-content", testMultiContentTypesWrapper(async (params) => {
-        if (params.type === "body_error") {
-          return {
-            status: 415, /* Unsupported Media Type */
-            contentType: "application/json",
-            data: { 
-              error: "Unsupported content type",
-              details: params.error.issues,
-            },
-          };
-        }
-        
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { message: "Content processed" },
-          };
-        }
-        
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-multi-content",
+        testMultiContentTypesWrapper(async (params) => {
+          if (params.type === "body_error") {
+            return {
+              status: 415 /* Unsupported Media Type */,
+              contentType: "application/json",
+              data: {
+                error: "Unsupported content type",
+                details: params.error.issues,
+              },
+            };
+          }
+
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: { message: "Content processed" },
+            };
+          }
+
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -194,28 +217,31 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
 
     it("should validate content based on content type", async () => {
       /* Arrange */
-      app.post("/test-multi-content", testMultiContentTypesWrapper(async (params) => {
-        if (params.type === "body_error") {
+      app.post(
+        "/test-multi-content",
+        testMultiContentTypesWrapper(async (params) => {
+          if (params.type === "body_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Content validation failed",
+                validationType: params.type,
+                details: params.error.issues,
+              },
+            };
+          }
+
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { 
-              error: "Content validation failed",
-              validationType: params.type,
-              details: params.error.issues,
+            data: {
+              message: "Content validated successfully",
+              contentType: params.type,
             },
           };
-        }
-        
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: { 
-            message: "Content validated successfully",
-            contentType: params.type,
-          },
-        };
-      }));
+        }),
+      );
 
       /* Act - Send invalid JSON */
       const response = await request(app)
@@ -238,20 +264,23 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
         data: { nested: true, value: 42 },
       };
 
-      app.post("/test-deserialization", testDeserializationWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Deserialization successful",
-              deserializedData: params.value.body,
-              dataType: typeof params.value.body,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-deserialization",
+        testDeserializationWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Deserialization successful",
+                deserializedData: params.value.body,
+                dataType: typeof params.value.body,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -271,23 +300,26 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
       /* Arrange */
       const customData = "custom-format:value1,value2,value3";
 
-      app.post("/test-deserialization", testDeserializationWrapper(async (params) => {
-        if (params.type === "ok") {
-          /* Custom deserialization logic could be applied here */
-          const processedData = params.value.body;
-          
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Custom deserialization processed",
-              originalData: processedData,
-              isString: typeof processedData === "string",
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-deserialization",
+        testDeserializationWrapper(async (params) => {
+          if (params.type === "ok") {
+            /* Custom deserialization logic could be applied here */
+            const processedData = params.value.body;
+
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Custom deserialization processed",
+                originalData: processedData,
+                isString: typeof processedData === "string",
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -305,30 +337,33 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
 
     it("should handle deserialization errors", async () => {
       /* Arrange */
-      app.post("/test-deserialization", testDeserializationWrapper(async (params) => {
-        if (params.type === "body_error") {
+      app.post(
+        "/test-deserialization",
+        testDeserializationWrapper(async (params) => {
+          if (params.type === "body_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Deserialization failed",
+                errorType: params.type,
+                details: params.error.issues,
+              },
+            };
+          }
+
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { 
-              error: "Deserialization failed",
-              errorType: params.type,
-              details: params.error.issues,
-            },
+            data: { message: "Deserialization successful" },
           };
-        }
-        
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: { message: "Deserialization successful" },
-        };
-      }));
+        }),
+      );
 
       /* Act - Send malformed data */
       const response = await request(app)
         .post("/test-deserialization")
-        .send(Buffer.from([0xFF, 0xFE, 0xFD])) /* Invalid binary data */
+        .send(Buffer.from([0xff, 0xfe, 0xfd])) /* Invalid binary data */
         .set("Content-Type", "application/json");
 
       /* Assert - Express may reject before wrapper or wrapper may handle gracefully */
@@ -340,19 +375,23 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
   describe("Content negotiation", () => {
     it("should handle Accept header for response content type", async () => {
       /* Arrange */
-      app.post("/test-multi-content", testMultiContentTypesWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json", /* Always return JSON for simplicity */
-            data: { 
-              message: "Content negotiation test",
-              acceptedContentType: "application/json",
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-multi-content",
+        testMultiContentTypesWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType:
+                "application/json" /* Always return JSON for simplicity */,
+              data: {
+                message: "Content negotiation test",
+                acceptedContentType: "application/json",
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -370,49 +409,54 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
     it("should handle multiple content types in single operation", async () => {
       /* Arrange */
       const testCases = [
-        { 
-          contentType: "application/json", 
+        {
+          contentType: "application/json",
           data: { json: true, value: "test" },
-          send: (req: any) => req.send({ json: true, value: "test" })
+          send: (req: any) => req.send({ json: true, value: "test" }),
         },
-        { 
-          contentType: "application/x-www-form-urlencoded", 
+        {
+          contentType: "application/x-www-form-urlencoded",
           data: { form: "true", value: "test" },
-          send: (req: any) => req.send("form=true&value=test")
+          send: (req: any) => req.send("form=true&value=test"),
         },
-        { 
-          contentType: "text/plain", 
+        {
+          contentType: "text/plain",
           data: "plain text data",
-          send: (req: any) => req.send("plain text data")
+          send: (req: any) => req.send("plain text data"),
         },
       ];
 
       for (const testCase of testCases) {
-        app.post(`/test-multi-${testCase.contentType.replace(/[\/\-]/g, '_')}`, testMultiContentTypesWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: { 
-                message: `${testCase.contentType} processed successfully`,
-                receivedData: params.value.body,
-              },
-            };
-          }
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.post(
+          `/test-multi-${testCase.contentType.replace(/[\/\-]/g, "_")}`,
+          testMultiContentTypesWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: `${testCase.contentType} processed successfully`,
+                  receivedData: params.value.body,
+                },
+              };
+            }
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act */
         const response = await testCase.send(
           request(app)
-            .post(`/test-multi-${testCase.contentType.replace(/[\/\-]/g, '_')}`)
-            .set("Content-Type", testCase.contentType)
+            .post(`/test-multi-${testCase.contentType.replace(/[\/\-]/g, "_")}`)
+            .set("Content-Type", testCase.contentType),
         );
 
         /* Assert */
         expect(response.status).toBe(200);
         expect(response.headers["content-type"]).toMatch(/application\/json/);
-        expect(response.body.message).toBe(`${testCase.contentType} processed successfully`);
+        expect(response.body.message).toBe(
+          `${testCase.contentType} processed successfully`,
+        );
       }
     });
   });
@@ -420,25 +464,31 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
   describe("Edge cases for multi-content operations", () => {
     it("should handle empty content with different content types", async () => {
       /* Arrange */
-      app.post("/test-multi-content", testMultiContentTypesWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Empty content handled",
-              bodyIsEmpty: params.value.body === undefined || params.value.body === null || params.value.body === "",
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-multi-content",
+        testMultiContentTypesWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Empty content handled",
+                bodyIsEmpty:
+                  params.value.body === undefined ||
+                  params.value.body === null ||
+                  params.value.body === "",
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
         .post("/test-multi-content")
         .set("Content-Type", "application/json");
-        /* No body sent */
+      /* No body sent */
 
       /* Assert */
       expect(response.status).toBe(200);
@@ -450,23 +500,26 @@ describe("Server Generator - Multi-Content-Type Operations", () => {
     it("should handle large content with different types", async () => {
       /* Arrange */
       const largeJsonData = {
-        data: "A".repeat(1024), /* 1KB string */
+        data: "A".repeat(1024) /* 1KB string */,
         metadata: { size: "large", type: "test" },
       };
 
-      app.post("/test-multi-content", testMultiContentTypesWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Large content processed",
-              dataSize: JSON.stringify(params.value.body).length,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-multi-content",
+        testMultiContentTypesWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Large content processed",
+                dataSize: JSON.stringify(params.value.body).length,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)

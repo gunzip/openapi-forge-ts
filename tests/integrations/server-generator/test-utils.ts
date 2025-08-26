@@ -10,23 +10,23 @@ import type { Express, Request, Response } from "express";
  */
 export function createTestApp(): Express {
   const app = express();
-  
+
   /* Standard middleware for parsing requests */
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  
+
   /* Parse query strings */
   app.use((req, res, next) => {
     req.query = req.query || {};
     next();
   });
-  
+
   /* Ensure path params are available */
   app.use((req, res, next) => {
     req.params = req.params || {};
     next();
   });
-  
+
   return app;
 }
 
@@ -34,11 +34,11 @@ export function createTestApp(): Express {
  * Creates an Express middleware adapter for server-generator wrappers
  */
 export function createExpressAdapter<T>(
-  wrapper: (handler: (params: any) => Promise<T>) => (req: any) => Promise<T>
+  wrapper: (handler: (params: any) => Promise<T>) => (req: any) => Promise<T>,
 ) {
   return (handler: (params: any) => Promise<T>) => {
     const wrappedHandler = wrapper(handler);
-    
+
     return async (req: Request, res: Response) => {
       try {
         /* Convert Express request to wrapper format */
@@ -47,21 +47,21 @@ export function createExpressAdapter<T>(
           path: req.params,
           headers: req.headers,
           body: req.body,
-          contentType: req.get('content-type'),
+          contentType: req.get("content-type"),
         };
-        
+
         /* Call the wrapper with the converted request */
         const result = await wrappedHandler(wrapperReq);
-        
+
         /* Send the response */
-        if (result && typeof result === 'object' && 'status' in result) {
+        if (result && typeof result === "object" && "status" in result) {
           const response = result as any;
           res.status(response.status);
-          
+
           if (response.contentType) {
-            res.set('Content-Type', response.contentType);
+            res.set("Content-Type", response.contentType);
           }
-          
+
           if (response.data !== undefined) {
             res.json(response.data);
           } else {
@@ -71,10 +71,10 @@ export function createExpressAdapter<T>(
           res.status(500).json({ error: "Invalid response from handler" });
         }
       } catch (error) {
-        console.error('Express adapter error:', error);
-        res.status(500).json({ 
-          error: "Internal server error", 
-          message: error instanceof Error ? error.message : String(error)
+        console.error("Express adapter error:", error);
+        res.status(500).json({
+          error: "Internal server error",
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     };
@@ -117,11 +117,11 @@ export const testData = {
   },
   queryParams: {
     qr: "required-param",
-    qo: "optional-param", 
+    qo: "optional-param",
     cursor: "test-cursor-123",
   },
   headers: {
-    "Authorization": "Bearer test-token-123",
+    Authorization: "Bearer test-token-123",
     "X-Functions-Key": "test-simple-token-456",
     "Content-Type": "application/json",
   },

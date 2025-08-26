@@ -39,7 +39,7 @@ describe("Server Generator Integration Summary", () => {
       expect(receivedParams.type).toBe("ok");
       expect(receivedParams.value.query).toEqual({
         qr: "required",
-        qo: "optional", 
+        qo: "optional",
         cursor: "test",
       });
       expect(validResult.status).toBe(200);
@@ -53,7 +53,9 @@ describe("Server Generator Integration Summary", () => {
         return {
           status: params.type === "ok" ? 200 : 400,
           contentType: "application/json",
-          data: { error: params.type !== "ok" ? params.error.issues : undefined },
+          data: {
+            error: params.type !== "ok" ? params.error.issues : undefined,
+          },
         };
       };
 
@@ -61,7 +63,7 @@ describe("Server Generator Integration Summary", () => {
 
       /* Act - Invalid parameters (missing required 'qr') */
       const invalidResult = await wrapper({
-        query: { qo: "optional", cursor: "test" }, /* Missing 'qr' */
+        query: { qo: "optional", cursor: "test" } /* Missing 'qr' */,
         path: {},
         headers: {},
         body: undefined,
@@ -75,7 +77,7 @@ describe("Server Generator Integration Summary", () => {
             path: expect.arrayContaining(["qr"]),
             code: "invalid_type",
           }),
-        ])
+        ]),
       );
       expect(invalidResult.status).toBe(400);
     });
@@ -171,7 +173,7 @@ describe("Server Generator Integration Summary", () => {
   describe("Type Safety and Runtime Validation", () => {
     it("should provide fully typed interfaces", () => {
       /* This test demonstrates the type safety provided by server-generator */
-      
+
       /* Wrapper functions are properly typed */
       const wrapper = testAuthBearerWrapper(async (params) => {
         /* TypeScript ensures proper handling of all validation cases */
@@ -189,7 +191,7 @@ describe("Server Generator Integration Summary", () => {
             expect(params.error.issues).toBeInstanceOf(Array);
             break;
         }
-        
+
         return {
           status: 200,
           contentType: "application/json",
@@ -202,7 +204,7 @@ describe("Server Generator Integration Summary", () => {
 
     it("should integrate seamlessly with Express.js patterns", async () => {
       /* This test shows how the wrappers integrate with Express */
-      
+
       /* Mock Express request/response pattern */
       const mockExpressReq = {
         query: { qr: "test", qo: "optional", cursor: "cursor" },
@@ -226,7 +228,7 @@ describe("Server Generator Integration Summary", () => {
       };
 
       const wrapper = testAuthBearerWrapper(handler);
-      
+
       /* Convert Express request to wrapper format */
       const wrapperRequest = {
         query: mockExpressReq.query,

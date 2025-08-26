@@ -16,10 +16,13 @@ describe("Server Generator - File Upload/Download Operations", () => {
 
   beforeEach(() => {
     app = createTestApp();
-    
+
     /* Create a temporary test file */
     testFilePath = path.join("/tmp", "test-file.txt");
-    fs.writeFileSync(testFilePath, "This is a test file content for upload testing.");
+    fs.writeFileSync(
+      testFilePath,
+      "This is a test file content for upload testing.",
+    );
   });
 
   afterEach(() => {
@@ -32,21 +35,24 @@ describe("Server Generator - File Upload/Download Operations", () => {
   describe("testFileUpload operation", () => {
     it("should handle multipart/form-data file upload", async () => {
       /* Arrange */
-      app.post("/test-file-upload", testFileUploadWrapper(async (params) => {
-        if (params.type === "ok") {
-          /* File should be parsed and available in body */
-          expect(params.value.body).toBeDefined();
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "File uploaded successfully",
-              receivedFile: !!params.value.body,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-file-upload",
+        testFileUploadWrapper(async (params) => {
+          if (params.type === "ok") {
+            /* File should be parsed and available in body */
+            expect(params.value.body).toBeDefined();
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "File uploaded successfully",
+                receivedFile: !!params.value.body,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -63,28 +69,31 @@ describe("Server Generator - File Upload/Download Operations", () => {
 
     it("should handle missing file in upload", async () => {
       /* Arrange */
-      app.post("/test-file-upload", testFileUploadWrapper(async (params) => {
-        if (params.type === "body_error") {
-          return {
-            status: 400,
-            contentType: "application/json",
-            data: { 
-              error: "File upload validation failed",
-              details: params.error.issues,
-            },
-          };
-        }
-        
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { message: "Upload processed" },
-          };
-        }
-        
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-file-upload",
+        testFileUploadWrapper(async (params) => {
+          if (params.type === "body_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "File upload validation failed",
+                details: params.error.issues,
+              },
+            };
+          }
+
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: { message: "Upload processed" },
+            };
+          }
+
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -99,28 +108,31 @@ describe("Server Generator - File Upload/Download Operations", () => {
 
     it("should validate file upload with proper content type", async () => {
       /* Arrange */
-      app.post("/test-file-upload", testFileUploadWrapper(async (params) => {
-        if (params.type === "ok") {
+      app.post(
+        "/test-file-upload",
+        testFileUploadWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "File validated and uploaded",
+                hasFile: !!params.value.body,
+              },
+            };
+          }
+
+          /* Handle validation errors */
           return {
-            status: 200,
+            status: 400,
             contentType: "application/json",
-            data: { 
-              message: "File validated and uploaded",
-              hasFile: !!params.value.body,
+            data: {
+              error: `Validation failed: ${params.type}`,
+              details: params.error.issues,
             },
           };
-        }
-        
-        /* Handle validation errors */
-        return {
-          status: 400,
-          contentType: "application/json",
-          data: { 
-            error: `Validation failed: ${params.type}`,
-            details: params.error.issues,
-          },
-        };
-      }));
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -137,19 +149,22 @@ describe("Server Generator - File Upload/Download Operations", () => {
   describe("testBinaryFileUpload operation", () => {
     it("should handle binary file upload", async () => {
       /* Arrange */
-      app.post("/test-binary-file-upload", testBinaryFileUploadWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Binary file uploaded successfully",
-              receivedBinaryFile: !!params.value.body,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-binary-file-upload",
+        testBinaryFileUploadWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Binary file uploaded successfully",
+                receivedBinaryFile: !!params.value.body,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -165,28 +180,33 @@ describe("Server Generator - File Upload/Download Operations", () => {
 
     it("should validate binary file format", async () => {
       /* Arrange */
-      app.post("/test-binary-file-upload", testBinaryFileUploadWrapper(async (params) => {
-        if (params.type === "body_error") {
+      app.post(
+        "/test-binary-file-upload",
+        testBinaryFileUploadWrapper(async (params) => {
+          if (params.type === "body_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Binary file validation failed",
+                details: params.error.issues,
+              },
+            };
+          }
+
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { 
-              error: "Binary file validation failed",
-              details: params.error.issues,
-            },
+            data: { message: "Binary file validated" },
           };
-        }
-        
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: { message: "Binary file validated" },
-        };
-      }));
+        }),
+      );
 
       /* Create a binary test file */
       const binaryFilePath = path.join("/tmp", "test-binary.bin");
-      const binaryData = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]); /* PNG header */
+      const binaryData = Buffer.from([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      ]); /* PNG header */
       fs.writeFileSync(binaryFilePath, binaryData);
 
       try {
@@ -210,81 +230,102 @@ describe("Server Generator - File Upload/Download Operations", () => {
   describe("testBinaryFileDownload operation", () => {
     it("should return binary file download with correct content type", async () => {
       /* Arrange */
-      const binaryData = Buffer.from("Binary file content for download test", "utf-8");
-      
-      app.get("/test-binary-file-download", testBinaryFileDownloadWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/octet-stream",
-            data: binaryData,
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      const binaryData = Buffer.from(
+        "Binary file content for download test",
+        "utf-8",
+      );
+
+      app.get(
+        "/test-binary-file-download",
+        testBinaryFileDownloadWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/octet-stream",
+              data: binaryData,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-binary-file-download");
+      const response = await request(app).get("/test-binary-file-download");
 
       /* Assert */
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toMatch(/application\/octet-stream/);
-      expect(Buffer.isBuffer(response.body) || typeof response.body === "string").toBe(true);
+      expect(response.headers["content-type"]).toMatch(
+        /application\/octet-stream/,
+      );
+      expect(
+        Buffer.isBuffer(response.body) || typeof response.body === "string",
+      ).toBe(true);
     });
 
     it("should handle download with proper headers", async () => {
       /* Arrange */
       const downloadFileName = "test-download.bin";
       const fileContent = Buffer.from("Downloadable binary content");
-      
-      app.get("/test-binary-file-download", testBinaryFileDownloadWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/octet-stream",
-            data: fileContent,
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+
+      app.get(
+        "/test-binary-file-download",
+        testBinaryFileDownloadWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/octet-stream",
+              data: fileContent,
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Add middleware to set download headers */
       app.use("/test-binary-file-download", (req, res, next) => {
         if (res.statusCode === 200) {
-          res.setHeader("Content-Disposition", `attachment; filename="${downloadFileName}"`);
+          res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${downloadFileName}"`,
+          );
           res.setHeader("Content-Length", fileContent.length.toString());
         }
         next();
       });
 
       /* Act */
-      const response = await request(app)
-        .get("/test-binary-file-download");
+      const response = await request(app).get("/test-binary-file-download");
 
       /* Assert */
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toMatch(/application\/octet-stream/);
+      expect(response.headers["content-type"]).toMatch(
+        /application\/octet-stream/,
+      );
       /* Note: Content-Disposition and Content-Length would be set by user implementation */
     });
 
     it("should handle file download error scenarios", async () => {
       /* Arrange */
-      app.get("/test-binary-file-download", testBinaryFileDownloadWrapper(async (params) => {
-        if (params.type === "ok") {
-          /* Simulate file not found or access error */
-          return {
-            status: 404,
-            contentType: "application/json",
-            data: { error: "File not found", message: "The requested file could not be located" },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-binary-file-download",
+        testBinaryFileDownloadWrapper(async (params) => {
+          if (params.type === "ok") {
+            /* Simulate file not found or access error */
+            return {
+              status: 404,
+              contentType: "application/json",
+              data: {
+                error: "File not found",
+                message: "The requested file could not be located",
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-binary-file-download");
+      const response = await request(app).get("/test-binary-file-download");
 
       /* Assert */
       expect(response.status).toBe(404);
@@ -301,24 +342,27 @@ describe("Server Generator - File Upload/Download Operations", () => {
       const largeContent = "A".repeat(1024 * 10); /* 10KB file */
       fs.writeFileSync(largeFilePath, largeContent);
 
-      app.post("/test-file-upload", testFileUploadWrapper(async (params) => {
-        if (params.type === "ok") {
+      app.post(
+        "/test-file-upload",
+        testFileUploadWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Large file uploaded",
+                fileReceived: !!params.value.body,
+              },
+            };
+          }
+
           return {
-            status: 200,
+            status: 400,
             contentType: "application/json",
-            data: { 
-              message: "Large file uploaded",
-              fileReceived: !!params.value.body,
-            },
+            data: { error: `Upload failed: ${params.type}` },
           };
-        }
-        
-        return {
-          status: 400,
-          contentType: "application/json",
-          data: { error: `Upload failed: ${params.type}` },
-        };
-      }));
+        }),
+      );
 
       try {
         /* Act */
@@ -327,7 +371,9 @@ describe("Server Generator - File Upload/Download Operations", () => {
           .attach("file", largeFilePath, "large-file.txt");
 
         /* Assert */
-        expect([200, 400, 413]).toContain(response.status); /* 413 = Payload Too Large */
+        expect([200, 400, 413]).toContain(
+          response.status,
+        ); /* 413 = Payload Too Large */
         expect(response.headers["content-type"]).toMatch(/application\/json/);
       } finally {
         /* Clean up */
@@ -344,24 +390,27 @@ describe("Server Generator - File Upload/Download Operations", () => {
       fs.writeFileSync(file1Path, "File 1 content");
       fs.writeFileSync(file2Path, "File 2 content");
 
-      app.post("/test-file-upload", testFileUploadWrapper(async (params) => {
-        if (params.type === "ok") {
+      app.post(
+        "/test-file-upload",
+        testFileUploadWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Multiple files handled",
+                bodyReceived: !!params.value.body,
+              },
+            };
+          }
+
           return {
-            status: 200,
+            status: 400,
             contentType: "application/json",
-            data: { 
-              message: "Multiple files handled",
-              bodyReceived: !!params.value.body,
-            },
+            data: { error: `Upload validation failed: ${params.type}` },
           };
-        }
-        
-        return {
-          status: 400,
-          contentType: "application/json",
-          data: { error: `Upload validation failed: ${params.type}` },
-        };
-      }));
+        }),
+      );
 
       try {
         /* Act */
@@ -375,7 +424,7 @@ describe("Server Generator - File Upload/Download Operations", () => {
         expect(response.headers["content-type"]).toMatch(/application\/json/);
       } finally {
         /* Clean up */
-        [file1Path, file2Path].forEach(filePath => {
+        [file1Path, file2Path].forEach((filePath) => {
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
           }

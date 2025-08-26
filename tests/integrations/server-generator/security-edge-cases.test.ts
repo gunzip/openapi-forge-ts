@@ -20,19 +20,22 @@ describe("Server Generator - Security and Edge Cases", () => {
     describe("testOverriddenSecurity operation", () => {
       it("should handle operation with overridden security", async () => {
         /* Arrange */
-        app.get("/test-overridden-security", testOverriddenSecurityWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: { 
-                message: "Overridden security validated",
-                securityHandled: true,
-              },
-            };
-          }
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.get(
+          "/test-overridden-security",
+          testOverriddenSecurityWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: "Overridden security validated",
+                  securityHandled: true,
+                },
+              };
+            }
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act */
         const response = await request(app)
@@ -48,29 +51,31 @@ describe("Server Generator - Security and Edge Cases", () => {
 
       it("should handle missing security when required", async () => {
         /* Arrange */
-        app.get("/test-overridden-security", testOverriddenSecurityWrapper(async (params) => {
-          if (params.type === "headers_error") {
+        app.get(
+          "/test-overridden-security",
+          testOverriddenSecurityWrapper(async (params) => {
+            if (params.type === "headers_error") {
+              return {
+                status: 401,
+                contentType: "application/json",
+                data: {
+                  error: "Authentication required",
+                  details: params.error.issues,
+                },
+              };
+            }
+
             return {
-              status: 401,
+              status: 200,
               contentType: "application/json",
-              data: { 
-                error: "Authentication required",
-                details: params.error.issues,
-              },
+              data: { message: "Authorized" },
             };
-          }
-          
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { message: "Authorized" },
-          };
-        }));
+          }),
+        );
 
         /* Act */
-        const response = await request(app)
-          .get("/test-overridden-security");
-          /* No authorization header */
+        const response = await request(app).get("/test-overridden-security");
+        /* No authorization header */
 
         /* Assert - Depends on wrapper implementation */
         expect([200, 401]).toContain(response.status);
@@ -81,24 +86,26 @@ describe("Server Generator - Security and Edge Cases", () => {
     describe("testOverriddenSecurityNoAuth operation", () => {
       it("should work without authentication (security: [])", async () => {
         /* Arrange */
-        app.get("/test-no-auth", testOverriddenSecurityNoAuthWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: { 
-                message: "No authentication required",
-                publicEndpoint: true,
-              },
-            };
-          }
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.get(
+          "/test-no-auth",
+          testOverriddenSecurityNoAuthWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: "No authentication required",
+                  publicEndpoint: true,
+                },
+              };
+            }
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act */
-        const response = await request(app)
-          .get("/test-no-auth");
-          /* No authentication headers needed */
+        const response = await request(app).get("/test-no-auth");
+        /* No authentication headers needed */
 
         /* Assert */
         expect(response.status).toBe(200);
@@ -109,19 +116,22 @@ describe("Server Generator - Security and Edge Cases", () => {
 
       it("should work even with authentication present", async () => {
         /* Arrange */
-        app.get("/test-no-auth", testOverriddenSecurityNoAuthWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: { 
-                message: "Auth ignored when not required",
-                authProvided: true,
-              },
-            };
-          }
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.get(
+          "/test-no-auth",
+          testOverriddenSecurityNoAuthWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: "Auth ignored when not required",
+                  authProvided: true,
+                },
+              };
+            }
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act */
         const response = await request(app)
@@ -138,20 +148,23 @@ describe("Server Generator - Security and Edge Cases", () => {
     describe("testCustomTokenHeader operation", () => {
       it("should handle custom token in headers", async () => {
         /* Arrange */
-        app.get("/test-custom-token", testCustomTokenHeaderWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: { 
-                message: "Custom token validated",
-                customTokenPresent: true,
-                headers: params.value.headers,
-              },
-            };
-          }
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.get(
+          "/test-custom-token",
+          testCustomTokenHeaderWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: "Custom token validated",
+                  customTokenPresent: true,
+                  headers: params.value.headers,
+                },
+              };
+            }
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act */
         const response = await request(app)
@@ -171,24 +184,27 @@ describe("Server Generator - Security and Edge Cases", () => {
 
       it("should validate custom token header format", async () => {
         /* Arrange */
-        app.get("/test-custom-token", testCustomTokenHeaderWrapper(async (params) => {
-          if (params.type === "headers_error") {
+        app.get(
+          "/test-custom-token",
+          testCustomTokenHeaderWrapper(async (params) => {
+            if (params.type === "headers_error") {
+              return {
+                status: 400,
+                contentType: "application/json",
+                data: {
+                  error: "Invalid custom token header",
+                  details: params.error.issues,
+                },
+              };
+            }
+
             return {
-              status: 400,
+              status: 200,
               contentType: "application/json",
-              data: { 
-                error: "Invalid custom token header",
-                details: params.error.issues,
-              },
+              data: { message: "Token validated" },
             };
-          }
-          
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { message: "Token validated" },
-          };
-        }));
+          }),
+        );
 
         /* Act */
         const response = await request(app)
@@ -218,20 +234,23 @@ describe("Server Generator - Security and Edge Cases", () => {
           },
         };
 
-        app.patch("/test-simple-patch", testSimplePatchWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: { 
-                message: "PATCH operation successful",
-                patchedData: params.value.body,
-                method: "PATCH",
-              },
-            };
-          }
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.patch(
+          "/test-simple-patch",
+          testSimplePatchWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: "PATCH operation successful",
+                  patchedData: params.value.body,
+                  method: "PATCH",
+                },
+              };
+            }
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act */
         const response = await request(app)
@@ -253,20 +272,23 @@ describe("Server Generator - Security and Edge Cases", () => {
           status: "inactive",
         };
 
-        app.patch("/test-simple-patch", testSimplePatchWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: { 
-                message: "Partial update processed",
-                isPartial: Object.keys(params.value.body || {}).length < 3,
-                receivedFields: Object.keys(params.value.body || {}),
-              },
-            };
-          }
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.patch(
+          "/test-simple-patch",
+          testSimplePatchWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: "Partial update processed",
+                  isPartial: Object.keys(params.value.body || {}).length < 3,
+                  receivedFields: Object.keys(params.value.body || {}),
+                },
+              };
+            }
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act */
         const response = await request(app)
@@ -284,37 +306,40 @@ describe("Server Generator - Security and Edge Cases", () => {
 
       it("should handle PATCH without body", async () => {
         /* Arrange */
-        app.patch("/test-simple-patch", testSimplePatchWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: { 
-                message: "PATCH without body",
-                hasBody: !!params.value.body,
-              },
-            };
-          }
-          
-          if (params.type === "body_error") {
-            return {
-              status: 400,
-              contentType: "application/json",
-              data: { 
-                error: "PATCH body validation failed",
-                details: params.error.issues,
-              },
-            };
-          }
-          
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.patch(
+          "/test-simple-patch",
+          testSimplePatchWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: "PATCH without body",
+                  hasBody: !!params.value.body,
+                },
+              };
+            }
+
+            if (params.type === "body_error") {
+              return {
+                status: 400,
+                contentType: "application/json",
+                data: {
+                  error: "PATCH body validation failed",
+                  details: params.error.issues,
+                },
+              };
+            }
+
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act */
         const response = await request(app)
           .patch("/test-simple-patch")
           .set("Content-Type", "application/json");
-          /* No body */
+        /* No body */
 
         /* Assert */
         expect([200, 400]).toContain(response.status);
@@ -326,25 +351,28 @@ describe("Server Generator - Security and Edge Cases", () => {
   describe("Edge cases and error scenarios", () => {
     it("should handle malformed request data gracefully", async () => {
       /* Arrange */
-      app.post("/test-edge-case", testSimplePatchWrapper(async (params) => {
-        if (params.type === "body_error") {
+      app.post(
+        "/test-edge-case",
+        testSimplePatchWrapper(async (params) => {
+          if (params.type === "body_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Request data validation failed",
+                errorType: params.type,
+                details: params.error.issues,
+              },
+            };
+          }
+
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { 
-              error: "Request data validation failed",
-              errorType: params.type,
-              details: params.error.issues,
-            },
+            data: { message: "Request processed" },
           };
-        }
-        
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: { message: "Request processed" },
-        };
-      }));
+        }),
+      );
 
       /* Act - Send malformed JSON */
       const response = await request(app)
@@ -360,28 +388,31 @@ describe("Server Generator - Security and Edge Cases", () => {
     it("should handle very large requests", async () => {
       /* Arrange */
       const largeData = {
-        data: "X".repeat(10000), /* 10KB string */
+        data: "X".repeat(10000) /* 10KB string */,
         metadata: { size: "very_large" },
       };
 
-      app.post("/test-large-request", testSimplePatchWrapper(async (params) => {
-        if (params.type === "ok") {
+      app.post(
+        "/test-large-request",
+        testSimplePatchWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Large request processed",
+                dataSize: JSON.stringify(params.value.body).length,
+              },
+            };
+          }
+
           return {
-            status: 200,
+            status: 413 /* Payload Too Large */,
             contentType: "application/json",
-            data: { 
-              message: "Large request processed",
-              dataSize: JSON.stringify(params.value.body).length,
-            },
+            data: { error: "Request too large" },
           };
-        }
-        
-        return {
-          status: 413, /* Payload Too Large */
-          contentType: "application/json",
-          data: { error: "Request too large" },
-        };
-      }));
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -396,30 +427,31 @@ describe("Server Generator - Security and Edge Cases", () => {
 
     it("should handle concurrent requests properly", async () => {
       /* Arrange */
-      app.get("/test-concurrent", testOverriddenSecurityNoAuthWrapper(async (params) => {
-        if (params.type === "ok") {
-          /* Simulate some processing time */
-          await new Promise(resolve => setTimeout(resolve, 10));
-          
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Concurrent request processed",
-              timestamp: new Date().toISOString(),
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-concurrent",
+        testOverriddenSecurityNoAuthWrapper(async (params) => {
+          if (params.type === "ok") {
+            /* Simulate some processing time */
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Concurrent request processed",
+                timestamp: new Date().toISOString(),
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act - Send multiple concurrent requests */
       const promises = Array.from({ length: 5 }, (_, i) =>
-        request(app)
-          .get("/test-concurrent")
-          .query({ requestId: i })
+        request(app).get("/test-concurrent").query({ requestId: i }),
       );
-      
+
       const responses = await Promise.all(promises);
 
       /* Assert */
@@ -431,29 +463,32 @@ describe("Server Generator - Security and Edge Cases", () => {
       });
 
       /* All responses should have different timestamps */
-      const timestamps = responses.map(r => r.body.timestamp);
+      const timestamps = responses.map((r) => r.body.timestamp);
       const uniqueTimestamps = new Set(timestamps);
       expect(uniqueTimestamps.size).toBeGreaterThan(1);
     });
 
     it("should handle timeout scenarios gracefully", async () => {
       /* Arrange */
-      app.get("/test-timeout", testOverriddenSecurityNoAuthWrapper(async (params) => {
-        if (params.type === "ok") {
-          /* Simulate long processing that might timeout */
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Long operation completed",
-              duration: "100ms",
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-timeout",
+        testOverriddenSecurityNoAuthWrapper(async (params) => {
+          if (params.type === "ok") {
+            /* Simulate long processing that might timeout */
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Long operation completed",
+                duration: "100ms",
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -468,35 +503,46 @@ describe("Server Generator - Security and Edge Cases", () => {
 
     it("should handle all validation error types consistently", async () => {
       /* Arrange */
-      const errorTypes = ["query_error", "path_error", "headers_error", "body_error"] as const;
-      
+      const errorTypes = [
+        "query_error",
+        "path_error",
+        "headers_error",
+        "body_error",
+      ] as const;
+
       for (const errorType of errorTypes) {
-        app.get(`/test-${errorType}`, testCustomTokenHeaderWrapper(async (params) => {
-          if (params.type === errorType) {
+        app.get(
+          `/test-${errorType}`,
+          testCustomTokenHeaderWrapper(async (params) => {
+            if (params.type === errorType) {
+              return {
+                status: 400,
+                contentType: "application/json",
+                data: {
+                  error: `${errorType} encountered`,
+                  errorType: params.type,
+                  details: params.error.issues,
+                },
+              };
+            }
+
             return {
-              status: 400,
+              status: 200,
               contentType: "application/json",
-              data: { 
-                error: `${errorType} encountered`,
-                errorType: params.type,
-                details: params.error.issues,
-              },
+              data: { message: "Success" },
             };
-          }
-          
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { message: "Success" },
-          };
-        }));
+          }),
+        );
       }
 
       /* Act & Assert - Test that each error type can be handled */
       /* This is more of a structure test - actual validation errors would be triggered by real invalid data */
       const response = await request(app)
         .get("/test-query_error")
-        .query({ qr: "test", cursor: "test" }); /* Valid params to avoid actual errors */
+        .query({
+          qr: "test",
+          cursor: "test",
+        }); /* Valid params to avoid actual errors */
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Success");

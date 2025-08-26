@@ -25,23 +25,27 @@ describe("Server Generator - Parameter Validation Operations", () => {
       const param1 = "value1";
       const param2 = "value2";
 
-      app.get("/test-two-params/:param1/:param2", testWithTwoParamsWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Parameters received",
-              receivedParams: params.value.path,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-two-params/:param1/:param2",
+        testWithTwoParamsWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Parameters received",
+                receivedParams: params.value.path,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get(`/test-two-params/${param1}/${param2}`);
+      const response = await request(app).get(
+        `/test-two-params/${param1}/${param2}`,
+      );
 
       /* Assert */
       expect(response.status).toBe(200);
@@ -51,24 +55,32 @@ describe("Server Generator - Parameter Validation Operations", () => {
 
     it("should handle missing path parameters", async () => {
       /* Arrange */
-      app.get("/test-two-params/:param1?/:param2?", testWithTwoParamsWrapper(async (params) => {
-        if (params.type === "path_error") {
+      app.get(
+        "/test-two-params/:param1?/:param2?",
+        testWithTwoParamsWrapper(async (params) => {
+          if (params.type === "path_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Invalid path parameters",
+                details: params.error.issues,
+              },
+            };
+          }
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { error: "Invalid path parameters", details: params.error.issues },
+            data: { message: "Success" },
           };
-        }
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: { message: "Success" },
-        };
-      }));
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-two-params/"); /* Missing both path parameters */
+      const response =
+        await request(app).get(
+          "/test-two-params/",
+        ); /* Missing both path parameters */
 
       /* Assert */
       expect(response.status).toBe(400);
@@ -80,28 +92,29 @@ describe("Server Generator - Parameter Validation Operations", () => {
   describe("testParametersAtPathLevel operation", () => {
     it("should return 200 with valid path-level parameters", async () => {
       /* Arrange */
-      app.get("/test-path-level-params", testParametersAtPathLevelWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Path-level parameters processed",
-              query: params.value.query,
-              path: params.value.path,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-path-level-params",
+        testParametersAtPathLevelWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Path-level parameters processed",
+                query: params.value.query,
+                path: params.value.path,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-path-level-params")
-        .query({
-          qr: testData.queryParams.qr,
-          cursor: testData.queryParams.cursor,
-        });
+      const response = await request(app).get("/test-path-level-params").query({
+        qr: testData.queryParams.qr,
+        cursor: testData.queryParams.cursor,
+      });
 
       /* Assert */
       expect(response.status).toBe(200);
@@ -113,26 +126,27 @@ describe("Server Generator - Parameter Validation Operations", () => {
   describe("testParameterWithDash operation", () => {
     it("should handle parameter names with dashes", async () => {
       /* Arrange */
-      app.get("/test-param-dash", testParameterWithDashWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Parameter with dash handled",
-              receivedParams: params.value,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-param-dash",
+        testParameterWithDashWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Parameter with dash handled",
+                receivedParams: params.value,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-param-dash")
-        .query({
-          "param-with-dash": "test-value",
-        });
+      const response = await request(app).get("/test-param-dash").query({
+        "param-with-dash": "test-value",
+      });
 
       /* Assert */
       expect(response.status).toBe(200);
@@ -144,19 +158,22 @@ describe("Server Generator - Parameter Validation Operations", () => {
   describe("testParameterWithDashAnUnderscore operation", () => {
     it("should handle parameter names with both dashes and underscores", async () => {
       /* Arrange */
-      app.get("/test-param-dash-underscore", testParameterWithDashAnUnderscoreWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Parameter with dash and underscore handled",
-              receivedParams: params.value,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-param-dash-underscore",
+        testParameterWithDashAnUnderscoreWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Parameter with dash and underscore handled",
+                receivedParams: params.value,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -168,34 +185,37 @@ describe("Server Generator - Parameter Validation Operations", () => {
       /* Assert */
       expect(response.status).toBe(200);
       expect(response.headers["content-type"]).toMatch(/application\/json/);
-      expect(response.body.message).toBe("Parameter with dash and underscore handled");
+      expect(response.body.message).toBe(
+        "Parameter with dash and underscore handled",
+      );
     });
   });
 
   describe("testParamWithSchemaRef operation", () => {
     it("should handle parameters with schema references", async () => {
       /* Arrange */
-      app.get("/test-param-schema-ref", testParamWithSchemaRefWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Schema reference parameter handled",
-              receivedParams: params.value,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-param-schema-ref",
+        testParamWithSchemaRefWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Schema reference parameter handled",
+                receivedParams: params.value,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-param-schema-ref")
-        .query({
-          /* Add appropriate query parameters based on the schema reference */
-          testParam: "schema-ref-value",
-        });
+      const response = await request(app).get("/test-param-schema-ref").query({
+        /* Add appropriate query parameters based on the schema reference */
+        testParam: "schema-ref-value",
+      });
 
       /* Assert */
       expect(response.status).toBe(200);
@@ -205,28 +225,32 @@ describe("Server Generator - Parameter Validation Operations", () => {
 
     it("should validate parameters against schema references", async () => {
       /* Arrange */
-      app.get("/test-param-schema-ref", testParamWithSchemaRefWrapper(async (params) => {
-        if (params.type === "query_error") {
+      app.get(
+        "/test-param-schema-ref",
+        testParamWithSchemaRefWrapper(async (params) => {
+          if (params.type === "query_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Invalid schema reference parameter",
+                details: params.error.issues,
+              },
+            };
+          }
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { error: "Invalid schema reference parameter", details: params.error.issues },
+            data: { message: "Success" },
           };
-        }
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: { message: "Success" },
-        };
-      }));
+        }),
+      );
 
       /* Act */
-      const response = await request(app)
-        .get("/test-param-schema-ref")
-        .query({
-          /* Intentionally pass invalid data to trigger validation */
-          testParam: "", /* Assuming schema requires non-empty string */
-        });
+      const response = await request(app).get("/test-param-schema-ref").query({
+        /* Intentionally pass invalid data to trigger validation */
+        testParam: "" /* Assuming schema requires non-empty string */,
+      });
 
       /* Assert - Should handle validation appropriately */
       expect([200, 400]).toContain(response.status);
@@ -241,19 +265,22 @@ describe("Server Generator - Parameter Validation Operations", () => {
     describe("testHeaderWithSchemaRef operation", () => {
       it("should handle headers with schema references", async () => {
         /* Arrange */
-        app.get("/test-header-schema-ref", testHeaderWithSchemaRefWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: { 
-                message: "Header with schema reference handled",
-                receivedHeaders: params.value.headers,
-              },
-            };
-          }
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.get(
+          "/test-header-schema-ref",
+          testHeaderWithSchemaRefWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: "Header with schema reference handled",
+                  receivedHeaders: params.value.headers,
+                },
+              };
+            }
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act */
         const response = await request(app)
@@ -263,30 +290,37 @@ describe("Server Generator - Parameter Validation Operations", () => {
         /* Assert */
         expect(response.status).toBe(200);
         expect(response.headers["content-type"]).toMatch(/application\/json/);
-        expect(response.body.message).toBe("Header with schema reference handled");
+        expect(response.body.message).toBe(
+          "Header with schema reference handled",
+        );
       });
 
       it("should validate headers against schema references", async () => {
         /* Arrange */
-        app.get("/test-header-schema-ref", testHeaderWithSchemaRefWrapper(async (params) => {
-          if (params.type === "headers_error") {
+        app.get(
+          "/test-header-schema-ref",
+          testHeaderWithSchemaRefWrapper(async (params) => {
+            if (params.type === "headers_error") {
+              return {
+                status: 400,
+                contentType: "application/json",
+                data: {
+                  error: "Invalid header schema",
+                  details: params.error.issues,
+                },
+              };
+            }
             return {
-              status: 400,
+              status: 200,
               contentType: "application/json",
-              data: { error: "Invalid header schema", details: params.error.issues },
+              data: { message: "Success" },
             };
-          }
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { message: "Success" },
-          };
-        }));
+          }),
+        );
 
         /* Act */
-        const response = await request(app)
-          .get("/test-header-schema-ref");
-          /* Missing required header or invalid header value */
+        const response = await request(app).get("/test-header-schema-ref");
+        /* Missing required header or invalid header value */
 
         /* Assert - Should handle validation appropriately */
         expect([200, 400]).toContain(response.status);
@@ -300,28 +334,36 @@ describe("Server Generator - Parameter Validation Operations", () => {
     describe("testHeaderOptional operation", () => {
       it("should handle optional headers correctly", async () => {
         /* Arrange */
-        app.get("/test-header-optional", testHeaderOptionalWrapper(async (params) => {
-          if (params.type === "ok") {
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: { 
-                message: "Optional header handled",
-                hasOptionalHeader: !!params.value.headers,
-              },
-            };
-          }
-          throw new Error(`Validation error: ${params.type}`);
-        }));
+        app.get(
+          "/test-header-optional",
+          testHeaderOptionalWrapper(async (params) => {
+            if (params.type === "ok") {
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: "Optional header handled",
+                  hasOptionalHeader: !!params.value.headers,
+                },
+              };
+            }
+            throw new Error(`Validation error: ${params.type}`);
+          }),
+        );
 
         /* Act - Without optional header */
-        const responseWithoutHeader = await request(app)
-          .get("/test-header-optional");
+        const responseWithoutHeader = await request(app).get(
+          "/test-header-optional",
+        );
 
         /* Assert */
         expect(responseWithoutHeader.status).toBe(200);
-        expect(responseWithoutHeader.headers["content-type"]).toMatch(/application\/json/);
-        expect(responseWithoutHeader.body.message).toBe("Optional header handled");
+        expect(responseWithoutHeader.headers["content-type"]).toMatch(
+          /application\/json/,
+        );
+        expect(responseWithoutHeader.body.message).toBe(
+          "Optional header handled",
+        );
 
         /* Act - With optional header */
         const responseWithHeader = await request(app)
@@ -330,7 +372,9 @@ describe("Server Generator - Parameter Validation Operations", () => {
 
         /* Assert */
         expect(responseWithHeader.status).toBe(200);
-        expect(responseWithHeader.headers["content-type"]).toMatch(/application\/json/);
+        expect(responseWithHeader.headers["content-type"]).toMatch(
+          /application\/json/,
+        );
         expect(responseWithHeader.body.message).toBe("Optional header handled");
       });
     });
@@ -339,31 +383,34 @@ describe("Server Generator - Parameter Validation Operations", () => {
   describe("Edge cases and validation scenarios", () => {
     it("should handle complex parameter combinations", async () => {
       /* Arrange */
-      app.get("/test-two-params/:param1/:param2", testWithTwoParamsWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
+      app.get(
+        "/test-two-params/:param1/:param2",
+        testWithTwoParamsWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Complex parameters handled",
+                path: params.value.path,
+                query: params.value.query,
+                headers: params.value.headers,
+              },
+            };
+          }
+
+          /* Handle different types of validation errors */
+          const errorResponse = {
+            status: 400,
             contentType: "application/json",
-            data: { 
-              message: "Complex parameters handled",
-              path: params.value.path,
-              query: params.value.query,
-              headers: params.value.headers,
+            data: {
+              error: `${params.type.replace("_", " ")} validation failed`,
+              details: params.error.issues,
             },
           };
-        }
-
-        /* Handle different types of validation errors */
-        const errorResponse = {
-          status: 400,
-          contentType: "application/json",
-          data: { 
-            error: `${params.type.replace('_', ' ')} validation failed`,
-            details: params.error.issues,
-          },
-        };
-        return errorResponse;
-      }));
+          return errorResponse;
+        }),
+      );
 
       /* Act */
       const response = await request(app)

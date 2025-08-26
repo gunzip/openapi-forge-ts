@@ -17,24 +17,28 @@ describe("Server Generator - Working Example", () => {
     it("should return 200 with valid Person when all required parameters are provided", async () => {
       /* Arrange */
       const adapter = createExpressAdapter(testAuthBearerWrapper);
-      app.get("/test-auth-bearer", adapter(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: testData.person,
-          };
-        }
-        /* Handle validation errors by returning appropriate error response */
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-auth-bearer",
+        adapter(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: testData.person,
+            };
+          }
+          /* Handle validation errors by returning appropriate error response */
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
         .get("/test-auth-bearer")
         .query({
           qr: testData.queryParams.qr,
-          qo: testData.queryParams.qo, /* Note: Generated schema treats this as required */
+          qo: testData.queryParams
+            .qo /* Note: Generated schema treats this as required */,
           cursor: testData.queryParams.cursor,
         })
         .set("Authorization", testData.headers.Authorization);
@@ -50,20 +54,26 @@ describe("Server Generator - Working Example", () => {
     it("should handle missing required query parameter 'qr'", async () => {
       /* Arrange */
       const adapter = createExpressAdapter(testAuthBearerWrapper);
-      app.get("/test-auth-bearer", adapter(async (params) => {
-        if (params.type === "query_error") {
+      app.get(
+        "/test-auth-bearer",
+        adapter(async (params) => {
+          if (params.type === "query_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Invalid query parameters",
+                details: params.error.issues,
+              },
+            };
+          }
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { error: "Invalid query parameters", details: params.error.issues },
+            data: testData.person,
           };
-        }
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: testData.person,
-        };
-      }));
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -85,27 +95,33 @@ describe("Server Generator - Working Example", () => {
             path: expect.arrayContaining(["qr"]),
             code: "invalid_type",
           }),
-        ])
+        ]),
       );
     });
 
     it("should handle invalid cursor parameter (too short)", async () => {
       /* Arrange */
       const adapter = createExpressAdapter(testAuthBearerWrapper);
-      app.get("/test-auth-bearer", adapter(async (params) => {
-        if (params.type === "query_error") {
+      app.get(
+        "/test-auth-bearer",
+        adapter(async (params) => {
+          if (params.type === "query_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Invalid query parameters",
+                details: params.error.issues,
+              },
+            };
+          }
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { error: "Invalid query parameters", details: params.error.issues },
+            data: testData.person,
           };
-        }
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: testData.person,
-        };
-      }));
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -113,7 +129,7 @@ describe("Server Generator - Working Example", () => {
         .query({
           qr: testData.queryParams.qr,
           qo: testData.queryParams.qo,
-          cursor: "", /* Empty cursor violates minLength: 1 */
+          cursor: "" /* Empty cursor violates minLength: 1 */,
         })
         .set("Authorization", testData.headers.Authorization);
 
@@ -127,7 +143,7 @@ describe("Server Generator - Working Example", () => {
             path: expect.arrayContaining(["cursor"]),
             code: "too_small",
           }),
-        ])
+        ]),
       );
     });
 
@@ -135,26 +151,29 @@ describe("Server Generator - Working Example", () => {
       /* Arrange */
       const testParams = {
         qr: "test-required-value",
-        qo: "test-optional-value", 
+        qo: "test-optional-value",
         cursor: "test-cursor-123",
       };
-      
+
       let receivedParams: any;
       const adapter = createExpressAdapter(testAuthBearerWrapper);
-      app.get("/test-auth-bearer", adapter(async (params) => {
-        receivedParams = params;
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: {
-              message: "Parameters validated",
-              receivedQuery: params.value.query,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.get(
+        "/test-auth-bearer",
+        adapter(async (params) => {
+          receivedParams = params;
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Parameters validated",
+                receivedQuery: params.value.query,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -173,63 +192,78 @@ describe("Server Generator - Working Example", () => {
     it("should demonstrate the complete server-generator integration pattern", async () => {
       /* Arrange - This test shows the complete pattern for using server-generator wrappers */
       const adapter = createExpressAdapter(testAuthBearerWrapper);
-      
-      app.get("/test-auth-bearer", adapter(async (params) => {
-        /* The wrapper provides validated parameters or validation errors */
-        switch (params.type) {
-          case "ok":
-            /* All validation passed - use the validated data */
-            return {
-              status: 200,
-              contentType: "application/json",
-              data: {
-                message: "Server-generator integration working",
-                validatedData: {
-                  query: params.value.query,
-                  path: params.value.path,
-                  headers: Object.keys(params.value.headers).length,
-                  body: params.value.body,
+
+      app.get(
+        "/test-auth-bearer",
+        adapter(async (params) => {
+          /* The wrapper provides validated parameters or validation errors */
+          switch (params.type) {
+            case "ok":
+              /* All validation passed - use the validated data */
+              return {
+                status: 200,
+                contentType: "application/json",
+                data: {
+                  message: "Server-generator integration working",
+                  validatedData: {
+                    query: params.value.query,
+                    path: params.value.path,
+                    headers: Object.keys(params.value.headers).length,
+                    body: params.value.body,
+                  },
+                  generatedTypes: "fully-typed with Zod validation",
                 },
-                generatedTypes: "fully-typed with Zod validation",
-              },
-            };
-            
-          case "query_error":
-            return {
-              status: 400,
-              contentType: "application/json",
-              data: { error: "Query validation failed", issues: params.error.issues },
-            };
-            
-          case "path_error":
-            return {
-              status: 400,
-              contentType: "application/json",
-              data: { error: "Path validation failed", issues: params.error.issues },
-            };
-            
-          case "headers_error":
-            return {
-              status: 400,
-              contentType: "application/json",
-              data: { error: "Headers validation failed", issues: params.error.issues },
-            };
-            
-          case "body_error":
-            return {
-              status: 400,
-              contentType: "application/json",
-              data: { error: "Body validation failed", issues: params.error.issues },
-            };
-            
-          default:
-            return {
-              status: 500,
-              contentType: "application/json",
-              data: { error: "Unknown validation error type" },
-            };
-        }
-      }));
+              };
+
+            case "query_error":
+              return {
+                status: 400,
+                contentType: "application/json",
+                data: {
+                  error: "Query validation failed",
+                  issues: params.error.issues,
+                },
+              };
+
+            case "path_error":
+              return {
+                status: 400,
+                contentType: "application/json",
+                data: {
+                  error: "Path validation failed",
+                  issues: params.error.issues,
+                },
+              };
+
+            case "headers_error":
+              return {
+                status: 400,
+                contentType: "application/json",
+                data: {
+                  error: "Headers validation failed",
+                  issues: params.error.issues,
+                },
+              };
+
+            case "body_error":
+              return {
+                status: 400,
+                contentType: "application/json",
+                data: {
+                  error: "Body validation failed",
+                  issues: params.error.issues,
+                },
+              };
+
+            default:
+              return {
+                status: 500,
+                contentType: "application/json",
+                data: { error: "Unknown validation error type" },
+              };
+          }
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -243,13 +277,17 @@ describe("Server Generator - Working Example", () => {
 
       /* Assert */
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe("Server-generator integration working");
+      expect(response.body.message).toBe(
+        "Server-generator integration working",
+      );
       expect(response.body.validatedData.query).toEqual({
         qr: "required-param",
-        qo: "optional-param", 
+        qo: "optional-param",
         cursor: "valid-cursor",
       });
-      expect(response.body.generatedTypes).toBe("fully-typed with Zod validation");
+      expect(response.body.generatedTypes).toBe(
+        "fully-typed with Zod validation",
+      );
     });
   });
 });

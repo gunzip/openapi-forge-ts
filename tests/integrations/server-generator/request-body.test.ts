@@ -23,17 +23,23 @@ describe("Server Generator - Request Body Operations", () => {
         age: 25,
       };
 
-      app.post("/test-inline-body", testInlineBodySchemaWrapper(async (params) => {
-        if (params.type === "ok") {
-          expect(params.value.body).toEqual(requestBody);
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { message: "Body received successfully", receivedBody: params.value.body },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-inline-body",
+        testInlineBodySchemaWrapper(async (params) => {
+          if (params.type === "ok") {
+            expect(params.value.body).toEqual(requestBody);
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Body received successfully",
+                receivedBody: params.value.body,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -50,16 +56,22 @@ describe("Server Generator - Request Body Operations", () => {
 
     it("should handle empty body gracefully", async () => {
       /* Arrange */
-      app.post("/test-inline-body", testInlineBodySchemaWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { message: "Empty body received", bodyIsUndefined: params.value.body === undefined },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-inline-body",
+        testInlineBodySchemaWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Empty body received",
+                bodyIsUndefined: params.value.body === undefined,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -75,20 +87,26 @@ describe("Server Generator - Request Body Operations", () => {
 
     it("should handle malformed JSON body", async () => {
       /* Arrange */
-      app.post("/test-inline-body", testInlineBodySchemaWrapper(async (params) => {
-        if (params.type === "body_error") {
+      app.post(
+        "/test-inline-body",
+        testInlineBodySchemaWrapper(async (params) => {
+          if (params.type === "body_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Invalid request body",
+                details: params.error.issues,
+              },
+            };
+          }
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { error: "Invalid request body", details: params.error.issues },
+            data: { message: "Success" },
           };
-        }
-        return {
-          status: 200,
-          contentType: "application/json", 
-          data: { message: "Success" },
-        };
-      }));
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -108,22 +126,25 @@ describe("Server Generator - Request Body Operations", () => {
       const requestBody = { name: "Test Model", id: "test-123" };
       const requestId = "req-456";
 
-      app.post("/test-parameter-body-ref/:requestId", testParameterWithBodyReferenceWrapper(async (params) => {
-        if (params.type === "ok") {
-          expect(params.value.body).toEqual(requestBody);
-          /* The path parameter should be captured based on the route */
-          return {
-            status: 201,
-            contentType: "application/json",
-            data: { 
-              message: "Created successfully",
-              requestId: requestId,
-              receivedBody: params.value.body,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-parameter-body-ref/:requestId",
+        testParameterWithBodyReferenceWrapper(async (params) => {
+          if (params.type === "ok") {
+            expect(params.value.body).toEqual(requestBody);
+            /* The path parameter should be captured based on the route */
+            return {
+              status: 201,
+              contentType: "application/json",
+              data: {
+                message: "Created successfully",
+                requestId: requestId,
+                receivedBody: params.value.body,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -143,27 +164,33 @@ describe("Server Generator - Request Body Operations", () => {
       /* Arrange */
       const requestId = "req-789";
 
-      app.post("/test-parameter-body-ref/:requestId", testParameterWithBodyReferenceWrapper(async (params) => {
-        if (params.type === "body_error") {
+      app.post(
+        "/test-parameter-body-ref/:requestId",
+        testParameterWithBodyReferenceWrapper(async (params) => {
+          if (params.type === "body_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Missing request body",
+                details: params.error.issues,
+              },
+            };
+          }
           return {
-            status: 400,
+            status: 201,
             contentType: "application/json",
-            data: { error: "Missing request body", details: params.error.issues },
+            data: { message: "Created" },
           };
-        }
-        return {
-          status: 201,
-          contentType: "application/json",
-          data: { message: "Created" },
-        };
-      }));
+        }),
+      );
 
       /* Act */
       const response = await request(app)
         .post(`/test-parameter-body-ref/${requestId}`)
         .set("Content-Type", "application/json")
         .set("X-Request-Id", requestId);
-        /* No body sent */
+      /* No body sent */
 
       /* Assert */
       expect(response.status).toBe(400);
@@ -178,21 +205,24 @@ describe("Server Generator - Request Body Operations", () => {
       const requestBody = { id: "update-123", name: "Updated Model" };
       const requestId = "put-req-456";
 
-      app.put("/put-test-parameter-body-ref/:requestId", putTestParameterWithBodyReferenceWrapper(async (params) => {
-        if (params.type === "ok") {
-          expect(params.value.body).toEqual(requestBody);
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Updated successfully",
-              requestId: requestId,
-              updatedBody: params.value.body,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.put(
+        "/put-test-parameter-body-ref/:requestId",
+        putTestParameterWithBodyReferenceWrapper(async (params) => {
+          if (params.type === "ok") {
+            expect(params.value.body).toEqual(requestBody);
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Updated successfully",
+                requestId: requestId,
+                updatedBody: params.value.body,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -213,20 +243,26 @@ describe("Server Generator - Request Body Operations", () => {
       const invalidBody = { /* Missing required fields */ incomplete: true };
       const requestId = "put-req-789";
 
-      app.put("/put-test-parameter-body-ref/:requestId", putTestParameterWithBodyReferenceWrapper(async (params) => {
-        if (params.type === "body_error") {
+      app.put(
+        "/put-test-parameter-body-ref/:requestId",
+        putTestParameterWithBodyReferenceWrapper(async (params) => {
+          if (params.type === "body_error") {
+            return {
+              status: 400,
+              contentType: "application/json",
+              data: {
+                error: "Invalid body schema",
+                details: params.error.issues,
+              },
+            };
+          }
           return {
-            status: 400,
+            status: 200,
             contentType: "application/json",
-            data: { error: "Invalid body schema", details: params.error.issues },
+            data: { message: "Updated" },
           };
-        }
-        return {
-          status: 200,
-          contentType: "application/json",
-          data: { message: "Updated" },
-        };
-      }));
+        }),
+      );
 
       /* Act */
       const response = await request(app)
@@ -249,20 +285,23 @@ describe("Server Generator - Request Body Operations", () => {
       /* Arrange */
       const jsonBody = { name: "JSON Test", type: "application/json" };
 
-      app.post("/test-inline-body", testInlineBodySchemaWrapper(async (params) => {
-        if (params.type === "ok") {
-          return {
-            status: 200,
-            contentType: "application/json",
-            data: { 
-              message: "Content received",
-              bodyType: typeof params.value.body,
-              body: params.value.body,
-            },
-          };
-        }
-        throw new Error(`Validation error: ${params.type}`);
-      }));
+      app.post(
+        "/test-inline-body",
+        testInlineBodySchemaWrapper(async (params) => {
+          if (params.type === "ok") {
+            return {
+              status: 200,
+              contentType: "application/json",
+              data: {
+                message: "Content received",
+                bodyType: typeof params.value.body,
+                body: params.value.body,
+              },
+            };
+          }
+          throw new Error(`Validation error: ${params.type}`);
+        }),
+      );
 
       /* Act - JSON */
       const jsonResponse = await request(app)

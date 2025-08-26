@@ -1,6 +1,6 @@
 import express from "express";
 import type { Express, Request, Response } from "express";
-import { testAuthBearerWrapper } from "../generated/server-operations/testAuthBearer.js";
+import { testAuthBearerWrapper } from "./generated/server-operations/testAuthBearer.js";
 
 /**
  * Test utilities for server-generator integration tests

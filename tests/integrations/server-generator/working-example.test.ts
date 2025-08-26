@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testAuthBearerWrapper } from "../generated/server-operations/testAuthBearer.js";
+import { testAuthBearerWrapper } from./generated/server-operations/testAuthBearer.js";
 import {
   createTestApp,
   createExpressAdapter,

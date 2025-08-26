@@ -3,10 +3,10 @@ import express from "express";
 import request from "supertest";
 import type { Express } from "express";
 
-import { testOverriddenSecurityWrapper } from "../generated/server-operations/testOverriddenSecurity.js";
-import { testOverriddenSecurityNoAuthWrapper } from "../generated/server-operations/testOverriddenSecurityNoAuth.js";
-import { testCustomTokenHeaderWrapper } from "../generated/server-operations/testCustomTokenHeader.js";
-import { testSimplePatchWrapper } from "../generated/server-operations/testSimplePatch.js";
+import { testOverriddenSecurityWrapper } from ./generated/server-operations/testOverriddenSecurity.js";
+import { testOverriddenSecurityNoAuthWrapper } from ./generated/server-operations/testOverriddenSecurityNoAuth.js";
+import { testCustomTokenHeaderWrapper } from ./generated/server-operations/testCustomTokenHeader.js";
+import { testSimplePatchWrapper } from ./generated/server-operations/testSimplePatch.js";
 import { createTestApp, testData } from "./test-utils.js";
 
 describe("Server Generator - Security and Edge Cases", () => {

@@ -7,8 +7,7 @@ import type {
 import type { ParameterGroups } from "../../client-generator/parameters.js";
 import type { ServerOperationMetadata } from "../operation-wrapper-generator.js";
 
-import { extractResponseContentTypes } from "../../client-generator/operation-extractor.js";
-import { resolveSchemaTypeName } from "../../client-generator/responses.js";
+import { analyzeResponseStructure } from "../../client-generator/response-analysis.js";
 import { sanitizeIdentifier } from "../../schema-generator/utils.js";
 import { zodSchemaToCode } from "../../schema-generator/zod-schema-generator.js";
 
@@ -52,7 +51,7 @@ export type ${mapName} = typeof ${mapName};`;
 }
 
 /**
- * Builds server response map for operations
+ * Builds server response map for operations using client generator logic
  */
 export function buildServerResponseMap(
   metadata: ServerOperationMetadata,
@@ -62,24 +61,37 @@ export function buildServerResponseMap(
   const responseTypeName = `${operationId}Response`;
   const responseEntries: string[] = [];
 
-  // Reuse client extractor to gather responses with content types
-  const responseGroups = extractResponseContentTypes(metadata.operation);
+  /* Use client generator logic to analyze responses */
+  const responseAnalysis = analyzeResponseStructure({
+    hasResponseContentTypeMap: false,
+    operation: metadata.operation,
+    typeImports,
+  });
 
-  for (const group of responseGroups) {
-    for (const mapping of group.contentTypes) {
-      const schemaType = resolveSchemaTypeName(
-        mapping.schema,
-        metadata.operationId,
-        `${group.statusCode}Response`,
-        typeImports,
-      );
+  /* Convert client analysis to server response types */
+  for (const responseInfo of responseAnalysis.responses) {
+    const statusCode = responseInfo.statusCode;
+
+    if (responseInfo.hasSchema && responseInfo.typeName) {
+      /* Response has content with schema */
+      const contentType = responseInfo.contentType || "application/json";
       responseEntries.push(
-        `  | { status: ${group.statusCode}; contentType: "${mapping.contentType}"; data: ${schemaType} }`,
+        `  | { status: ${statusCode}; contentType: "${contentType}"; data: ${responseInfo.typeName} }`,
+      );
+    } else if (responseInfo.contentType) {
+      /* Response has content type but no schema - use unknown */
+      responseEntries.push(
+        `  | { status: ${statusCode}; contentType: "${responseInfo.contentType}"; data: unknown }`,
+      );
+    } else {
+      /* Response has no content - use void */
+      responseEntries.push(
+        `  | { status: ${statusCode}; contentType: "text/plain"; data: void }`,
       );
     }
   }
 
-  // Fallback for operations without explicit content
+  /* Fallback for operations without explicit responses */
   if (responseEntries.length === 0) {
     responseEntries.push(
       `  | { status: 200; contentType: "application/json"; data: unknown }`,

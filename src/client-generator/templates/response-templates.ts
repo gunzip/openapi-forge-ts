@@ -89,7 +89,19 @@ export function renderResponseHandler(
       finalParseExpression = "const data = undefined; // data = undefined";
     }
 
-    const indentedParseCode = finalParseExpression
+    /*
+     * The response body is consumed immediately to prevent holding onto the raw
+     * response stream. A new, lightweight response object is created with only
+     * the necessary properties, and headers are copied to a Map to break the
+     * reference to the original response object.
+     */
+    const memoryOptimizedCode = `${finalParseExpression}
+      const minimalResponse = {
+        status: response.status,
+        headers: new Map(response.headers.entries()),
+      };`;
+
+    const indentedParseCode = memoryOptimizedCode
       .split("\n")
       .map((l) => (l ? `      ${l}` : l))
       .join("\n");
@@ -103,11 +115,12 @@ export function renderResponseHandler(
       : undefined;
 
     /* Use string-literal indexing for numeric HTTP status codes to preserve literal key types */
+    /* Pass minimalResponse instead of response to prevent memory leaks */
     const parseMethod =
       responseInfo.hasSchema && responseMapName
         ? `,
         parse: (deserializerMap?: ${deserializerMapTypeName}) =>
-          parseApiResponseUnknownData(response, data, ${responseMapName}["${statusCode}"], deserializerMap as import("./config.js").DeserializerMap),`
+          parseApiResponseUnknownData(minimalResponse, data, ${responseMapName}["${statusCode}"], deserializerMap as import("./config.js").DeserializerMap),`
         : "";
 
     return `    case ${statusCode}: {

@@ -62,7 +62,7 @@ const config: Config = {
       title: 'YanoGen-Ts',
       logo: {
         alt: 'YanoGen-Ts Logo',
-        src: 'img/logo.svg',
+        src: 'img/yanogen-logo.svg',
       },
       items: [
         {

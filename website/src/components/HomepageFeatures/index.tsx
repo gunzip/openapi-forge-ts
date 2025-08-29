@@ -12,7 +12,7 @@ type FeatureItem = {
 const FeatureList: FeatureItem[] = [
   {
     title: 'Type-Safe Client Generation',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    Svg: require('@site/static/img/type-safe-generation.svg').default,
     description: (
       <>
         Generate operation-based TypeScript clients with <strong>Zod v4 validation</strong>, 
@@ -23,7 +23,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: 'Multi-Version OpenAPI Support',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    Svg: require('@site/static/img/multi-version-support.svg').default,
     description: (
       <>
         Supports <strong>OpenAPI 2.0 (Swagger), 3.0.x, and 3.1.x</strong> specifications. 
@@ -34,7 +34,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: 'Minimal Dependencies & Fast',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    Svg: require('@site/static/img/minimal-fast.svg').default,
     description: (
       <>
         <strong>No runtime dependencies</strong> except Zod. Optimized for quick generation 

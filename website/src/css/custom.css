@@ -6,25 +6,121 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
+  /* Custom YanoGen-Ts color palette based on #a2a497 */
+  --ifm-color-primary: #a2a497;
+  --ifm-color-primary-dark: #919187;
+  --ifm-color-primary-darker: #888976;
+  --ifm-color-primary-darkest: #727066;
+  --ifm-color-primary-light: #b3b7a7;
+  --ifm-color-primary-lighter: #bcc0b2;
+  --ifm-color-primary-lightest: #d4d7cc;
   --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --docusaurus-highlighted-code-line-bg: rgba(162, 164, 151, 0.1);
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  /* Lighter variant for dark mode */
+  --ifm-color-primary: #b3b7a7;
+  --ifm-color-primary-dark: #a5a997;
+  --ifm-color-primary-darker: #9ca090;
+  --ifm-color-primary-darkest: #858775;
+  --ifm-color-primary-light: #c1c5b7;
+  --ifm-color-primary-lighter: #cacec1;
+  --ifm-color-primary-lightest: #e2e4db;
+  --docusaurus-highlighted-code-line-bg: rgba(179, 183, 167, 0.2);
+}
+
+/* Custom styles for homepage features */
+.hero--primary {
+  background: linear-gradient(135deg, #a2a497 0%, #8a9186 100%);
+}
+
+.button--secondary {
+  background-color: white;
+  border-color: white;
+  color: var(--ifm-color-primary);
+}
+
+.button--secondary:hover {
+  background-color: #f8f9fa;
+  border-color: #f8f9fa;
+}
+
+.button--outline {
+  border-color: white;
+  color: white;
+}
+
+.button--outline:hover {
+  background-color: white;
+  color: var(--ifm-color-primary);
+}
+
+/* Feature cards styling */
+.features-container {
+  margin: 3rem 0;
+}
+
+.feature-card {
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  height: 100%;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(162, 164, 151, 0.15);
+}
+
+.feature-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1rem;
+}
+
+/* Demo section */
+.demo-section {
+  padding: 4rem 0;
+  background-color: #f8f9fa;
+}
+
+.demo-image {
+  max-width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(162, 164, 151, 0.2);
+}
+
+/* Code examples styling */
+.code-example {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.code-example h4 {
+  color: var(--ifm-color-primary-dark);
+  margin-bottom: 1rem;
+}
+
+/* Quick start section */
+.quick-start {
+  padding: 3rem 0;
+}
+
+.quick-start-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .quick-start-grid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,0 +1,80 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.demo {
+  padding: 4rem 0;
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.demo h2 {
+  margin-bottom: 1rem;
+  color: var(--ifm-color-primary);
+}
+
+.demo p {
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.quickStart {
+  padding: 4rem 0;
+}
+
+.quickStart h2 {
+  margin-bottom: 1rem;
+  color: var(--ifm-color-primary);
+}
+
+.quickStart pre {
+  background-color: var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  overflow-x: auto;
+}
+
+.quickStart code {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+@media screen and (max-width: 996px) {
+  .demo,
+  .quickStart {
+    padding: 2rem 0;
+  }
+  
+  .quickStart .row {
+    flex-direction: column;
+  }
+  
+  .quickStart .col {
+    margin-bottom: 2rem;
+  }
+}

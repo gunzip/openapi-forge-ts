@@ -69,11 +69,7 @@ export function renderResponseHandlers(
   const handlers: string[] = [];
 
   for (const responseInfo of responses) {
-    const handler = renderResponseHandler(
-      responseInfo,
-      responseMapName,
-      forceValidation,
-    );
+    const handler = renderResponseHandler(responseInfo, responseMapName);
     handlers.push(handler);
   }
 

@@ -1,0 +1,61 @@
+<svg width="400" height="200" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Multi-Version OpenAPI Support Illustration -->
+  <defs>
+    <linearGradient id="versionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a2a497"/>
+      <stop offset="100%" style="stop-color:#8a9186"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="200" fill="#f8f9fa" rx="8"/>
+  
+  <!-- OpenAPI 2.0 -->
+  <rect x="20" y="40" width="80" height="50" fill="white" stroke="#a2a497" stroke-width="2" rx="4"/>
+  <text x="60" y="55" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle" fill="#a2a497">OpenAPI</text>
+  <text x="60" y="70" font-family="monospace" font-size="12" font-weight="bold" text-anchor="middle" fill="#a2a497">2.0</text>
+  <text x="60" y="82" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#6c757d">Swagger</text>
+  
+  <!-- OpenAPI 3.0.x -->
+  <rect x="20" y="110" width="80" height="50" fill="white" stroke="#a2a497" stroke-width="2" rx="4"/>
+  <text x="60" y="125" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle" fill="#a2a497">OpenAPI</text>
+  <text x="60" y="140" font-family="monospace" font-size="12" font-weight="bold" text-anchor="middle" fill="#a2a497">3.0.x</text>
+  <text x="60" y="152" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#6c757d">JSON/YAML</text>
+  
+  <!-- OpenAPI 3.1.x -->
+  <rect x="120" y="75" width="80" height="50" fill="white" stroke="#a2a497" stroke-width="2" rx="4"/>
+  <text x="160" y="90" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle" fill="#a2a497">OpenAPI</text>
+  <text x="160" y="105" font-family="monospace" font-size="12" font-weight="bold" text-anchor="middle" fill="#a2a497">3.1.x</text>
+  <text x="160" y="117" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#6c757d">Latest</text>
+  
+  <!-- Arrows pointing to converter -->
+  <path d="M110 65 L220 90" stroke="url(#versionGradient)" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M110 135 L220 110" stroke="url(#versionGradient)" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M210 100 L220 100" stroke="url(#versionGradient)" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Converter/Normalizer -->
+  <circle cx="240" cy="100" r="25" fill="url(#versionGradient)"/>
+  <text x="240" y="95" font-family="monospace" font-size="8" font-weight="bold" text-anchor="middle" fill="white">AUTO</text>
+  <text x="240" y="105" font-family="monospace" font-size="8" font-weight="bold" text-anchor="middle" fill="white">CONVERT</text>
+  
+  <!-- Arrow to output -->
+  <path d="M270 100 L300 100" stroke="url(#versionGradient)" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- Unified Output -->
+  <rect x="320" y="60" width="60" height="80" fill="white" stroke="#a2a497" stroke-width="2" rx="4"/>
+  <text x="350" y="80" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle" fill="#a2a497">Unified</text>
+  <text x="350" y="95" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle" fill="#a2a497">TypeScript</text>
+  <text x="350" y="110" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle" fill="#a2a497">Client</text>
+  <text x="350" y="125" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#6c757d">Zod v4</text>
+  
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+     refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="url(#versionGradient)" />
+    </marker>
+  </defs>
+  
+  <!-- Bottom tagline -->
+  <text x="200" y="190" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">Multi-Version OpenAPI Support</text>
+</svg>

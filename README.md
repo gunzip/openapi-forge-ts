@@ -101,8 +101,6 @@ pnpx chokidar-cli openapi.yaml -c \
 - `-o, --output <path>`: Output directory for generated code
 - `--generate-client`: Generate the operation functions (default: false)
 - `--generate-server`: Generate the operation wrapper (default: false)
-- `--force-validation`: Automatically validate responses with Zod in generated
-  operations (default: manual validation via `parse()` method)
 
 ## Supported Input Formats
 
@@ -162,7 +160,7 @@ const apiConfig = {
 
 ```ts
 // Simple operation call
-const pet = await getPetById({ petId: "123" }, apiConfig);
+const pet = await getPetById({ path: { petId: "123" } }, apiConfig);
 
 // Operation with request body
 const newPet = await createPet(
@@ -176,13 +174,12 @@ const newPet = await createPet(
 );
 
 // Use default empty config (operations work without configuration)
-const result = await getPetById({ petId: "123" });
+const result = await getPetById({ path: { petId: "123" } });
 ```
 
 ## Binding Configuration to Operations
 
-You can use the `configureOperations` helper to bind a configuration object to
-all generated operations, so you don't have to pass the config each time:
+You can use the `configureOperations` helper to bind a configuration object to all generated operations, so you don't have to pass the config each time:
 
 ```ts
 import * as operations from "./generated/client/index.js";
@@ -196,35 +193,50 @@ const apiConfig = {
   },
 };
 
-// You may consider to only pass operations you use
+// Bind operations with manual validation (default)
 const client = configureOperations(operations, apiConfig);
 
+// Or bind operations with force validation enabled
+const validatingClient = configureOperations(operations, {
+  ...apiConfig,
+  forceValidation: true, // Enable automatic validation for all operations
+});
+
 // Now you can call operations without passing config:
-const pet = await client.getPetById({ petId: "123" });
+const pet = await client.getPetById({ path: { petId: "123" } });
 const newPet = await client.createPet({
   body: { name: "Fluffy", status: "available" },
 });
+
+// With force validation enabled, responses are automatically validated
+const validatedPet = await validatingClient.getPetById({ path: { petId: "123" } });
+if (validatedPet.success && validatedPet.status === 200 && "parsed" in validatedPet) {
+  // TypeScript knows the data is already validated
+  console.log("Pet name:", validatedPet.parsed.parsed.name);
+}
 ```
 
 ## Response Handling
 
-Each operation returns a discriminated union: either an API response (with a
-`status` code) or an error object (`ApiResponseError`) with a `kind`
-discriminator. Note: the `fetch-error` variant has NO `status`, so you must
-guard on `kind` before relying on `status` being present. Validation is opt-in
-by default, but can be made automatic with the `--force-validation` flag.
+Each operation returns a discriminated union with a `success` field: either a successful API response (with `success: true` and a `status` code) or an error object (with `success: false` and a `kind` discriminator). Validation is opt-in by default and can be controlled at runtime using the `forceValidation` config option.
 
 Recommended pattern:
 
 ```ts
-const result = await getPetById({ petId: "123" });
+const result = await getPetById({ path: { petId: "123" } });
 
-if ("kind" in result) {
+if (!result.success) {
   // Operation-level error (network, parsing, missing schema, etc.)
   console.error("Operation failed:", result.kind, result.error);
 } else if (result.status === 200) {
-  // result.data is RAW (unless --force-validation was used)
+  // result.data is RAW (manual validation via parse() method)
   console.log("Pet (raw):", result.data);
+  
+  // Optional: validate the response manually
+  const parsed = result.parse();
+  if ("parsed" in parsed) {
+    console.log("Pet (validated):", parsed.parsed);
+  }
 } else if (result.status === 404) {
   console.warn("Pet not found");
 } else {
@@ -235,61 +247,72 @@ if ("kind" in result) {
 
 ## Error Handling
 
-Operations never throw exceptions. Instead, all errors are returned as part of the response union, providing a consistent and type-safe error handling experience. There is no `result.success` boolean; you distinguish errors via the presence of the `kind` discriminator.
+Operations never throw exceptions. Instead, all errors are returned as part of the response union, providing a consistent and type-safe error handling experience. You distinguish errors from successful responses using the `success` boolean field.
 
 ### Error Types
 
 All operations return a union that includes `ApiResponseError`, which is a discriminated union covering all possible error scenarios:
 
 ```ts
-type ApiResponseError =
+type ApiResponseError = {
+  readonly success: false;
+} & (
   | {
       readonly kind: "unexpected-error";
       readonly error: unknown;
     }
   | {
       readonly kind: "unexpected-response";
-      readonly data: unknown;
-      readonly status: number;
-      readonly response: Response;
+      readonly result: {
+        readonly data: unknown;
+        readonly status: number;
+        readonly response: Response;
+      };
       readonly error: string;
     }
   | {
       readonly kind: "parse-error";
-      readonly data: unknown;
-      readonly status: number;
-      readonly response: Response;
+      readonly result: {
+        readonly data: unknown;
+        readonly status: number;
+        readonly response: Response;
+      };
       readonly error: z.ZodError;
     }
   | {
       readonly kind: "deserialization-error";
-      readonly data: unknown;
-      readonly status: number;
-      readonly response: Response;
+      readonly result: {
+        readonly data: unknown;
+        readonly status: number;
+        readonly response: Response;
+      };
       readonly error: unknown;
     }
   | {
       readonly kind: "missing-schema";
-      readonly data: unknown;
-      readonly status: number;
-      readonly response: Response;
+      readonly result: {
+        readonly data: unknown;
+        readonly status: number;
+        readonly response: Response;
+      };
       readonly error: string;
-    };
+    }
+);
 ```
 
 ### Error Handling Patterns
 
 ```ts
-const result = await getPetById({ petId: "123" });
+const result = await getPetById({ path: { petId: "123" } });
 
-if ("kind" in result) {
-  // All error variants handled first (safe: unexpected-error lacks status)
+if (!result.success) {
+  // All error variants handled first
   switch (result.kind) {
     case "unexpected-error":
       console.error("Unexpected error:", result.error);
       break;
     case "unexpected-response":
-      console.error("Unexpected status:", result.status, result.error);
+      console.error("Unexpected status:", result.result.status, result.error);
       break;
     case "parse-error":
       console.error("Validation failed:", result.error);
@@ -308,35 +331,31 @@ if ("kind" in result) {
 } else {
   console.error("Unexpected documented status", result.status);
 }
+}
 ```
 
 ### Error Context
 
 Different error types provide different context:
 
-- **unexpected-error**: Network failures, connection issues, or any unexpected exception (no `status`, `data`, or `response`)
-- **unexpected-response**: HTTP status codes not defined in OpenAPI spec (includes `status`, `data`, `response`)
-- **parse-error**: Zod validation failures when using `parse()` or `--force-validation` (includes parsing details)
-- **deserialization-error**: Custom deserializer failures (includes original error)
-- **missing-schema**: No schema available for content type (includes attempted deserialization)
+- **unexpected-error**: Network failures, connection issues, or any unexpected exception (no status, data, or response available)
+- **unexpected-response**: HTTP status codes not defined in OpenAPI spec (includes status, data, response in `result` field)
+- **parse-error**: Zod validation failures when using `parse()` or force validation (includes parsing details in `result` field)
+- **deserialization-error**: Custom deserializer failures (includes original error and context in `result` field)
+- **missing-schema**: No schema available for content type (includes attempted deserialization context in `result` field)
 
-## Runtime Response Validation (Opt-In)
+## Runtime Response Validation
 
-Operations return raw data by default (no automatic Zod parsing). To perform
-runtime validation you must explicitly call the response object's `parse()`
-method. The `parse()` method now returns a discriminated union:
+The generator supports two validation modes that can be controlled dynamically at runtime through the `forceValidation` configuration option:
 
-- `{ contentType, parsed }` on success
-- `{ kind: "parse-error", error: ZodError }` when validation fails
-- `{ kind: "deserialization-error", error: unknown }` when a custom deserializer throws
-- `{ kind: "missing-schema", error: string }` when no schema exists for the resolved content type
+### Manual Validation (Default)
 
-These objects never throw; you inspect the returned value to act accordingly.
+Operations return raw data by default. To perform runtime validation, explicitly call the response object's `parse()` method:
 
 ```ts
-const result = await getUserProfile({ userId: "123" });
+const result = await getUserProfile({ path: { userId: "123" } });
 
-if (result.status === 200) {
+if (result.success && result.status === 200) {
   const outcome = result.parse();
   if ("parsed" in outcome) {
     console.log("User:", outcome.parsed.name, outcome.parsed.email);
@@ -347,25 +366,76 @@ if (result.status === 200) {
   } else if (outcome.kind === "missing-schema") {
     console.warn("No schema – raw data retained:", result.data);
   }
-} else if (result.status === 404) {
+} else if (result.success && result.status === 404) {
   console.warn("User not found");
+} else if (!result.success) {
+  console.error("Operation failed:", result.kind, result.error);
 }
 ```
 
-For operations with mixed content types, validation only applies when you call
-`parse()` and a schema exists for the selected content type:
+### Force Validation Mode
+
+Enable automatic validation by setting `forceValidation: true` in the config. When enabled, responses are automatically validated and the `parsed` field is directly available:
 
 ```ts
-const result = await getDocument({
-  docId: "123",
-  contentType: { response: "application/json" },
-});
+// Configure force validation
+const apiConfig = {
+  baseURL: "https://api.example.com",
+  fetch: fetch,
+  headers: { Authorization: "Bearer token" },
+  forceValidation: true, // Enable automatic validation
+};
 
-if (result.status === 200) {
-  const outcome = result.parse();
-  if ("parsed" in outcome) {
-    console.log("Document:", outcome.parsed);
+const result = await getUserProfile(
+  { path: { userId: "123" } },
+  apiConfig
+);
+
+if (result.success && result.status === 200) {
+  // No need to call parse() - data is already validated
+  if ("parsed" in result) {
+    console.log("User:", result.parsed.parsed.name);
+  } else if (result.parsed.kind === "parse-error") {
+    console.error("Validation failed:", result.parsed.error);
   }
+} else if (!result.success) {
+  console.error("Operation failed:", result.kind);
+}
+```
+
+### Dynamic Force Validation with Type Safety
+
+The `forceValidation` option supports full TypeScript type safety through generic parameters:
+
+```ts
+// Type-safe force validation
+async function fetchUserWithValidation<TForceValidation extends boolean>(
+  userId: string,
+  forceValidation: TForceValidation
+) {
+  const result = await getUserProfile<TForceValidation>(
+    { path: { userId } },
+    { ...globalConfig, forceValidation }
+  );
+
+  if (result.success && result.status === 200) {
+    // TypeScript knows the return type based on TForceValidation
+    if (forceValidation) {
+      // result.parsed is available (forced validation)
+      return result.parsed;
+    } else {
+      // result.parse() method is available (manual validation)
+      return result.parse();
+    }
+  }
+  
+  return null;
+}
+
+// Usage with compile-time type inference
+const manualResult = await fetchUserWithValidation("123", false); // Returns parse() result
+const autoResult = await fetchUserWithValidation("123", true);   // Returns parsed field
+```
 }
 ```
 
@@ -392,84 +462,78 @@ if (result.status === 200) {
   if ("parsed" in outcome) {
     console.log("Downloaded file size:", outcome.parsed.size);
   }
-}
-```
-
-## Automatic Runtime Validation
-
-When using the `--force-validation` CLI flag, operations automatically validate
-responses using Zod schemas without requiring explicit calls to `parse()`.
-This provides stricter type safety and validation at the cost of performance.
-
-### Usage with Automatic Validation
+For operations with mixed content types, validation applies when you call `parse()` and a schema exists for the selected content type:
 
 ```ts
-// Generate with --force-validation flag
-pnpx yanogen-ts generate \
-  --generate-client \
-  --force-validation \
-  -i openapi.yaml \
-  -o generated
+const result = await getDocument({
+  path: { docId: "123" },
+  contentType: { response: "application/json" },
+});
 
-// Operations now return validated data directly
-const result = await getUserProfile({ userId: "123" });
-
-if (result.status === 200) {
-  // automatically validated and typed (result has either parsed or an error kind)
-  if ("parsed" in result) {
-    console.log("User:", result.parsed.name, result.parsed.email);
-  } else if (result.kind === "parse-error") {
-    console.error("User profile validation failed", result.error);
+if (result.success && result.status === 200) {
+  const outcome = result.parse();
+  if ("parsed" in outcome) {
+    console.log("Document:", outcome.parsed);
   }
-} else if (result.status === 404) {
-  console.warn("User not found");
 }
 ```
 
-## Why is Runtime Validation Opt-In?
+Non-JSON responses (like `text/plain`, `application/octet-stream`) are still left raw unless you supply a custom deserializer in the config:
 
-TypeScript client generator uses Zod for payload validation and parsing, but
-we've made this feature opt-in rather than mandatory. This design choice
-provides several key advantages:
+```ts
+const result = await downloadFile(
+  {
+    path: { fileId: "123" },
+  },
+  {
+    // You can provide custom deserializers for specific operations
+    // or even in the global configuration
+    deserializerMap: {
+      "application/octet-stream": (blob: Blob) => ({ size: blob.size }),
+    },
+  },
+);
 
-- **Integration with Existing Systems**: This approach allows for seamless
-  integration with other validation mechanisms already present in your codebase.
-  If you have existing business logic that handles data validation, disabled
-  runtime parsing at the client level avoids redundancy and streamlines your
-  data flow.
+if (result.success && result.status === 200) {
+  const outcome = result.parse();
+  if ("parsed" in outcome) {
+    console.log("Downloaded file size:", outcome.parsed.size);
+  }
+}
+```
 
-- **Robustness in the Real World**: APIs responses can be unpredictable. You
-  might encounter non-documented fields or slight deviations from the OpenAPI
-  specification. Making validation optional prevents the client from crashing on
-  unexpected—but often harmless—payloads, ensuring your application remains
-  resilient.
+## Why is Runtime Validation Configurable?
 
-- **Performance**: Parsing and validating a payload comes with a computational
-  cost. By allowing you to opt-in, you can decide to skip validation for
-  non-critical API calls, leading to better performance, especially in
-  high-volume scenarios.
+TypeScript client generator uses Zod for payload validation and parsing, but we've made this feature configurable rather than mandatory. This design choice provides several key advantages:
 
-This approach gives you more control, allowing you to balance strict type-safety
-with the practical demands of working with real-world APIs.
+- **Integration with Existing Systems**: This approach allows for seamless integration with other validation mechanisms already present in your codebase. If you have existing business logic that handles data validation, disabled runtime parsing at the client level avoids redundancy and streamlines your data flow.
 
-### When to Use Automatic Validation
+- **Robustness in the Real World**: API responses can be unpredictable. You might encounter non-documented fields or slight deviations from the OpenAPI specification. Making validation optional prevents the client from crashing on unexpected—but often harmless—payloads, ensuring your application remains resilient.
 
-Use the `--force-validation` flag when:
+- **Performance**: Parsing and validating a payload comes with a computational cost. By allowing you to choose per operation call, you can decide to skip validation for non-critical API calls, leading to better performance, especially in high-volume scenarios.
+
+- **Runtime Flexibility**: Applications can dynamically choose validation behavior based on runtime conditions (e.g., development vs production, user preferences, API trust level).
+
+This approach gives you more control, allowing you to balance strict type-safety with the practical demands of working with real-world APIs.
+
+### When to Use Force Validation
+
+Enable `forceValidation: true` when:
 
 - **Trusted APIs**: When responses always match the OpenAPI specification
-- **Performance is Not Critical**: When the validation overhead is acceptable
-  for your use case
+- **Performance is Not Critical**: When the validation overhead is acceptable for your use case
+- **Development/Testing**: When you want to catch schema mismatches early
+- **Critical Operations**: When data integrity is paramount
 
 ### When to Use Manual Validation
 
-Use the default manual validation (without `--force-validation`) when:
+Use the default manual validation (`forceValidation: false` or unset) when:
 
-- **Huge Payloads**: When dealing with large responses where validation overhead is a concern
+- **Large Payloads**: When dealing with large responses where validation overhead is a concern
 - **Untrusted APIs**: When APIs may return unexpected data that shouldn't crash your application
-- **Gradual Migration**: When incrementally adding validation to existing
-  codebases
-- **Custom Validation Logic**: When you need more control over validation
-  behavior and error handling or you have your own validation already in place
+- **Gradual Migration**: When incrementally adding validation to existing codebases
+- **Custom Validation Logic**: When you need more control over validation behavior and error handling
+- **Performance-Critical Paths**: When every millisecond counts
 
 ## Custom Response Deserialization
 
@@ -714,7 +778,7 @@ type:
 ```ts
 const result = await getPetById(
   {
-    petId: "123",
+    path: { petId: "123" },
     contentType: { response: "application/xml" },
   },
   {
@@ -725,7 +789,7 @@ const result = await getPetById(
   },
 );
 
-if (result.status === 200) {
+if (result.success && result.status === 200) {
   const data = result.parse();
   // result.data is typed as PetXml if response: "application/xml" was selected
   // or as Pet if response: "application/json" was selected

@@ -184,7 +184,7 @@ describe("client-generator config-templates", () => {
 
       expect(result).toContain("type Operation =");
       expect(result).toContain("export function configureOperations");
-      expect(result).toContain("typeof operations[key] === 'function'");
+      expect(result).toContain("typeof op === 'function'");
     });
   });
 

@@ -196,30 +196,55 @@ const handler: getPetByIdHandler = async (params) => {
 
 ### 5. Client Usage (`src/client-example.ts`)
 
-The generated client provides type-safe functions with built-in validation:
+The generated client provides type-safe functions with built-in validation and configurable force validation:
 
 ```typescript
-// Configure client for local server
+// Configure client for local server with manual validation (default)
 const localConfig = {
   ...globalConfig,
   baseURL: "http://localhost:3000",
 };
 
-// Call API with type safety
+// Configure client with automatic validation enabled
+const forceValidationConfig = {
+  ...globalConfig,
+  baseURL: "http://localhost:3000",
+  forceValidation: true, // Enable automatic response validation
+};
+
+// Manual validation example
 const response = await findPetsByStatus(
   { query: { status: "available" } },
   localConfig,
 );
 
-if (response.status === 200) {
+if (!response.success) {
+  console.error("Operation failed:", response.kind, response.error);
+} else if (response.status === 200) {
+  // Manual validation with parse() method
   const parsed = response.parse();
   if ("parsed" in parsed) {
     console.log("Pets:", parsed.parsed);
   } else if (parsed.kind === "parse-error") {
     console.error("Validation failed:", parsed.error);
   }
-} else if ("kind" in response) {
-  console.error("Operation failed:", response.kind, response.error);
+}
+
+// Force validation example  
+const autoValidatedResponse = await findPetsByStatus(
+  { query: { status: "available" } },
+  forceValidationConfig,
+);
+
+if (!autoValidatedResponse.success) {
+  console.error("Operation failed:", autoValidatedResponse.kind);
+} else if (autoValidatedResponse.status === 200) {
+  // Automatic validation - data is already parsed
+  if ("parsed" in autoValidatedResponse) {
+    console.log("Pets:", autoValidatedResponse.parsed.parsed);
+  } else if (autoValidatedResponse.parsed.kind === "parse-error") {
+    console.error("Validation failed:", autoValidatedResponse.parsed.error);
+  }
 }
 ```
 

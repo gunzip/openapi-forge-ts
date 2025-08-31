@@ -33,14 +33,29 @@ async function demonstrateClient() {
     localConfig,
   );
 
+  /* Configure force validation for automatic response validation */
+  const forceValidationApi = configureOperations(
+    {
+      findPetsByStatus,
+      getInventory,
+      getPetById,
+    },
+    {
+      ...localConfig,
+      forceValidation: true, // Enable automatic validation
+    },
+  );
+
   try {
-    /* Example 1: Find pets by status */
-    console.log("1️⃣ Finding pets with status 'available'...");
+    /* Example 1: Find pets by status with manual validation */
+    console.log("1️⃣ Finding pets with status 'available' (manual validation)...");
     const petsResponse = await api.findPetsByStatus({
       query: { status: "available" },
     });
 
-    if (petsResponse.status === 200) {
+    if (!petsResponse.success) {
+      console.error("❌ Operation failed:", petsResponse.kind, petsResponse.error);
+    } else if (petsResponse.status === 200) {
       console.log(
         "✅ Found pets (raw):",
         JSON.stringify(petsResponse.data, null, 2),
@@ -54,11 +69,34 @@ async function demonstrateClient() {
           JSON.stringify(parseResult.parsed, null, 2),
         );
         console.log(`📊 Found ${parseResult.parsed.length} pets`);
-      } else if ("parseError" in parseResult) {
-        console.error("❌ Failed to parse response:", parseResult.parseError);
+      } else if (parseResult.kind === "parse-error") {
+        console.error("❌ Failed to parse response:", parseResult.error);
       }
     } else {
       console.error("❌ Failed to find pets:", petsResponse.status);
+    }
+
+    console.log("");
+
+    /* Example 1b: Same operation with force validation */
+    console.log("1️⃣b Finding pets with status 'available' (force validation)...");
+    const forceValidatedPetsResponse = await forceValidationApi.findPetsByStatus({
+      query: { status: "available" },
+    });
+
+    if (!forceValidatedPetsResponse.success) {
+      console.error("❌ Operation failed:", forceValidatedPetsResponse.kind);
+    } else if (forceValidatedPetsResponse.status === 200) {
+      /* With force validation, data is automatically validated */
+      if ("parsed" in forceValidatedPetsResponse) {
+        console.log(
+          "✅ Automatically validated pets:",
+          JSON.stringify(forceValidatedPetsResponse.parsed.parsed, null, 2),
+        );
+        console.log(`📊 Found ${forceValidatedPetsResponse.parsed.parsed.length} pets`);
+      } else if (forceValidatedPetsResponse.parsed.kind === "parse-error") {
+        console.error("❌ Validation failed:", forceValidatedPetsResponse.parsed.error);
+      }
     }
 
     console.log("");
@@ -70,7 +108,9 @@ async function demonstrateClient() {
       path: { petId: "1" },
     });
 
-    if (petResponse.status === 200) {
+    if (!petResponse.success) {
+      console.error("❌ Operation failed:", petResponse.kind, petResponse.error);
+    } else if (petResponse.status === 200) {
       console.log("✅ Found pet:", JSON.stringify(petResponse.data, null, 2));
 
       /* Parse the response data */
@@ -81,8 +121,8 @@ async function demonstrateClient() {
         if (pet.category) {
           console.log(`🏷️ Category: ${pet.category.name}`);
         }
-      } else if ("parseError" in parseResult) {
-        console.error("❌ Failed to parse pet data:", parseResult.parseError);
+      } else if (parseResult.kind === "parse-error") {
+        console.error("❌ Failed to parse pet data:", parseResult.error);
       }
     } else {
       console.error("❌ Failed to get pet:", petResponse.status);
@@ -96,7 +136,9 @@ async function demonstrateClient() {
       headers: { api_key: "demo-api-key" },
     });
 
-    if (inventoryResponse.status === 200) {
+    if (!inventoryResponse.success) {
+      console.error("❌ Operation failed:", inventoryResponse.kind, inventoryResponse.error);
+    } else if (inventoryResponse.status === 200) {
       console.log(
         "✅ Inventory:",
         JSON.stringify(inventoryResponse.data, null, 2),
@@ -110,8 +152,8 @@ async function demonstrateClient() {
         for (const [status, count] of Object.entries(inventory)) {
           console.log(`  ${status}: ${count}`);
         }
-      } else if ("parseError" in parseResult) {
-        console.error("❌ Failed to parse inventory:", parseResult.parseError);
+      } else if (parseResult.kind === "parse-error") {
+        console.error("❌ Failed to parse inventory:", parseResult.error);
       }
     } else {
       console.error("❌ Failed to get inventory:", inventoryResponse.status);
@@ -128,7 +170,9 @@ async function demonstrateClient() {
       path: { petId: "999" },
     });
 
-    if (nonExistentPetResponse.status === 404) {
+    if (!nonExistentPetResponse.success) {
+      console.error("❌ Operation failed:", nonExistentPetResponse.kind);
+    } else if (nonExistentPetResponse.status === 404) {
       console.log("✅ Correctly received 404 for non-existent pet");
     } else {
       console.log("🤔 Unexpected response:", nonExistentPetResponse.status);

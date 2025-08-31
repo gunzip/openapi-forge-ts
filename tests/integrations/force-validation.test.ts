@@ -3,236 +3,69 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 /*
- * Integration test for --force-validation CLI flag
- * Tests that the generated code has the correct structure and behavior differences
- * when force-validation is enabled vs disabled
+ * Integration test for dynamic force validation feature
+ * Tests that the generated code has the correct structure to support
+ * both manual and force validation modes at runtime
  */
 
-describe("Force Validation CLI Flag Integration Test", () => {
+describe("Dynamic Force Validation Integration Test", () => {
   const generatedDir = "tests/integrations/generated";
-  const forceValidationDir = "tests/integrations/generated-force-validation";
 
-  it("should generate different return types for force-validation vs manual validation", () => {
-    const manualOperationPath = join(
+  it("should generate operations with generic TForceValidation parameter", () => {
+    const operationPath = join(
       generatedDir,
       "client/testDeserialization.ts",
     );
-    const forceValidationOperationPath = join(
-      forceValidationDir,
-      "client/testDeserialization.ts",
-    );
 
-    const manualOperationContent = readFileSync(manualOperationPath, "utf-8");
-    const forceValidationOperationContent = readFileSync(
-      forceValidationOperationPath,
-      "utf-8",
-    );
+    const operationContent = readFileSync(operationPath, "utf-8");
 
-    // Manual validation should use ApiResponseWithParse
-    expect(manualOperationContent).toContain(
-      "ApiResponseWithParse<200, typeof TestDeserializationResponseMap>",
-    );
+    // Should include TForceValidation generic parameter
+    expect(operationContent).toContain("TForceValidation extends boolean = false");
+    
+    // Should have forceValidation in config parameter  
+    expect(operationContent).toContain("forceValidation?: TForceValidation");
 
-    // Force validation should use ApiResponseWithForcedParse
-    expect(forceValidationOperationContent).toContain(
-      "ApiResponseWithForcedParse<200, typeof TestDeserializationResponseMap>",
-    );
+    // Should use conditional return types
+    expect(operationContent).toContain("TForceValidation extends true");
+    expect(operationContent).toContain("ApiResponseWithForcedParse");
+    expect(operationContent).toContain("ApiResponseWithParse");
 
-    // Manual validation should have parse() method
-    expect(manualOperationContent).toContain("parse: () =>");
-
-    // Force validation should have parsed field assignment
-    expect(forceValidationOperationContent).toContain("parsed: parseResult");
-    expect(forceValidationOperationContent).toContain("success: true");
-
-    // Force validation should not have parse() method
-    expect(forceValidationOperationContent).not.toContain("parse: () =>");
+    // Should have runtime conditional logic
+    expect(operationContent).toContain("if (config.forceValidation)");
   });
 
-  it("should generate correct response handler logic for force validation", () => {
-    const forceValidationOperationPath = join(
-      forceValidationDir,
-      "client/testDeserialization.ts",
-    );
-    const forceValidationOperationContent = readFileSync(
-      forceValidationOperationPath,
-      "utf-8",
-    );
+  it("should generate config with forceValidation property", () => {
+    const configPath = join(generatedDir, "client/config.ts");
+    const configContent = readFileSync(configPath, "utf-8");
 
-    // Should automatically call parseApiResponseUnknownData
-    expect(forceValidationOperationContent).toContain(
-      "const parseResult = parseApiResponseUnknownData(",
-    );
+    // Should include forceValidation in GlobalConfig interface
+    expect(configContent).toContain("forceValidation?: boolean");
 
-    // Should return parsed field in response when parsing succeeds
-    expect(forceValidationOperationContent).toContain(
-      'if ("parsed" in parseResult) {',
-    );
-    expect(forceValidationOperationContent).toContain(
-      "return {\n            success: true,\n            status: 200 as const,\n            data,\n            response,\n            parsed: parseResult,\n          };",
-    );
+    // Should include both ApiResponseWithParse and ApiResponseWithForcedParse types
+    expect(configContent).toContain("ApiResponseWithParse");
+    expect(configContent).toContain("ApiResponseWithForcedParse");
+
+    // Should include configureOperations with TForceValidation support
+    expect(configContent).toContain("TForceValidation extends boolean");
+    expect(configContent).toContain("ReplaceWithForcedParse");
   });
 
-  it("should import ApiResponseWithForcedParse in force validation client", () => {
-    const forceValidationOperationPath = join(
-      forceValidationDir,
-      "client/testDeserialization.ts",
-    );
-    const forceValidationOperationContent = readFileSync(
-      forceValidationOperationPath,
-      "utf-8",
-    );
-
-    // Should import ApiResponseWithForcedParse
-    expect(forceValidationOperationContent).toContain(
-      "ApiResponseWithForcedParse",
-    );
-  });
-
-  it("should not import ApiResponseWithParse in force validation client", () => {
-    const forceValidationOperationPath = join(
-      forceValidationDir,
-      "client/testDeserialization.ts",
-    );
-    const forceValidationOperationContent = readFileSync(
-      forceValidationOperationPath,
-      "utf-8",
-    );
-
-    // Should not import ApiResponseWithParse
-    expect(forceValidationOperationContent).not.toContain(
-      "ApiResponseWithParse",
-    );
-  });
-
-  it("should generate consistent response map structure", () => {
-    const manualOperationPath = join(
-      generatedDir,
-      "client/testDeserialization.ts",
-    );
-    const forceValidationOperationPath = join(
-      forceValidationDir,
-      "client/testDeserialization.ts",
-    );
-
-    const manualOperationContent = readFileSync(manualOperationPath, "utf-8");
-    const forceValidationOperationContent = readFileSync(
-      forceValidationOperationPath,
-      "utf-8",
-    );
-
-    // Both should have the same response map structure
-    expect(manualOperationContent).toContain(
-      "export const TestDeserializationResponseMap = {",
-    );
-    expect(forceValidationOperationContent).toContain(
-      "export const TestDeserializationResponseMap = {",
-    );
-
-    expect(manualOperationContent).toContain('"200": {');
-    expect(forceValidationOperationContent).toContain('"200": {');
-
-    expect(manualOperationContent).toContain(
-      '"application/json": TestDeserUser',
-    );
-    expect(forceValidationOperationContent).toContain(
-      '"application/json": TestDeserUser',
-    );
-  });
-
-  it("should generate correct config imports for force validation", () => {
-    const manualConfigPath = join(generatedDir, "client/config.ts");
-    const forceValidationConfigPath = join(
-      forceValidationDir,
-      "client/config.ts",
-    );
-
-    const manualConfigContent = readFileSync(manualConfigPath, "utf-8");
-    const forceValidationConfigContent = readFileSync(
-      forceValidationConfigPath,
-      "utf-8",
-    );
-
-    // Both should have ApiResponseWithParse
-    expect(manualConfigContent).toContain("export type ApiResponseWithParse<");
-    expect(forceValidationConfigContent).toContain(
-      "export type ApiResponseWithParse<",
-    );
-
-    // Both should have ApiResponseWithForcedParse
-    expect(manualConfigContent).toContain(
-      "export type ApiResponseWithForcedParse<",
-    );
-    expect(forceValidationConfigContent).toContain(
-      "export type ApiResponseWithForcedParse<",
-    );
-  });
-
-  it("should work with multi-content-type operations", () => {
-    const manualMultiContentPath = join(
+  it("should generate operations that support both validation modes", () => {
+    const operationPath = join(
       generatedDir,
       "client/testMultiContentTypes.ts",
     );
-    const forceValidationMultiContentPath = join(
-      forceValidationDir,
-      "client/testMultiContentTypes.ts",
-    );
 
-    const manualMultiContentContent = readFileSync(
-      manualMultiContentPath,
-      "utf-8",
-    );
-    const forceValidationMultiContentContent = readFileSync(
-      forceValidationMultiContentPath,
-      "utf-8",
-    );
+    const operationContent = readFileSync(operationPath, "utf-8");
 
-    // Manual validation should have parse() method
-    expect(manualMultiContentContent).toContain("parse: () =>");
+    // Should include both response branches (manual and force validation)
+    expect(operationContent).toContain("if (config.forceValidation)");
+    expect(operationContent).toContain("else {");
 
-    // Force validation should have parsed field
-    expect(forceValidationMultiContentContent).toContain("parsed: parseResult");
-    expect(forceValidationMultiContentContent).toContain("success: true");
+    // Force validation branch should parse automatically
+    expect(operationContent).toContain("parsed: parseResult");
 
-    // Both should have the same response map
-    expect(manualMultiContentContent).toContain(
-      "TestMultiContentTypesResponseMap",
-    );
-    expect(forceValidationMultiContentContent).toContain(
-      "TestMultiContentTypesResponseMap",
-    );
-  });
-
-  it("should handle operations without response schemas", () => {
-    const manualSimplePath = join(
-      generatedDir,
-      "client/testWithEmptyResponse.ts",
-    );
-    const forceValidationSimplePath = join(
-      forceValidationDir,
-      "client/testWithEmptyResponse.ts",
-    );
-
-    const manualSimpleContent = readFileSync(manualSimplePath, "utf-8");
-    const forceValidationSimpleContent = readFileSync(
-      forceValidationSimplePath,
-      "utf-8",
-    );
-
-    // Both should handle void responses correctly
-    expect(manualSimpleContent).toContain("ApiResponse<200, void>");
-    expect(forceValidationSimpleContent).toContain("ApiResponse<200, void>");
-
-    // Operations without schemas should not have parse methods or parsed fields
-    expect(manualSimpleContent).not.toContain("parse: () =>");
-    expect(forceValidationSimpleContent).not.toContain("const parsed =");
-
-    // Both should return simple response structure
-    expect(manualSimpleContent).toContain(
-      "return {\n          success: true,\n          status: 200 as const,\n          data: undefined,\n          response,\n        };",
-    );
-    expect(forceValidationSimpleContent).toContain(
-      "return {\n          success: true,\n          status: 200 as const,\n          data: undefined,\n          response,\n        };",
-    );
+    // Manual validation branch should provide parse method
+    expect(operationContent).toContain("parse: () =>");
   });
 });

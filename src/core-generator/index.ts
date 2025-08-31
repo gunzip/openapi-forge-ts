@@ -54,7 +54,7 @@ export interface GenerationOptions {
    * When true, operations return ApiResponseWithForcedParse with automatic validation and parsed field.
    * @default false
    */
-  forceValidation?: boolean;
+  forceValidation: boolean;
   generateClient: boolean;
   generateServer?: boolean;
   input: string;

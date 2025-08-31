@@ -205,12 +205,12 @@ export function renderOperationFunction(
     : "GlobalConfig";
 
   /* Add forceValidation generic constraint to config type */
-  const configType = `${baseConfigType} & { forceValidation?: TForceValidation }`;
+  const configType = `${baseConfigType} & { forceValidation: TForceValidation }`;
 
   /* Only add type cast when we have a narrowed type */
   return `${config.typeAliases}${config.summary}export async function ${config.functionName}${config.genericParams}(
   ${config.parameterDeclaration},
-  config: ${configType} = globalConfig as any
+  config: ${configType} = globalConfig
 ): Promise<${config.updatedReturnType}> {
   ${config.functionBodyCode}
 }`;

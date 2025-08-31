@@ -53,7 +53,7 @@ export interface ResponseAnalysis {
  */
 export interface ResponseAnalysisConfig {
   /* Whether to use forced validation mode */
-  forceValidation?: boolean;
+  forceValidation: boolean;
   /* Whether the operation has a response content type map */
   hasResponseContentTypeMap?: boolean;
   /* The operation being analyzed */

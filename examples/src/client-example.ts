@@ -48,13 +48,19 @@ async function demonstrateClient() {
 
   try {
     /* Example 1: Find pets by status with manual validation */
-    console.log("1️⃣ Finding pets with status 'available' (manual validation)...");
+    console.log(
+      "1️⃣ Finding pets with status 'available' (manual validation)...",
+    );
     const petsResponse = await api.findPetsByStatus({
       query: { status: "available" },
     });
 
     if (!petsResponse.success) {
-      console.error("❌ Operation failed:", petsResponse.kind, petsResponse.error);
+      console.error(
+        "❌ Operation failed:",
+        petsResponse.kind,
+        petsResponse.error,
+      );
     } else if (petsResponse.status === 200) {
       console.log(
         "✅ Found pets (raw):",
@@ -79,10 +85,13 @@ async function demonstrateClient() {
     console.log("");
 
     /* Example 1b: Same operation with force validation */
-    console.log("1️⃣b Finding pets with status 'available' (force validation)...");
-    const forceValidatedPetsResponse = await forceValidationApi.findPetsByStatus({
-      query: { status: "available" },
-    });
+    console.log(
+      "1️⃣b Finding pets with status 'available' (force validation)...",
+    );
+    const forceValidatedPetsResponse =
+      await forceValidationApi.findPetsByStatus({
+        query: { status: "available" },
+      });
 
     if (!forceValidatedPetsResponse.success) {
       console.error("❌ Operation failed:", forceValidatedPetsResponse.kind);
@@ -93,9 +102,14 @@ async function demonstrateClient() {
           "✅ Automatically validated pets:",
           JSON.stringify(forceValidatedPetsResponse.parsed.parsed, null, 2),
         );
-        console.log(`📊 Found ${forceValidatedPetsResponse.parsed.parsed.length} pets`);
+        console.log(
+          `📊 Found ${forceValidatedPetsResponse.parsed.parsed.length} pets`,
+        );
       } else if (forceValidatedPetsResponse.parsed.kind === "parse-error") {
-        console.error("❌ Validation failed:", forceValidatedPetsResponse.parsed.error);
+        console.error(
+          "❌ Validation failed:",
+          forceValidatedPetsResponse.parsed.error,
+        );
       }
     }
 
@@ -109,7 +123,11 @@ async function demonstrateClient() {
     });
 
     if (!petResponse.success) {
-      console.error("❌ Operation failed:", petResponse.kind, petResponse.error);
+      console.error(
+        "❌ Operation failed:",
+        petResponse.kind,
+        petResponse.error,
+      );
     } else if (petResponse.status === 200) {
       console.log("✅ Found pet:", JSON.stringify(petResponse.data, null, 2));
 
@@ -137,7 +155,11 @@ async function demonstrateClient() {
     });
 
     if (!inventoryResponse.success) {
-      console.error("❌ Operation failed:", inventoryResponse.kind, inventoryResponse.error);
+      console.error(
+        "❌ Operation failed:",
+        inventoryResponse.kind,
+        inventoryResponse.error,
+      );
     } else if (inventoryResponse.status === 200) {
       console.log(
         "✅ Inventory:",

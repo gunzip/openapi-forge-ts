@@ -24,14 +24,14 @@ ${!responseInfo.hasSchema ? "      const data = undefined;" : ""}
         /* Force validation: automatically parse and return result */
         const parseResult = parseApiResponseUnknownData(minimalResponse, data, ${responseMapName}["${statusCode}"], config.deserializerMap ?? {});
         if ("parsed" in parseResult) {
-          return { success: true, status: ${statusCode} as const, data, response, parsed: parseResult } as any;
+          return { success: true, status: ${statusCode} as const, data, response, parsed: parseResult };
         }
         if (parseResult.kind) {
           return {
             ...parseResult,
             success: false,
             result: { data, status: ${statusCode}, response },
-          } as any;
+          };
         }
         throw new Error("Invalid parse result");
       } else {
@@ -42,20 +42,20 @@ ${!responseInfo.hasSchema ? "      const data = undefined;" : ""}
           data,
           response,
           parse: () => parseApiResponseUnknownData(minimalResponse, data, ${responseMapName}["${statusCode}"], config.deserializerMap ?? {})
-        } as any;
+        };
       }
     }`;
     } else {
       /* No schema or response map: return simple response */
       return `    case ${statusCode}: {
 ${!responseInfo.hasSchema ? "      const data = undefined;" : ""}
-      return { success: true, status: ${statusCode} as const, data, response } as any;
+      return { success: true, status: ${statusCode} as const, data, response };
     }`;
     }
   }
 
   return `    case ${statusCode}:
-      return { success: true, status: ${statusCode} as const, data: undefined, response } as any;`;
+      return { success: true, status: ${statusCode} as const, data: undefined, response };`;
 }
 
 /*

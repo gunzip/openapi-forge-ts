@@ -153,6 +153,7 @@ export const globalConfig: GlobalConfig = {
   baseURL: '${server.defaultBaseURL}',
   fetch: fetch,
   headers: {},
+  forceValidation: false
 };
 
 /* A minimal, serializable representation of a fetch Response */
@@ -183,7 +184,7 @@ export interface GlobalConfig {
     [K in ${auth.hasAuthHeaders ? `AuthHeaders` : "string"}]?: string;
   } & Record<string, string>;
   deserializerMap?: DeserializerMap;
-  forceValidation?: boolean;
+  forceValidation: boolean;
 }`;
 }
 

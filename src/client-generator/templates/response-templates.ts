@@ -64,7 +64,6 @@ ${!responseInfo.hasSchema ? "      const data = undefined;" : ""}
 export function renderResponseHandlers(
   responses: ResponseInfo[],
   responseMapName?: string,
-  forceValidation = false,
 ): string[] {
   const handlers: string[] = [];
 

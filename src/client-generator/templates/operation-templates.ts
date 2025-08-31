@@ -210,7 +210,7 @@ export function renderOperationFunction(
   /* Only add type cast when we have a narrowed type */
   return `${config.typeAliases}${config.summary}export async function ${config.functionName}${config.genericParams}(
   ${config.parameterDeclaration},
-  config: ${configType} = globalConfig
+  config: ${configType} = globalConfig as any
 ): Promise<${config.updatedReturnType}> {
   ${config.functionBodyCode}
 }`;

@@ -1,9 +1,5 @@
 # CLI Usage
 
-The YanoGen-Ts CLI provides a simple and powerful interface for generating TypeScript code from OpenAPI specifications.
-
-## Basic Command
-
 ```sh
 pnpx yanogen-ts generate \
   --generate-server \
@@ -12,7 +8,7 @@ pnpx yanogen-ts generate \
   -o generated
 ```
 
-## Watch Mode
+## Watch mode
 
 You can run the CLI in watch mode to automatically regenerate code on file changes:
 
@@ -42,66 +38,3 @@ The generator automatically detects and converts:
 - **OpenAPI 3.1.x** (no conversion needed)
 
 All input formats (local or remote yaml or JSON) are automatically normalized to OpenAPI 3.1.0 before generation.
-
-## Examples
-
-### Generate Client Only
-
-```bash
-pnpx yanogen-ts generate \
-  --generate-client \
-  -i ./api-spec.yaml \
-  -o ./generated
-```
-
-### Generate Server Only
-
-```bash
-pnpx yanogen-ts generate \
-  --generate-server \
-  -i ./api-spec.yaml \
-  -o ./generated
-```
-
-### Generate Both Client and Server
-
-```bash
-pnpx yanogen-ts generate \
-  --generate-client \
-  --generate-server \
-  -i ./api-spec.yaml \
-  -o ./generated
-```
-
-### With Force Validation
-
-```bash
-pnpx yanogen-ts generate \
-  --generate-client \
-  --force-validation \
-  -i ./api-spec.yaml \
-  -o ./generated
-```
-
-### Remote OpenAPI Spec
-
-```bash
-pnpx yanogen-ts generate \
-  --generate-client \
-  -i https://petstore.swagger.io/v2/swagger.json \
-  -o ./generated
-```
-
-## Programmatic Usage
-
-You can also use YanoGen-Ts programmatically:
-
-```ts
-import { generate } from "./src/generator";
-
-await generate({
-  input: "./openapi.yaml",
-  output: "./generated",
-  generateClient: true,
-});
-```

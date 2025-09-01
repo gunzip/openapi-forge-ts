@@ -4,8 +4,6 @@ This page covers the programmatic API for using YanoGen-Ts in your Node.js appli
 
 ## Programmatic Usage
 
-You can use YanoGen-Ts programmatically in your Node.js applications:
-
 ```ts
 import { generate } from "./src/generator";
 
@@ -15,6 +13,14 @@ await generate({
   generateClient: true,
 });
 ```
+
+## Generated Architecture
+
+The generator creates:
+
+- **`server/`** - Typed handler wrappers
+- **`client/`** - Individual operation functions for each API endpoint
+- **`schemas/`** - Zod schemas and TypeScript types
 
 ## Generate Function
 

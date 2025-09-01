@@ -6,41 +6,41 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  /* Custom YanoGen-Ts color palette: brown/tan primary with blue and cream accents */
-  --ifm-color-primary: #ddbea9;
-  --ifm-color-primary-dark: #d4ac8e;
-  --ifm-color-primary-darker: #d0a684;
-  --ifm-color-primary-darkest: #c19060;
-  --ifm-color-primary-light: #e2c4b4;
-  --ifm-color-primary-lighter: #e6cab8;
-  --ifm-color-primary-lightest: #f0e0d6;
+  /* Custom YanoGen-Ts color palette from provided image: light blue, cream, brown/tan */
+  --ifm-color-primary: #c19a7e;
+  --ifm-color-primary-dark: #b8906e;
+  --ifm-color-primary-darker: #b08a68;
+  --ifm-color-primary-darkest: #9e7756;
+  --ifm-color-primary-light: #caa48e;
+  --ifm-color-primary-lighter: #d2aa94;
+  --ifm-color-primary-lightest: #e8c7b0;
   
-  /* Secondary colors from palette */
-  --yanogen-blue: #c9d6df;
-  --yanogen-cream: #f0ead6;
-  --yanogen-brown: #ddbea9;
+  /* Three-color palette from provided image */
+  --yanogen-blue: #b8c5ce;
+  --yanogen-cream: #e8e1d0;
+  --yanogen-brown: #c19a7e;
   
   --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(221, 190, 169, 0.1);
+  --docusaurus-highlighted-code-line-bg: rgba(193, 154, 126, 0.1);
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
   /* Lighter variant for dark mode */
-  --ifm-color-primary: #e6cab8;
-  --ifm-color-primary-dark: #e2c4b4;
-  --ifm-color-primary-darker: #ddbea9;
-  --ifm-color-primary-darkest: #d0a684;
-  --ifm-color-primary-light: #ead0bc;
-  --ifm-color-primary-lighter: #eed6c0;
-  --ifm-color-primary-lightest: #f6e8d8;
+  --ifm-color-primary: #d2aa94;
+  --ifm-color-primary-dark: #caa48e;
+  --ifm-color-primary-darker: #c19a7e;
+  --ifm-color-primary-darkest: #b08a68;
+  --ifm-color-primary-light: #dab09a;
+  --ifm-color-primary-lighter: #e2b6a0;
+  --ifm-color-primary-lightest: #f2c6ac;
   
   /* Darker variants of accent colors for dark mode */
-  --yanogen-blue: #a8b8c8;
-  --yanogen-cream: #d4cbb8;
-  --yanogen-brown: #e6cab8;
+  --yanogen-blue: #9fb0be;
+  --yanogen-cream: #cfc8b8;
+  --yanogen-brown: #d2aa94;
   
-  --docusaurus-highlighted-code-line-bg: rgba(230, 202, 184, 0.2);
+  --docusaurus-highlighted-code-line-bg: rgba(210, 170, 148, 0.2);
 }
 
 /* Custom styles for homepage features */
@@ -85,7 +85,7 @@
 
 .feature-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(221, 190, 169, 0.15);
+  box-shadow: 0 8px 24px rgba(193, 154, 126, 0.15);
 }
 
 .feature-icon {
@@ -103,7 +103,7 @@
 .demo-image {
   max-width: 100%;
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(221, 190, 169, 0.2);
+  box-shadow: 0 4px 20px rgba(193, 154, 126, 0.2);
 }
 
 /* Code examples styling */

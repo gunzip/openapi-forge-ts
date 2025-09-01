@@ -1,25 +1,18 @@
 # Getting Started
 
-Welcome to **YanoGen-Ts** - the type-safe OpenAPI to TypeScript generator that creates fully-typed Zod v4 schemas and operation-based REST API clients.
+Welcome to **YanoGen-Ts** - Yet Another OpenAPI to TypeScript Generator that creates fully-typed Zod v4 schemas and type-safe REST API clients from OpenAPI specifications.
+
+> **Disclaimer:** This project is currently in an early stage. Breaking changes may occur at any time. The first stable release will be version **0.1.0**. Nevertheless, it's already solid and you can still use it in your projects, but be prepared for potential changes in the API.
 
 ## What is YanoGen-Ts?
 
-YanoGen-Ts is a powerful code generator that transforms your OpenAPI specifications into:
+We all like the developer experience of [tRPC](https://trpc.io/), but not always we're in control of the backend. OpenAPI specifications provide a powerful way to define your API contracts, and with YanoGen-Ts, you can easily generate TypeScript code that strictly adheres to those contracts, all while enjoying a seamless developer experience.
 
-- **Fully-typed Zod v4 schemas** ready for runtime validation
-- **Type-safe, operation-based REST API clients** with comprehensive error handling
-- **Server route wrappers** for building type-safe HTTP servers
-- **Tree-shakable output** where each operation is in its own file
+✨ Effortlessly turn your OpenAPI specifications into **fully-typed Zod v4 schemas** ready for runtime (client or server) validation and TypeScript development.
 
-## Why Choose YanoGen-Ts?
+Need a **client**? 🚀 Instantly generate a type-safe, low-footprint, operation-based REST API client alongside your schemas.
 
-✨ **Developer Experience**: Enjoy a tRPC-like experience while staying true to OpenAPI standards
-
-🛡️ **Type Safety**: Strong TypeScript typing with comprehensive support for multiple response types
-
-🚀 **Performance**: Minimal runtime dependencies (only Zod) and optimized for fast generation
-
-🔧 **Flexibility**: Works with OpenAPI 2.0, 3.0.x, and 3.1.x specifications
+Need to **validate server requests and return typed responses**? 🛡️ We've got you covered with built-in support for request and response validation using Zod schemas.
 
 ## Quick Start
 
@@ -45,9 +38,49 @@ npm install -g yanogen-ts
 Generate schemas and client from an OpenAPI spec:
 
 ```bash
-yanogen-ts generate \
+pnpx yanogen-ts generate \
+  --generate-server \
   --generate-client \
-  -i your-openapi-spec.yaml \
+  -i https://petstore.swagger.io/v2/swagger.json \
+  -o generated
+```
+
+### Watch Mode
+
+You can run the CLI in watch mode to automatically regenerate code on file changes:
+
+```bash
+pnpx chokidar-cli openapi.yaml -c \
+  "yanogen-ts generate \
+  --generate-server \
+  --generate-client \
+  -i openapi.yaml \
+  -o generated"
+```
+
+## Supported Input Formats
+
+The generator automatically detects and converts:
+
+- **OpenAPI 2.0** (Swagger) → 3.0 → 3.1
+- **OpenAPI 3.0.x** → 3.1
+- **OpenAPI 3.1.x** (no conversion needed)
+
+All input formats (local or remote yaml or JSON) are automatically normalized to OpenAPI 3.1.0 before generation.
+
+## Generated Architecture
+
+The generator creates:
+
+- **`server/`** - Typed handler wrappers
+- **`client/`** - Individual operation functions for each API endpoint
+- **`schemas/`** - Zod schemas and TypeScript types
+
+## Why Choose YanoGen-Ts?
+
+Why choose this generator against alternatives? See our [comparison with alternative libraries](/docs/comparison) for more details.
+
+See our [examples](/docs/examples) for comprehensive information about all capabilities.
   -o ./generated
 ```
 

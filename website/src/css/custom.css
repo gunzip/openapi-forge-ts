@@ -6,34 +6,46 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  /* Custom YanoGen-Ts color palette based on #a2a497 */
-  --ifm-color-primary: #a2a497;
-  --ifm-color-primary-dark: #919187;
-  --ifm-color-primary-darker: #888976;
-  --ifm-color-primary-darkest: #727066;
-  --ifm-color-primary-light: #b3b7a7;
-  --ifm-color-primary-lighter: #bcc0b2;
-  --ifm-color-primary-lightest: #d4d7cc;
+  /* Custom YanoGen-Ts color palette: brown/tan primary with blue and cream accents */
+  --ifm-color-primary: #ddbea9;
+  --ifm-color-primary-dark: #d4ac8e;
+  --ifm-color-primary-darker: #d0a684;
+  --ifm-color-primary-darkest: #c19060;
+  --ifm-color-primary-light: #e2c4b4;
+  --ifm-color-primary-lighter: #e6cab8;
+  --ifm-color-primary-lightest: #f0e0d6;
+  
+  /* Secondary colors from palette */
+  --yanogen-blue: #c9d6df;
+  --yanogen-cream: #f0ead6;
+  --yanogen-brown: #ddbea9;
+  
   --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(162, 164, 151, 0.1);
+  --docusaurus-highlighted-code-line-bg: rgba(221, 190, 169, 0.1);
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
   /* Lighter variant for dark mode */
-  --ifm-color-primary: #b3b7a7;
-  --ifm-color-primary-dark: #a5a997;
-  --ifm-color-primary-darker: #9ca090;
-  --ifm-color-primary-darkest: #858775;
-  --ifm-color-primary-light: #c1c5b7;
-  --ifm-color-primary-lighter: #cacec1;
-  --ifm-color-primary-lightest: #e2e4db;
-  --docusaurus-highlighted-code-line-bg: rgba(179, 183, 167, 0.2);
+  --ifm-color-primary: #e6cab8;
+  --ifm-color-primary-dark: #e2c4b4;
+  --ifm-color-primary-darker: #ddbea9;
+  --ifm-color-primary-darkest: #d0a684;
+  --ifm-color-primary-light: #ead0bc;
+  --ifm-color-primary-lighter: #eed6c0;
+  --ifm-color-primary-lightest: #f6e8d8;
+  
+  /* Darker variants of accent colors for dark mode */
+  --yanogen-blue: #a8b8c8;
+  --yanogen-cream: #d4cbb8;
+  --yanogen-brown: #e6cab8;
+  
+  --docusaurus-highlighted-code-line-bg: rgba(230, 202, 184, 0.2);
 }
 
 /* Custom styles for homepage features */
 .hero--primary {
-  background: linear-gradient(135deg, #a2a497 0%, #8a9186 100%);
+  background: linear-gradient(135deg, var(--yanogen-brown) 0%, var(--yanogen-blue) 50%, var(--yanogen-cream) 100%);
 }
 
 .button--secondary {
@@ -43,8 +55,8 @@
 }
 
 .button--secondary:hover {
-  background-color: #f8f9fa;
-  border-color: #f8f9fa;
+  background-color: var(--yanogen-cream);
+  border-color: var(--yanogen-cream);
 }
 
 .button--outline {
@@ -65,14 +77,15 @@
 .feature-card {
   padding: 2rem;
   border-radius: 8px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--yanogen-blue);
+  background: linear-gradient(145deg, white 0%, var(--yanogen-cream) 100%);
   height: 100%;
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .feature-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(162, 164, 151, 0.15);
+  box-shadow: 0 8px 24px rgba(221, 190, 169, 0.15);
 }
 
 .feature-icon {
@@ -84,19 +97,19 @@
 /* Demo section */
 .demo-section {
   padding: 4rem 0;
-  background-color: #f8f9fa;
+  background: linear-gradient(to bottom, var(--yanogen-cream) 0%, #f8f9fa 100%);
 }
 
 .demo-image {
   max-width: 100%;
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(162, 164, 151, 0.2);
+  box-shadow: 0 4px 20px rgba(221, 190, 169, 0.2);
 }
 
 /* Code examples styling */
 .code-example {
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: linear-gradient(145deg, var(--yanogen-cream) 0%, #f8f9fa 100%);
+  border: 1px solid var(--yanogen-blue);
   border-radius: 8px;
   padding: 1.5rem;
   margin: 1rem 0;

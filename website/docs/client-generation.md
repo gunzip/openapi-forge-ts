@@ -1,394 +1,461 @@
 # Client Generation
 
-YanoGen-Ts generates type-safe, operation-based REST API clients from your OpenAPI specifications. Each operation becomes a standalone function with full TypeScript typing and optional Zod validation.
+YanoGen-Ts generates type-safe, operation-based REST API clients with comprehensive error handling and runtime validation capabilities.
 
-## Key Features
+## Using the Generated Operations
 
-- 🚀 **Operation-based architecture**: Each API endpoint becomes a tree-shakable function
-- 🔒 **Type-safe configuration**: Immutable config objects with per-operation overrides
-- 🧩 **Discriminated union responses**: Exhaustive handling of all possible response types
-- ⚠️ **Comprehensive error handling**: Only unexpected responses throw exceptions
-- 📁 **File upload/download support**: Handles multipart and binary data
-- 🪶 **Zero dependencies**: Only requires Zod at runtime
+### Define Configuration
 
-## Basic Usage
+```ts
+import { getPetById, createPet } from "./generated/client/index.js";
 
-### 1. Generate the Client
-
-```bash
-yanogen-ts generate \
-  --generate-client \
-  -i openapi.yaml \
-  -o ./generated
-```
-
-### 2. Import Operations
-
-```typescript
-import { getPetById, createPet } from './generated/operations/index.js';
-```
-
-### 3. Define Configuration
-
-```typescript
+// You can define your API configuration (all fields required)
+// or just use the default configuration to avoid passing it
+// as parameter to every operation
 const apiConfig = {
-  baseURL: 'https://api.example.com/v1',
+  baseURL: "https://api.example.com/v1",
   fetch: fetch, // or globalThis.fetch in browsers
   headers: {
-    Authorization: 'Bearer your-token',
+    Authorization: "Bearer your-token",
   },
+  // here you can provide your custom deserializers
+  // see below for examples
 };
 ```
 
-### 4. Call Operations
+### Call Operations
 
-```typescript
+```ts
 // Simple operation call
-const pet = await getPetById({ petId: '123' }, apiConfig);
+const pet = await getPetById({ petId: "123" }, apiConfig);
 
 // Operation with request body
 const newPet = await createPet(
   {
     body: {
-      name: 'Fluffy',
-      status: 'available',
+      name: "Fluffy",
+      status: "available",
     },
   },
   apiConfig,
 );
+
+// Use default empty config (operations work without configuration)
+const result = await getPetById({ petId: "123" });
 ```
 
-## Configuration Management
+## Binding Configuration to Operations
 
-### Global Configuration
+You can use the `configureOperations` helper to bind a configuration object to all generated operations, so you don't have to pass the config each time:
 
-You can bind configuration to all operations to avoid passing it repeatedly:
-
-```typescript
-import * as operations from './generated/operations/index.js';
-import { configureOperations } from './generated/operations/index.js';
+```ts
+import * as operations from "./generated/client/index.js";
+import { configureOperations } from "./generated/client/index.js";
 
 const apiConfig = {
-  baseURL: 'https://api.example.com/v1',
+  baseURL: "https://api.example.com/v1",
   fetch: fetch,
   headers: {
-    Authorization: 'Bearer your-token',
+    Authorization: "Bearer your-token",
   },
 };
 
+// You may consider to only pass operations you use
 const client = configureOperations(operations, apiConfig);
 
-// Now call operations without passing config
-const pet = await client.getPetById({ petId: '123' });
-```
-
-### Per-Operation Configuration
-
-You can override configuration for specific operations:
-
-```typescript
-// Use different base URL for a specific operation
-const result = await getPetById(
-  { petId: '123' },
-  {
-    ...apiConfig,
-    baseURL: 'https://legacy-api.example.com/v1',
-  }
-);
+// Now you can call operations without passing config:
+const pet = await client.getPetById({ petId: "123" });
+const newPet = await client.createPet({
+  body: { name: "Fluffy", status: "available" },
+});
 ```
 
 ## Response Handling
 
-Each operation returns a discriminated union of possible responses:
+Each operation returns a discriminated union of possible responses containing the raw (unvalidated) response body in `data`. Validation is opt-in by default, but can be made automatic with the `--force-validation` flag. Example:
 
-```typescript
-const result = await getPetById({ petId: '123' });
+```ts
+const result = await getPetById({ petId: "123" });
 
 if (result.status === 200) {
-  // result.data contains the pet data (unvalidated by default)
-  console.log('Pet:', result.data);
+  // result.data is the RAW response body (unvalidated by default)
+  // or VALIDATED data when using --force-validation
+  console.log("Pet (raw):", result.data);
+  // But will have a parse() method bound if you want
+  // to parse the returned response, see examples below
 } else if (result.status === 404) {
-  console.log('Pet not found');
-} else if (result.status === 500) {
-  console.error('Server error:', result.data);
+  // Not found
+  console.warn("Pet not found");
 } else {
-  // TypeScript ensures exhaustive handling
-  const _exhaustive: never = result;
+  // Exhaustive check
+  console.error("Unexpected status", result.status);
 }
 ```
-
-## Runtime Validation
-
-### Manual Validation (Default)
-
-By default, operations return raw data. Use the `parse()` method for validation:
-
-```typescript
-const result = await getUserProfile({ userId: '123' });
-
-if (result.status === 200) {
-  const outcome = result.parse();
-  
-  if (isParsed(outcome)) {
-    // Validated and typed data
-    console.log('User:', outcome.parsed.name, outcome.parsed.email);
-  } else if ('parseError' in outcome) {
-    console.error('Validation failed:', outcome.parseError);
-  } else {
-    console.log('Raw data:', result.data);
-  }
-}
-```
-
-### Automatic Validation
-
-Generate with `--force-validation` for automatic validation:
-
-```bash
-yanogen-ts generate \
-  --generate-client \
-  --force-validation \
-  -i openapi.yaml \
-  -o ./generated
-```
-
-```typescript
-const result = await getUserProfile({ userId: '123' });
-
-if (result.status === 200) {
-  if ('parsed' in result) {
-    // Automatically validated data
-    console.log('User:', result.parsed.name);
-  } else if ('parseError' in result) {
-    console.error('Validation failed:', result.parseError);
-  }
-}
-```
-
-### Why Manual Validation?
-
-Manual validation provides several advantages:
-
-- **Performance**: Skip validation for non-critical calls
-- **Robustness**: Handle unexpected but harmless API changes
-- **Integration**: Work with existing validation systems
-- **Flexibility**: Choose when to validate based on your needs
 
 ## Exception Handling
 
-Only unexpected responses (not defined in OpenAPI spec) throw exceptions:
+All responses not present in the OpenAPI specs throw an `UnexpectedResponseError` error:
 
-```typescript
+```ts
 try {
-  const result = await getPetById({ petId: 'invalid' });
-  // Handle expected responses (200, 404, etc.)
+  const result = await getPetById({ petId: "notfound" });
+  // handle result as above
 } catch (err) {
   if (err instanceof UnexpectedResponseError) {
-    console.error('Unexpected response:', err.status, err.data);
-    // err.headers also available
+    console.error("Unexpected response", err.status, err.data);
   } else {
-    throw err; // Re-throw unknown errors
+    throw err; // rethrow unknown errors
   }
 }
 ```
 
-## File Upload and Download
+## Runtime Response Validation (Opt-In)
 
-### File Upload
+Operations return raw data by default (no automatic Zod parsing). To perform runtime validation you must explicitly call the response object's `parse()` method. Validation errors are reported in the returned object (they do NOT throw) via an `parseError` property.
 
-```typescript
-// Create FormData for file upload
-const formData = new FormData();
-formData.append('file', fileBlob, 'document.pdf');
-formData.append('metadata', JSON.stringify({ type: 'document' }));
-
-const result = await uploadFile({
-  body: formData,
-});
-```
-
-### File Download
-
-```typescript
-const result = await downloadFile({ fileId: '123' });
+```ts
+const result = await getUserProfile({ userId: "123" });
 
 if (result.status === 200) {
-  // result.data is a Blob
-  const url = URL.createObjectURL(result.data);
-  // Use the URL for download or display
+  const outcome = result.parse();
+  if (isParsed(outcome)) {
+    console.log("User:", outcome.parsed.name, outcome.parsed.email);
+  } else if (outcome && "parseError" in outcome) {
+    console.error("Response validation failed:", outcome.parseError);
+  } else {
+    console.log("User (raw, unvalidated):", result.data);
+  }
+} else if (result.status === 404) {
+  console.warn("User not found");
 }
 ```
 
-## Multiple Content Types
+For operations with mixed content types, validation only applies when you call `parse()` and a schema exists for the selected content type:
 
-### Request Content Types
+```ts
+const result = await getDocument({
+  docId: "123",
+  contentType: { response: "application/json" },
+});
 
-Handle endpoints that accept multiple content types:
+if (result.status === 200) {
+  const outcome = result.parse();
+  if (isParsed(outcome)) {
+    console.log("Document:", outcome.parsed);
+  }
+}
+```
 
-```typescript
+Non-JSON responses (like `text/plain`, `application/octet-stream`) are still left raw unless you supply a custom deserializer in the config:
+
+```ts
+const result = await downloadFile(
+  {
+    fileId: "123",
+  },
+  {
+    // You can provide custom deserializers for specific operations
+    // or even in the global configuration
+    deserializerMap: {
+      ...globalConfig,
+      "application/octet-stream": (blob: Blob) => ({ size: blob.size }),
+    },
+  },
+);
+
+if (result.status === 200) {
+  const outcome = result.parse();
+  if (isParsed(outcome)) {
+    console.log("Downloaded file size:", outcome.parsed.size);
+  }
+}
+```
+
+## Automatic Runtime Validation
+
+When using the `--force-validation` CLI flag, operations automatically validate responses using Zod schemas without requiring explicit calls to `parse()`. This provides stricter type safety and validation at the cost of performance.
+
+### Usage with Automatic Validation
+
+```bash
+# Generate with --force-validation flag
+pnpx yanogen-ts generate \
+  --generate-client \
+  --force-validation \
+  -i openapi.yaml \
+  -o generated
+```
+
+```ts
+// Operations now return validated data directly
+const result = await getUserProfile({ userId: "123" });
+
+if (result.status === 200) {
+  // automatically validated and typed
+  if ("parsed" in result) {
+    const profile = result.parsed;
+    console.log("User:", profile.name, profile.email);
+  }
+  else if ("parseError" in result) {
+    console.error("User profile validation failed", result.parseError);
+  }
+} else if (result.status === 404) {
+  console.warn("User not found");
+}
+```
+
+## Why is Runtime Validation Opt-In?
+
+TypeScript client generator uses Zod for payload validation and parsing, but we've made this feature opt-in rather than mandatory. This design choice provides several key advantages:
+
+- **Integration with Existing Systems**: This approach allows for seamless integration with other validation mechanisms already present in your codebase. If you have existing business logic that handles data validation, disabled runtime parsing at the client level avoids redundancy and streamlines your data flow.
+
+- **Robustness in the Real World**: APIs responses can be unpredictable. You might encounter non-documented fields or slight deviations from the OpenAPI specification. Making validation optional prevents the client from crashing on unexpected—but often harmless—payloads, ensuring your application remains resilient.
+
+- **Performance**: Parsing and validating a payload comes with a computational cost. By allowing you to opt-in, you can decide to skip validation for non-critical API calls, leading to better performance, especially in high-volume scenarios.
+
+This approach gives you more control, allowing you to balance strict type-safety with the practical demands of working with real-world APIs.
+
+### When to Use Automatic Validation
+
+Use the `--force-validation` flag when:
+
+- **Trusted APIs**: When responses always match the OpenAPI specification
+- **Performance is Not Critical**: When the validation overhead is acceptable for your use case
+
+### When to Use Manual Validation
+
+Use the default manual validation (without `--force-validation`) when:
+
+- **Huge Payloads**: When dealing with large responses where validation overhead is a concern
+- **Untrusted APIs**: When APIs may return unexpected data that shouldn't crash your application
+- **Gradual Migration**: When incrementally adding validation to existing codebases
+- **Custom Validation Logic**: When you need more control over validation behavior and error handling or you have your own validation already in place
+
+## Custom Response Deserialization
+
+For advanced scenarios (e.g. XML parsing, vendor-specific media types, binary post-processing) you can provide custom deserializers through the config object. The `parse()` method will automatically use these deserializers before schema validation occurs.
+
+### Why use `parse()`?
+
+- Apply transformations (e.g. date reviver, case normalization) prior to Zod validation
+- Decode non‑JSON types (XML → JS object, CSV → array, binary → metadata)
+- Gracefully handle vendor or unknown content types without modifying generated code
+
+### Basic Usage
+
+```ts
+const res = await testMultiContentTypes(
+  {
+    body: { id: "123", name: "Example" },
+    contentType: { response: "application/xml" },
+  },
+  {
+    ...globalConfig,
+    // this can be merged into the global config object as well
+    deserializerMap: {
+      "application/xml": (raw: unknown) => customXmlToJson(raw as string),
+      "application/octet-stream": (blob: unknown) => ({
+        size: (blob as Blob).size,
+      }),
+    },
+  },
+);
+
+if (res.status === 200) {
+  const outcome = res.parse();
+
+  if (isParsed(outcome)) {
+    // Zod-validated & transformed data
+    console.log(outcome.parsed);
+  } else if ("parseError" in outcome) {
+    console.error("Validation failed", outcome.parseError);
+  } else if ("deserializationError" in outcome) {
+    console.error("Deserializer threw", outcome.deserializationError);
+  } else if ("missingSchema" in outcome) {
+    console.warn(
+      "No schema for content type; raw transformed value:",
+      outcome.deserialized,
+    );
+  }
+}
+```
+
+### Deserializer Map
+
+The `deserializerMap` is a property of the config object that maps content types to deserializer functions:
+
+```ts
+type Deserializer = (data: unknown, contentType?: string) => unknown;
+type DeserializerMap = Record<string, Deserializer>;
+```
+
+When provided in the config, the raw response body is passed to your function before schema validation. Whatever you return becomes the input to schema validation (if a schema for that content type exists).
+
+### Returned Object Shapes
+
+The result of `parse()` is a discriminated object you can pattern match on:
+
+| Scenario                              | Shape                                                                       |
+| ------------------------------------- | --------------------------------------------------------------------------- |
+| Schema + validation success           | `{ contentType, parsed }`                                                   |
+| Schema + validation failure           | `{ contentType, parseError }`                                               |
+| Schema present but deserializer threw | `{ contentType, deserializationError }`                                     |
+| No schema for content type            | `{ contentType, missingSchema: true, deserialized, deserializationError? }` |
+
+Notes:
+
+- If the deserializer throws, validation is skipped (you get `deserializationError`).
+- If no schema exists, the transformed value is returned under `deserialized` and flagged with `missingSchema: true`.
+- Content type normalization strips any charset parameters (e.g. `application/json; charset=utf-8` → `application/json`).
+
+### Common Patterns
+
+1. XML → JS:
+
+```ts
+const outcome = res.parse();
+// Uses deserializerMap from config:
+// {
+//   "application/xml": (xml: unknown) => fastXmlParser.parse(xml as string),
+// }
+```
+
+2. Binary metadata:
+
+```ts
+const outcome = res.parse();
+// Uses deserializerMap from config:
+// {
+//   "application/octet-stream": (b: unknown) => ({ size: (b as Blob).size }),
+// }
+```
+
+3. Vendor JSON normalization:
+
+```ts
+const outcome = res.parse();
+// Uses deserializerMap from config:
+// {
+//   "application/vnd.custom+json": (data: any) => ({
+//     ...data,
+//     id: String(data.id).toUpperCase(),
+//   }),
+// }
+```
+
+### Error Handling Summary
+
+| Field                  | Meaning                                             |
+| ---------------------- | --------------------------------------------------- |
+| `parsed`               | Successfully deserialized and schema-validated data |
+| `parseError`           | Zod validation error object (`ZodError`)            |
+| `deserializationError` | Exception thrown by your custom deserializer        |
+| `missingSchema`        | No schema was generated for this content type       |
+| `deserialized`         | Transformed value when no schema exists             |
+
+### Best Practices
+
+- Keep deserializers pure & fast—avoid performing network calls
+- Return plain JS objects ready for validation; do not mutate globals
+- Prefer adding schemas in the spec when possible (better type safety)
+- Log or surface `deserializationError` for observability
+
+## Handling Multiple Content Types (Request & Response)
+
+This generator fully supports OpenAPI endpoints that define multiple content types for both requests and responses. For each operation, the generated client:
+
+- Accepts a `contentType` property in the request object, which is an object with optional `request` and `response` keys, to specify which content type to use for the request and which to prefer for the response.
+- Returns a response typed according to the selected response content type.
+- Validates and parses the response according to the content type actually returned by the server.
+
+### Example: Endpoint with Multiple Request Content Types
+
+Suppose your OpenAPI spec defines an operation that accepts both `application/json` and `application/x-www-form-urlencoded` for the request body:
+
+```yaml
+requestBody:
+  content:
+    application/json:
+      schema:
+        $ref: "#/components/schemas/Pet"
+    application/x-www-form-urlencoded:
+      schema:
+        $ref: "#/components/schemas/PetForm"
+```
+
+The generated operation function will accept a `contentType` object to select the body and/or response format:
+
+```ts
+import { createPet } from "./generated/client/index.js";
+
 // Send as JSON (default)
 await createPet({
-  body: { name: 'Fluffy', status: 'available' },
+  body: { name: "Fluffy", status: "available" },
 });
 
 // Send as form-urlencoded
 await createPet({
-  body: { name: 'Fluffy', status: 'available' },
-  contentType: { request: 'application/x-www-form-urlencoded' },
+  body: { name: "Fluffy", status: "available" },
+  contentType: { request: "application/x-www-form-urlencoded" },
+});
+
+// Send as form-urlencoded and request a custom response type
+await createPet({
+  body: { name: "Fluffy", status: "available" },
+  contentType: {
+    request: "application/x-www-form-urlencoded",
+    response: "application/vnd.custom+json",
+  },
 });
 ```
 
-### Response Content Types
+### Example: Endpoint with Multiple Response Content Types
 
-Handle endpoints that return multiple content types:
+Suppose an operation returns either JSON or XML:
 
-```typescript
-const result = await getDocument({
-  docId: '123',
-  contentType: { response: 'application/xml' },
-});
-
-if (result.status === 200) {
-  // result.data is typed based on selected content type
-  const parsed = result.parse();
-  // Handle XML response with custom deserializer
-}
+```yaml
+responses:
+  "200":
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/Pet"
+      application/xml:
+        schema:
+          $ref: "#/components/schemas/PetXml"
 ```
 
-## Custom Response Deserialization
+The generated response type will match the selected or default response content type:
 
-For non-JSON responses or custom transformations:
-
-```typescript
-const config = {
-  ...apiConfig,
-  deserializerMap: {
-    'application/xml': (xmlString: string) => parseXml(xmlString),
-    'application/octet-stream': (blob: Blob) => ({ size: blob.size }),
-    'text/csv': (csvText: string) => parseCsv(csvText),
-  },
-};
-
-const result = await getReport(
-  { reportId: '123', contentType: { response: 'application/xml' } },
-  config
-);
-
-if (result.status === 200) {
-  const outcome = result.parse();
-  if (isParsed(outcome)) {
-    // XML was deserialized and validated
-    console.log('Report data:', outcome.parsed);
-  }
-}
-```
-
-## Authentication
-
-### Bearer Token
-
-```typescript
-const config = {
-  baseURL: 'https://api.example.com',
-  fetch: fetch,
-  headers: {
-    Authorization: 'Bearer your-jwt-token',
-  },
-};
-```
-
-### API Key
-
-```typescript
-const config = {
-  baseURL: 'https://api.example.com',
-  fetch: fetch,
-  headers: {
-    'X-API-Key': 'your-api-key',
-  },
-};
-```
-
-### Dynamic Authentication
-
-```typescript
-const getAuthHeaders = async () => {
-  const token = await refreshToken();
-  return { Authorization: `Bearer ${token}` };
-};
-
+```ts
 const result = await getPetById(
-  { petId: '123' },
   {
-    ...baseConfig,
-    headers: {
-      ...baseConfig.headers,
-      ...(await getAuthHeaders()),
+    petId: "123",
+    contentType: { response: "application/xml" },
+  },
+  {
+    ...globalConfig,
+    deserializerMap: {
+      "application/xml": myXmlDeserializer,
     },
-  }
+  },
 );
-```
 
-## Error Handling Patterns
-
-### Retry Logic
-
-```typescript
-async function retryOperation<T>(
-  operation: () => Promise<T>,
-  maxRetries = 3
-): Promise<T> {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await operation();
-    } catch (err) {
-      if (err instanceof UnexpectedResponseError && err.status >= 500) {
-        if (i === maxRetries - 1) throw err;
-        await delay(1000 * Math.pow(2, i)); // Exponential backoff
-        continue;
-      }
-      throw err;
-    }
-  }
-  throw new Error('Max retries exceeded');
+if (result.status === 200) {
+  const data = result.parse();
+  // result.data is typed as PetXml if response: "application/xml" was selected
+  // or as Pet if response: "application/json" was selected
 }
-
-const result = await retryOperation(() => 
-  getPetById({ petId: '123' }, config)
-);
 ```
 
-### Centralized Error Handling
+## Using Generated Zod Schemas
 
-```typescript
-function handleApiResponse<T>(result: T): T {
-  // Log errors, track metrics, etc.
-  if ('status' in result && typeof result.status === 'number') {
-    if (result.status >= 400) {
-      console.error('API Error:', result.status, result);
-    }
-  }
-  return result;
+```ts
+import { Pet } from "./generated/schemas/Pet.js";
+
+const result = Pet.safeParse(someData);
+if (!result.success) {
+  console.error(result.error);
 }
-
-const result = handleApiResponse(
-  await getPetById({ petId: '123' }, config)
-);
 ```
-
-## Best Practices
-
-1. **Use global configuration** for common settings like base URL and auth
-2. **Handle all response cases** - TypeScript will help ensure exhaustive matching
-3. **Validate responses** when data integrity is critical
-4. **Use custom deserializers** for non-JSON content types
-5. **Implement retry logic** for network resilience
-6. **Tree-shake unused operations** - import only what you need
-7. **Type your configurations** - leverage the generated types
-8. **Handle file uploads/downloads** appropriately with proper content types
-
-## Next Steps
-
-- Learn about [Server Generation](./server-generation)
-- Check out [Examples](./examples) for real-world patterns
-- See [API Reference](./api-reference) for detailed configuration options

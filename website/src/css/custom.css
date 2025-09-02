@@ -1,0 +1,139 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  /* Custom YanoGen-Ts color palette from provided image: light blue, cream, brown/tan */
+  --ifm-color-primary: #c19a7e;
+  --ifm-color-primary-dark: #b8906e;
+  --ifm-color-primary-darker: #b08a68;
+  --ifm-color-primary-darkest: #9e7756;
+  --ifm-color-primary-light: #caa48e;
+  --ifm-color-primary-lighter: #d2aa94;
+  --ifm-color-primary-lightest: #e8c7b0;
+  
+  /* Three-color palette from provided image */
+  --yanogen-blue: #b8c5ce;
+  --yanogen-cream: #e8e1d0;
+  --yanogen-brown: #c19a7e;
+  
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(193, 154, 126, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  /* Lighter variant for dark mode */
+  --ifm-color-primary: #d2aa94;
+  --ifm-color-primary-dark: #caa48e;
+  --ifm-color-primary-darker: #c19a7e;
+  --ifm-color-primary-darkest: #b08a68;
+  --ifm-color-primary-light: #dab09a;
+  --ifm-color-primary-lighter: #e2b6a0;
+  --ifm-color-primary-lightest: #f2c6ac;
+  
+  /* Darker variants of accent colors for dark mode */
+  --yanogen-blue: #9fb0be;
+  --yanogen-cream: #cfc8b8;
+  --yanogen-brown: #d2aa94;
+  
+  --docusaurus-highlighted-code-line-bg: rgba(210, 170, 148, 0.2);
+}
+
+/* Custom styles for homepage features */
+.hero--primary {
+  background: linear-gradient(135deg, var(--yanogen-brown) 0%, var(--yanogen-blue) 50%, var(--yanogen-cream) 100%);
+}
+
+.button--secondary {
+  background-color: white;
+  border-color: white;
+  color: var(--ifm-color-primary);
+}
+
+.button--secondary:hover {
+  background-color: var(--yanogen-cream);
+  border-color: var(--yanogen-cream);
+}
+
+.button--outline {
+  border-color: white;
+  color: white;
+}
+
+.button--outline:hover {
+  background-color: white;
+  color: var(--ifm-color-primary);
+}
+
+/* Feature cards styling */
+.features-container {
+  margin: 3rem 0;
+}
+
+.feature-card {
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid var(--yanogen-blue);
+  background: linear-gradient(145deg, white 0%, var(--yanogen-cream) 100%);
+  height: 100%;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(193, 154, 126, 0.15);
+}
+
+.feature-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1rem;
+}
+
+/* Demo section */
+.demo-section {
+  padding: 4rem 0;
+  background: linear-gradient(to bottom, var(--yanogen-cream) 0%, #f8f9fa 100%);
+}
+
+.demo-image {
+  max-width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(193, 154, 126, 0.2);
+}
+
+/* Code examples styling */
+.code-example {
+  background: linear-gradient(145deg, var(--yanogen-cream) 0%, #f8f9fa 100%);
+  border: 1px solid var(--yanogen-blue);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.code-example h4 {
+  color: var(--ifm-color-primary-dark);
+  margin-bottom: 1rem;
+}
+
+/* Quick start section */
+.quick-start {
+  padding: 3rem 0;
+}
+
+.quick-start-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .quick-start-grid {
+    grid-template-columns: 1fr;
+  }
+}

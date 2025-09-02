@@ -1,0 +1,48 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Social card for YanoGen-Ts -->
+  <defs>
+    <linearGradient id="socialGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a2a497"/>
+      <stop offset="100%" style="stop-color:#8a9186"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#socialGradient)"/>
+  
+  <!-- Main content area -->
+  <rect x="80" y="80" width="1040" height="470" fill="white" rx="20" opacity="0.98"/>
+  
+  <!-- Title -->
+  <text x="600" y="200" font-family="monospace" font-size="72" font-weight="bold" text-anchor="middle" fill="#a2a497">YanoGen-Ts</text>
+  
+  <!-- Subtitle -->
+  <text x="600" y="260" font-family="sans-serif" font-size="28" text-anchor="middle" fill="#6c757d">Yet Another OpenAPI to TypeScript Generator</text>
+  
+  <!-- Features -->
+  <text x="600" y="320" font-family="sans-serif" font-size="20" text-anchor="middle" fill="#6c757d">Generate fully-typed Zod v4 schemas and type-safe REST API clients</text>
+  <text x="600" y="350" font-family="sans-serif" font-size="20" text-anchor="middle" fill="#6c757d">from OpenAPI specifications</text>
+  
+  <!-- Key benefits -->
+  <rect x="200" y="400" width="200" height="80" fill="#f8f9fa" stroke="#a2a497" stroke-width="2" rx="8"/>
+  <text x="300" y="425" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#a2a497">Type Safety</text>
+  <text x="300" y="445" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">Zod v4 validation</text>
+  <text x="300" y="460" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">Runtime checks</text>
+  
+  <rect x="430" y="400" width="200" height="80" fill="#f8f9fa" stroke="#a2a497" stroke-width="2" rx="8"/>
+  <text x="530" y="425" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#a2a497">Multi-Version</text>
+  <text x="530" y="445" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">OpenAPI 2.0, 3.0.x, 3.1.x</text>
+  <text x="530" y="460" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">Auto-conversion</text>
+  
+  <rect x="660" y="400" width="200" height="80" fill="#f8f9fa" stroke="#a2a497" stroke-width="2" rx="8"/>
+  <text x="760" y="425" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#a2a497">Minimal Deps</text>
+  <text x="760" y="445" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">Zod only</text>
+  <text x="760" y="460" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">Fast generation</text>
+  
+  <!-- Logo/icon in corner -->
+  <circle cx="150" cy="150" r="40" fill="white" stroke="#a2a497" stroke-width="3"/>
+  <text x="150" y="160" font-family="monospace" font-size="20" font-weight="bold" text-anchor="middle" fill="#a2a497">TS</text>
+  
+  <!-- GitHub link -->
+  <text x="600" y="570" font-family="sans-serif" font-size="18" text-anchor="middle" fill="white">github.com/gunzip/yanogen-ts</text>
+</svg>
